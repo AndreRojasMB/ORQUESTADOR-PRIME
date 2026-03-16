@@ -11,64 +11,186 @@ function requireEnv(name: string): string {
 
 requireEnv("OPENAI_API_KEY");
 
-const model = process.env.OPENAI_MODEL || "gpt-5.4";
+const plannerModel = process.env.PLANNER_MODEL || "gpt-5.4";
+const specialistModel = process.env.SPECIALIST_MODEL || "gpt-5.4";
+const synthesisModel = process.env.SYNTHESIS_MODEL || "gpt-5.4";
+
+/* =========================
+   CORE SPECIALISTS
+========================= */
 
 const architectAgent = new Agent({
   name: "Architect Agent",
-  model,
+  model: plannerModel,
   instructions: `
-You are a software architect.
-Define system structure, modules, boundaries, risks, and implementation order.
-Do not jump into coding before a clear plan exists.
+You are a senior software architect.
+
+Responsibilities:
+- define system structure
+- identify modules and boundaries
+- propose implementation order
+- identify technical risks
+
+Never jump directly into code.
+Start with architecture and reasoning.
 `.trim(),
 });
 
 const frontendAgent = new Agent({
   name: "Frontend Agent",
-  model,
+  model: specialistModel,
   instructions: `
-You are a frontend specialist.
-Focus on UI architecture, routing, state, components, accessibility, and performance.
-Respect the architecture defined by the architect agent.
+You are a frontend architecture specialist.
+
+Focus on:
+- React architecture
+- routing
+- state management
+- accessibility
+- performance
+- component structure
+
+Respect the architecture defined by the Architect Agent.
 `.trim(),
 });
 
 const backendAgent = new Agent({
   name: "Backend Agent",
-  model,
+  model: specialistModel,
   instructions: `
-You are a backend specialist.
-Focus on APIs, authentication, services, validation, database design, and security.
-Respect contracts and avoid breaking compatibility.
+You are a backend systems specialist.
+
+Focus on:
+- APIs
+- services
+- authentication
+- validation
+- modular backend architecture
+- security boundaries
 `.trim(),
 });
 
 const qaAgent = new Agent({
   name: "QA Agent",
-  model,
+  model: specialistModel,
   instructions: `
-You are a QA specialist.
-Review risks, test scenarios, regressions, edge cases, and acceptance criteria.
-Never assume something works without validation.
+You are a QA and reliability engineer.
+
+Responsibilities:
+- identify edge cases
+- test strategies
+- regression risks
+- validation rules
+- failure scenarios
 `.trim(),
 });
 
+/* =========================
+   DATA SPECIALISTS
+========================= */
+
+const relationalDbAgent = new Agent({
+  name: "Relational DB Agent",
+  model: specialistModel,
+  instructions: `
+You specialize in relational databases.
+
+Focus on:
+- PostgreSQL
+- schema design
+- indexing strategies
+- migrations
+- query optimization
+`.trim(),
+});
+
+const nosqlAgent = new Agent({
+  name: "NoSQL Agent",
+  model: specialistModel,
+  instructions: `
+You specialize in NoSQL systems.
+
+Focus on:
+- Redis
+- caching strategies
+- event stores
+- distributed data models
+`.trim(),
+});
+
+/* =========================
+   PLATFORM SPECIALISTS
+========================= */
+
+const securityAgent = new Agent({
+  name: "Security Agent",
+  model: specialistModel,
+  instructions: `
+You are a security architecture expert.
+
+Focus on:
+- authentication
+- authorization
+- data protection
+- attack surface analysis
+- secure defaults
+`.trim(),
+});
+
+const devopsAgent = new Agent({
+  name: "DevOps Agent",
+  model: specialistModel,
+  instructions: `
+You are a DevOps and infrastructure specialist.
+
+Focus on:
+- CI/CD pipelines
+- Docker
+- deployment architecture
+- observability
+- scaling strategy
+`.trim(),
+});
+
+/* =========================
+   ORCHESTRATOR
+========================= */
+
 const orchestrator = Agent.create({
   name: "Project Orchestrator",
-  model,
+  model: synthesisModel,
   instructions: `
-You are the technical orchestrator.
-First analyze the task.
-Then delegate to the right specialists.
-Finally produce a consolidated response with:
-1. architecture plan
-2. responsibilities
-3. execution order
-4. risks
-5. validations
+You are the central AI orchestrator for a multi-agent engineering system.
+
+Process:
+
+1. Analyze the task
+2. Delegate to appropriate specialists
+3. Consolidate the results
+
+Your final output must include:
+
+1. Architecture overview
+2. Responsible agents
+3. Implementation order
+4. Technical risks
+5. Validation strategy
 `.trim(),
-  handoffs: [architectAgent, frontendAgent, backendAgent, qaAgent],
+  handoffs: [
+    architectAgent,
+    frontendAgent,
+    backendAgent,
+    qaAgent,
+    relationalDbAgent,
+    nosqlAgent,
+    securityAgent,
+    devopsAgent,
+  ],
 });
+
+/* =========================
+   ARG PARSER
+========================= */
 
 function parseArgs(argv: string[]) {
   let mode = "plan";
@@ -91,6 +213,10 @@ function parseArgs(argv: string[]) {
   };
 }
 
+/* =========================
+   MAIN
+========================= */
+
 async function main() {
   const { task, mode } = parseArgs(process.argv.slice(2));
 
@@ -101,8 +227,8 @@ async function main() {
 
   const prompt =
     mode === "route"
-      ? `Route and solve this task with the best specialist:\n\n${task}`
-      : `Plan and solve this task with the right specialists:\n\n${task}`;
+      ? `Route this task to the most appropriate specialist and explain why:\n\n${task}`
+      : `Create a structured technical plan for this task using the specialist agents:\n\n${task}`;
 
   const result = await run(orchestrator, prompt);
 
