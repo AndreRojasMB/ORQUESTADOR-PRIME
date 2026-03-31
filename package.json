@@ -8,6 +8,10 @@
     "dev": "tsx src/index.ts",
     "plan": "tsx src/index.ts --mode=plan",
     "route": "tsx src/index.ts --mode=route",
+    "blueprint": "tsx src/index.ts --mode=blueprint",
+    "audit":     "tsx src/index.ts --mode=audit",
+    "scaffold":  "tsx src/index.ts --mode=scaffold",
+    "memory": "tsx src/index.ts --mode=memory",
     "check": "tsc --noEmit"
   },
   "keywords": [],
@@ -15,6 +19,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.80.0",
     "@openai/agents": "^0.7.0",
     "dotenv": "^17.3.1",
     "zod": "^4.3.6"

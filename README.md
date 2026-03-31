@@ -1,261 +1,273 @@
-# AI Orchestrator Prime
+# ORQUESTADOR-PRIME
 
-Production-grade multi-agent AI orchestration system built with **TypeScript** and the **OpenAI Agents SDK**.
-
-This repository implements a modular AI engineering architecture capable of delegating complex software design and implementation tasks across specialized agents.
-
----
-
-# Architecture Overview
-
-![System Architecture](docs/architecture/orchestrator-architecture.png)
-
-The system is built around a **central orchestrator agent** that coordinates multiple specialist agents.
-
-Core capabilities include:
-
-* architecture planning
-* API design
-* frontend and backend system design
-* database modeling
-* security analysis
-* DevOps planning
-* UX/UI architecture
-* AI/ML pipeline design
-* integration architecture
+Multi-agent AI development orchestration system.  
+Designed to work alongside a human developer — not replace them.
 
 ---
 
-# System Layers
+## What this is
 
-## Orchestrator
+ORQUESTADOR-PRIME is a TypeScript CLI that coordinates a team of specialized
+AI agents to help with architecture, planning, routing, and project blueprinting.
 
-Central coordination layer:
-
-```
-src/orchestrator/orchestrator.ts
-```
-
-Responsibilities:
-
-* analyze tasks
-* route work to specialists
-* synthesize final output
-* manage delegation
+The human developer remains the final decision maker.  
+The system proposes, structures, and delegates — never merges autonomously.
 
 ---
 
-## Specialist Agents
-
-Located in:
-
+## Architecture overview
 ```
-src/agents
+Human Developer
+      ↓
+  CLI (index.ts)
+      ↓
+  Orchestrator  ←──  Agent Registry
+      ↓                    ↓
+  Agent Router        13 Specialists
+      ↓
+  Provider Router
+      ↙         ↘
+OpenAI        Anthropic (Claude)
+      ↓
+  Output Parser (Zod)
+      ↓
+  Tracer → TraceRecord
 ```
-
-Agents included:
-
-Core agents
-
-* Architect
-* Backend
-* Frontend
-* QA
-
-Data agents
-
-* Relational DB
-* NoSQL
-
-Platform agents
-
-* Security
-* DevOps
-
-Design & Experience
-
-* UX/UI
-* Motion FX
-
-Architecture & Integration
-
-* API Designer
-* Integration & Interop
-
-AI Engineering
-
-* AI/ML Agent
 
 ---
 
-# Prompts
-
-Located in:
-
+## Project structure
 ```
-src/prompts
+src/
+├── agents/
+│   ├── registry.ts          # Central agent catalog with metadata
+│   ├── selector.ts          # Query functions: byTier, byDomain, byTags
+│   ├── architect.ts
+│   ├── frontend.ts
+│   ├── backend.ts
+│   ├── qa.ts
+│   ├── db.ts                # relationalDbAgent + nosqlAgent
+│   ├── security.ts
+│   ├── devops.ts
+│   ├── apiDesigner.ts
+│   ├── integration.ts
+│   ├── uxui.ts
+│   ├── motionFx.ts
+│   └── aiml.ts
+├── observability/
+│   ├── logger.ts            # Structured logger with levels
+│   └── tracer.ts            # TraceRecord, timings, printTrace
+├── orchestrator/
+│   └── orchestrator.ts      # Central coordinator, mode routing
+├── output/
+│   ├── schemas.ts           # Zod schemas per mode
+│   └── parser.ts            # JSON extractor + validator
+├── prompts/
+│   ├── planning.ts          # plan mode prompt
+│   ├── routing.ts           # route mode prompt
+│   └── blueprint.ts         # blueprint mode prompt
+├── providers/
+│   ├── types.ts             # Provider interface contract
+│   ├── openaiProvider.ts    # OpenAI implementation
+│   ├── anthropicProvider.ts # Claude implementation
+│   └── providerRouter.ts   # Model → provider selector
+├── router/
+│   └── agentRouter.ts       # Keyword scoring, blueprint context
+├── config.ts                # Zod env validation, model config
+├── index.ts                 # CLI entry point
+└── types.ts                 # Shared type contracts
 ```
-
-Includes:
-
-* planning prompt
-* routing prompt
 
 ---
 
-# Guardrails
+## Agents
 
-Located in:
+### Core — always active
 
-```
-.continue/rules
-```
+| Agent | Domain | Responsibility |
+|---|---|---|
+| architect | architecture | System design, modules, implementation order |
+| frontend | frontend | React architecture, components, routing, state |
+| backend | backend | APIs, services, auth, validation |
+| qa | quality | Edge cases, test strategies, regression risks |
 
-Rules enforce engineering standards for:
+### Specialized
 
-* frontend
-* backend
-* security
-* database
-* DevOps
-* integration
-* UX
-* motion
-* AI/ML
+| Agent | Domain | Responsibility |
+|---|---|---|
+| relationalDb | data | PostgreSQL, schema design, migrations, indexing |
+| nosql | data | Redis, caching, event stores, distributed models |
+| security | security | Auth, RBAC, OWASP, attack surface |
+| devops | infrastructure | CI/CD, Docker, deployment, observability |
+| apiDesigner | backend | REST contracts, versioning, OpenAPI |
+| integration | integration | Webhooks, OAuth, adapters, SDK boundaries |
 
----
+### Design & Experience
 
-# MCP Tooling
+| Agent | Domain | Responsibility |
+|---|---|---|
+| uxui | design | User flows, design systems, accessibility |
+| motionFx | design | GSAP, scroll animations, micro-interactions |
 
-Located in:
+### Advanced / Optional
 
-```
-.continue/mcpServers
-```
-
-Includes integrations for:
-
-* Context7
-* Playwright
-* GitHub
-* filesystem
-* design tools
+| Agent | Domain | Responsibility |
+|---|---|---|
+| aiml | ai | LLM integration, RAG, embeddings, evaluation |
 
 ---
 
-# Installation
+## CLI modes
 
-Clone the repository
-
+### plan
+Generates a structured technical plan for a task.
+```bash
+npm run plan -- "add OAuth login with Google"
 ```
-git clone https://github.com/AndreRojasMB/ORQUESTADOR-PRIME.git
+Output: architecture overview, agent assignments, implementation order,
+risks, validation strategy.
+
+### route
+Routes a task to the most appropriate specialist.
+```bash
+npm run route -- "optimize slow PostgreSQL query in reports"
+```
+Output: best specialist, reasoning, responsibilities, execution order.
+
+### blueprint
+Generates a complete project architecture blueprint.  
+Uses Claude (Opus) when `ANTHROPIC_API_KEY` is set.
+```bash
+npm run blueprint -- "saas dashboard with auth, payments, and admin panel"
+```
+Output: project overview, architecture layers, agent assignments,
+implementation roadmap, risks, validation strategy.
+
+---
+
+## Provider strategy
+
+| Mode | Default provider | With Claude configured |
+|---|---|---|
+| plan | OpenAI (gpt-4o) | OpenAI |
+| route | OpenAI (gpt-4o) | OpenAI |
+| blueprint | OpenAI (gpt-4o) | Claude Opus |
+
+The system falls back to OpenAI automatically if `ANTHROPIC_API_KEY` is absent.
+
+Provider routing is model-name based — models starting with `claude-` 
+route to Anthropic, everything else routes to OpenAI.
+
+---
+
+## Observability
+
+Every execution produces a `TraceRecord` printed to console:
+```
+═══════════════════════════════════════════════════════
+  TRACE trace_m5x2k_a8f3j
+═══════════════════════════════════════════════════════
+  Mode     : BLUEPRINT
+  Total    : 4.21s
+  Parse    : ✅ success
+  Provider : anthropic (claude-opus-4-5) — 312 in / 890 out — 3.89s
+  Agents   : architect, frontend, backend, qa, security
+  Keywords : saas, auth, payment, admin
+
+  Phases:
+    router               12ms
+    provider:claude      3890ms
+    parse                8ms
+═══════════════════════════════════════════════════════
 ```
 
-Install dependencies
+Log level is configurable via `LOG_LEVEL` env variable.  
+Accepted values: `trace | debug | info | warn | error` (default: `info`)
 
-```
+---
+
+## Setup
+```bash
+# 1. Install dependencies
 npm install
+
+# 2. Configure environment
+cp .env.example .env
+# Edit .env and add your API keys
+
+# 3. Verify types compile
+npm run check
+
+# 4. Run
+npm run plan -- "your task here"
 ```
 
 ---
 
-# Environment Variables
+## Environment variables
 
-Create a `.env` file.
-
-Example:
-
-```
-OPENAI_API_KEY=your_key_here
-
-OPENAI_MODEL=gpt-5.4
-PLANNER_MODEL=gpt-5.4
-SPECIALIST_MODEL=gpt-5.4
-SYNTHESIS_MODEL=gpt-5.4
-```
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `OPENAI_API_KEY` | ✅ | — | OpenAI API key |
+| `ANTHROPIC_API_KEY` | ❌ | — | Enables Claude for blueprint mode |
+| `PLANNER_MODEL` | ❌ | `gpt-4o` | Model for planning tasks |
+| `SPECIALIST_MODEL` | ❌ | `gpt-4o` | Model for specialist agents |
+| `SYNTHESIS_MODEL` | ❌ | `gpt-4o` | Model for orchestrator synthesis |
+| `CLAUDE_ARCHITECT_MODEL` | ❌ | `claude-opus-4-5` | Claude model for architect tasks |
+| `CLAUDE_BLUEPRINT_MODEL` | ❌ | `claude-opus-4-5` | Claude model for blueprint mode |
+| `LOG_LEVEL` | ❌ | `info` | Log verbosity |
 
 ---
 
-# Usage
+## Extension points
 
-Run planning mode
+### Adding a new agent
 
-```
-npm run plan -- "design architecture for a multi-tenant SaaS platform"
-```
+1. Create `src/agents/yourAgent.ts` following the existing pattern
+2. Add the entry to `src/agents/registry.ts` with `domain`, `tier`, `tags`, `description`
+3. Done — the orchestrator picks it up automatically via `allAgents`
 
-Run routing mode
+### Adding a new CLI mode
 
-```
-npm run route -- "who should design API versioning?"
-```
+1. Add the mode string to `OrchestratorMode` in `src/types.ts`
+2. Add the mode to `parseArgs` in `src/orchestrator/orchestrator.ts`
+3. Create a prompt in `src/prompts/yourMode.ts`
+4. Add a Zod schema in `src/output/schemas.ts`
+5. Add the case to `parseOutput` in `src/output/parser.ts`
+6. Add the script to `package.json`
 
-Run development orchestration
+### Adding a new provider
 
-```
-npm run dev -- "design a production-ready backend architecture"
-```
-
----
-
-# Project Structure
-
-```
-src
- ├ agents
- │   architect.ts
- │   backend.ts
- │   frontend.ts
- │   qa.ts
- │   db.ts
- │   security.ts
- │   devops.ts
- │   apiDesigner.ts
- │   integration.ts
- │   uxui.ts
- │   motionFx.ts
- │   aiml.ts
- │
- ├ orchestrator
- │   orchestrator.ts
- │
- ├ prompts
- │   planning.ts
- │   routing.ts
- │
- ├ tools
- │   config.ts
- │
- └ index.ts
-```
+1. Create `src/providers/yourProvider.ts` implementing the `Provider` interface
+2. Add the model prefix check in `src/providers/providerRouter.ts`
+3. Add the API key to `src/config.ts` and `.env.example`
 
 ---
 
-# Development Philosophy
+## V2 roadmap
 
-This project follows several architectural principles:
-
-* modular agent architecture
-* separation of orchestration and specialization
-* explicit architectural reasoning before implementation
-* guardrails enforced through rule files
-* scalable multi-agent delegation
-
----
-
-# Roadmap
-
-Future improvements may include:
-
-* automatic PR generation agents
-* repository auto-editing workflows
-* integration with CI pipelines
-* model evaluation framework
-* memory systems for agents
-* telemetry and agent tracing
+| Phase | Status | Description |
+|---|---|---|
+| 1 — Foundation | ✅ | Config Zod, types, tsconfig, Agent pattern |
+| 2 — Agent Metadata | ✅ | Registry with domain, tier, tags |
+| 3 — Agent Router | ✅ | Keyword scoring, pre-selection |
+| 4 — Blueprint Mode | ✅ | Project detection, roadmap generation |
+| 5 — Structured Output | ✅ | Zod contracts per mode, JSON parser |
+| 6 — Multi-provider | ✅ | Claude + OpenAI, automatic fallback |
+| 7 — Observability | ✅ | Logger, Tracer, TraceRecord |
+| 8 — Documentation | ✅ | This README |
+| 9 — Audit Mode | 🔲 | Analyze existing repo, detect issues |
+| 10 — Scaffold Mode | 🔲 | Generate folder structure by project type |
+| 11 — Memory Layer | 🔲 | Context persistence across runs |
+| 12 — Execution Layer | 🔲 | Autonomous file changes with human approval |
 
 ---
 
-# License
+## Design principles
 
-MIT
+- **Human control first** — the system proposes, the human approves
+- **Small safe diffs** — no large rewrites, no destructive changes
+- **Fail fast** — config errors surface at startup, not mid-run
+- **Modular by default** — every layer is independently replaceable
+- **Extensible without bloat** — new agents, modes, providers follow
+  the same pattern with minimal surface area

@@ -1,14 +1,25 @@
 import { parseArgs, runOrchestrator } from "./orchestrator/orchestrator.js";
+import { logger } from "./observability/logger.js";
 
 async function main() {
   const { task, mode } = parseArgs(process.argv.slice(2));
 
-  if (!task) {
+  const requiresTask =
+    mode === "plan" ||
+    mode === "route" ||
+    mode === "blueprint" ||
+    mode === "scaffold";
+
+  if (requiresTask && !task) {
     console.error(
       [
-        'Usage: npm run dev -- "your task"',
-        '       npm run plan -- "your task"',
-        '       npm run route -- "your task"',
+        'Usage: npm run dev       -- "your task"',
+        '       npm run plan      -- "your task"',
+        '       npm run route     -- "your task"',
+        '       npm run blueprint -- "your project"',
+        '       npm run audit     -- --repo=./path',
+        '       npm run scaffold  -- "your project" --out=./dir',
+        '       npm run memory',
       ].join("\n")
     );
     process.exit(1);
@@ -16,9 +27,16 @@ async function main() {
 
   const result = await runOrchestrator(task, mode);
 
-  console.log(`\n=== MODE: ${mode.toUpperCase()} ===\n`);
-  console.log("=== FINAL RESULT ===\n");
-  console.log(result.finalOutput);
+  logger.section(`RESULT · ${result.mode.toUpperCase()}`);
+
+  if (result.structured) {
+    console.log(JSON.stringify(result.structured, null, 2));
+  } else {
+    console.log(result.finalOutput);
+    if (result.parseError) {
+      logger.warn("Parse error", { error: result.parseError });
+    }
+  }
 }
 
 main().catch((err) => {
