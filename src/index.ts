@@ -1,8 +1,15 @@
 import { parseArgs, runOrchestrator } from "./orchestrator/orchestrator.js";
+import { runInit } from "./init/initRunner.js";
 import { logger } from "./observability/logger.js";
 
 async function main() {
   const { task, mode } = parseArgs(process.argv.slice(2));
+
+  // Modo init — flujo interactivo
+  if (mode === "init") {
+    await runInit();
+    return;
+  }
 
   const requiresTask =
     mode === "plan" ||
@@ -20,6 +27,7 @@ async function main() {
         '       npm run audit     -- --repo=./path',
         '       npm run scaffold  -- "your project" --out=./dir',
         '       npm run memory',
+        '       npm run init',
       ].join("\n")
     );
     process.exit(1);

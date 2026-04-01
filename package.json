@@ -9,9 +9,11 @@
     "plan": "tsx src/index.ts --mode=plan",
     "route": "tsx src/index.ts --mode=route",
     "blueprint": "tsx src/index.ts --mode=blueprint",
-    "audit":     "tsx src/index.ts --mode=audit",
-    "scaffold":  "tsx src/index.ts --mode=scaffold",
+    "audit": "tsx src/index.ts --mode=audit",
+    "scaffold": "tsx src/index.ts --mode=scaffold",
     "memory": "tsx src/index.ts --mode=memory",
+    "init": "tsx src/index.ts --mode=init",
+    "execute": "tsx src/index.ts --mode=execute",
     "check": "tsc --noEmit"
   },
   "keywords": [],
@@ -20,12 +22,16 @@
   "type": "module",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
+    "@inquirer/prompts": "^8.3.2",
+    "@octokit/rest": "^22.0.1",
     "@openai/agents": "^0.7.0",
     "dotenv": "^17.3.1",
+    "simple-git": "^3.33.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
+    "figma-developer-mcp": "^0.8.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

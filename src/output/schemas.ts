@@ -262,6 +262,27 @@ export const MemoryOutputSchema = z.object({
 
 export type MemoryOutput = z.infer<typeof MemoryOutputSchema>;
 
+// ─── Execution Mode ───────────────────────────────────────────────
+
+const ExecutionFileSchema = z.object({
+  path: z.string(),
+  operation: z.enum(["create", "modify", "delete"]),
+  content: z.string().optional(),
+  reason: z.string(),
+});
+
+export const ExecutionOutputSchema = z.object({
+  mode: z.literal("execute"),
+  title: z.string(),
+  description: z.string(),
+  files: z.array(ExecutionFileSchema),
+  risks: z.array(z.string()),
+  rollbackPlan: z.string(),
+  testingInstructions: z.array(z.string()),
+});
+
+export type ExecutionOutput = z.infer<typeof ExecutionOutputSchema>;
+
 // ─── Union final ────────────────────────────────────────────────
 
 export type StructuredOutput =
@@ -270,4 +291,5 @@ export type StructuredOutput =
   | BlueprintOutput
   | AuditOutput
   | ScaffoldOutput
-  | MemoryOutput;
+  | MemoryOutput
+  | ExecutionOutput;

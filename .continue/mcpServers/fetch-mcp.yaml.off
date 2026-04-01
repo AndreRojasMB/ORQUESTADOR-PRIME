@@ -1,10 +1,10 @@
-name: Context7 MCP
+name: Fetch / Web Content MCP
 version: 0.0.1
 schema: v1
 mcpServers:
-  - name: context7
+  - name: fetch
     command: npx
     args:
       - -y
-      - "@upstash/context7-mcp@latest"
+      - "@modelcontextprotocol/server-fetch"
     connectionTimeout: 20000

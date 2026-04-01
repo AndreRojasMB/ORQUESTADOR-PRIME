@@ -1,0 +1,12 @@
+name: Chrome DevTools MCP
+version: 0.0.1
+schema: v1
+mcpServers:
+  - name: chrome-devtools
+    command: npx
+    args:
+      - -y
+      - chrome-devtools-mcp@latest
+      - --headless
+      - --no-usage-statistics
+    connectionTimeout: 30000

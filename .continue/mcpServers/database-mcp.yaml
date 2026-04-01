@@ -1,0 +1,11 @@
+name: Database MCP
+version: 0.0.1
+schema: v1
+mcpServers:
+  - name: database
+    command: npx
+    args:
+      - -y
+      - "@modelcontextprotocol/server-postgres"
+      - "${DATABASE_URL}"
+    connectionTimeout: 20000

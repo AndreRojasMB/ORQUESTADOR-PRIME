@@ -12,6 +12,7 @@ import {
   AuditOutputSchema,
   ScaffoldOutputSchema,
   MemoryOutputSchema,
+  ExecutionOutputSchema,
 } from "./schemas.js";
 import type { StructuredOutput } from "./schemas.js";
 
@@ -49,13 +50,16 @@ function extractJson(raw: string): string {
   return raw.trim();
 }
 
-function selectSchema(mode: OrchestratorMode):
+function selectSchema(
+  mode: OrchestratorMode
+):
   | typeof PlanOutputSchema
   | typeof RouteOutputSchema
   | typeof BlueprintOutputSchema
   | typeof AuditOutputSchema
   | typeof ScaffoldOutputSchema
-  | typeof MemoryOutputSchema {
+  | typeof MemoryOutputSchema
+  | typeof ExecutionOutputSchema {
   switch (mode) {
     case "plan":
       return PlanOutputSchema;
@@ -65,6 +69,9 @@ function selectSchema(mode: OrchestratorMode):
       return BlueprintOutputSchema;
     case "audit":
       return AuditOutputSchema;
+    case "execute":
+      return ExecutionOutputSchema;
+    case "init":
     case "scaffold":
       return ScaffoldOutputSchema;
     case "memory":

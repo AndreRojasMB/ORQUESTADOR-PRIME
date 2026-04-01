@@ -1,0 +1,13 @@
+name: Shell / CLI MCP
+version: 0.0.1
+schema: v1
+mcpServers:
+  - name: shell
+    command: npx
+    args:
+      - -y
+      - "@modelcontextprotocol/server-shell"
+    env:
+      # Comandos permitidos — nunca dejar vacío en producción
+      ALLOWED_COMMANDS: "git,npm,npx,tsc,tsx,ls,cat,echo,pwd"
+    connectionTimeout: 20000

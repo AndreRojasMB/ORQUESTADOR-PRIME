@@ -9,19 +9,28 @@ import { buildPlanningPrompt } from "../prompts/planning.js";
 import { buildRoutingPrompt } from "../prompts/routing.js";
 import { buildBlueprintPrompt } from "../prompts/blueprint.js";
 import { buildScaffoldPrompt } from "../prompts/scaffold.js";
+import { buildExecutionPrompt } from "../prompts/execution.js";
 import { writeScaffold } from "../scaffold/scaffoldWriter.js";
+import { writeProposal } from "../execution/proposalWriter.js";
+import { requestApproval } from "../execution/approvalGate.js";
+import { createPullRequest, buildPRBody } from "../execution/githubClient.js";
 import { parseOutput } from "../output/parser.js";
-import type { ScaffoldOutput } from "../output/schemas.js";
+import type { ScaffoldOutput, ExecutionOutput } from "../output/schemas.js";
 import { callProvider } from "../providers/providerRouter.js";
 import { Tracer, printTrace } from "../observability/tracer.js";
 import { logger } from "../observability/logger.js";
-import { MODELS, CLAUDE_MODELS, isClaudeAvailable } from "../config.js";
+import {
+  MODELS,
+  CLAUDE_MODELS,
+  isClaudeAvailable,
+  isGitHubAvailable,
+} from "../config.js";
 import { allAgents } from "../agents/registry.js";
 import { registrySummary } from "../agents/selector.js";
 import {
   appendMemoryEntry,
   getMemoryPath,
-  readMemoryStore,        // ← agregado
+  readMemoryStore,
 } from "../memory/memoryStore.js";
 import { buildMemoryContext } from "../memory/memoryContext.js";
 import type {
@@ -53,12 +62,14 @@ export function parseArgs(argv: string[]): ParsedArgs {
     if (arg.startsWith("--mode=")) {
       const value = arg.split("=")[1];
       if (
-        value === "plan"      ||
-        value === "route"     ||
+        value === "plan" ||
+        value === "route" ||
         value === "blueprint" ||
-        value === "audit"     ||
-        value === "scaffold"  ||
-        value === "memory"
+        value === "audit" ||
+        value === "scaffold" ||
+        value === "memory" ||
+        value === "init" ||
+        value === "execute"
       ) {
         mode = value;
         continue;
@@ -67,19 +78,18 @@ export function parseArgs(argv: string[]): ParsedArgs {
       continue;
     }
     if (arg.startsWith("--repo=")) continue;
-    if (arg.startsWith("--out="))  continue;
+    if (arg.startsWith("--out=")) continue;
     taskParts.push(arg);
   }
 
   return { mode, task: taskParts.join(" ").trim() };
 }
 
-// Agente OpenAI — solo para plan y route (multi-turn con handoffs)
 const openaiOrchestrator = new Agent({
-  name:         "Project Orchestrator",
-  model:        MODELS.synthesis,
+  name: "Project Orchestrator",
+  model: MODELS.synthesis,
   instructions: ORCHESTRATOR_SYSTEM,
-  handoffs:     allAgents,
+  handoffs: allAgents,
 });
 
 export async function runOrchestrator(
@@ -90,7 +100,6 @@ export async function runOrchestrator(
   logger.section(`ORQUESTADOR-PRIME · ${mode.toUpperCase()}`);
   logger.info(`Task: ${task}`);
 
-  // Cargar contexto de memoria antes de cualquier modo
   const memoryContext = await buildMemoryContext(task, [], mode);
   if (memoryContext.hasContext) {
     logger.debug(
@@ -100,7 +109,6 @@ export async function runOrchestrator(
 
   let rawOutput = "";
 
-  // ─── BLUEPRINT ────────────────────────────────────────────────
   if (mode === "blueprint") {
     const { router, context } = await tracer.phaseAsync("router", async () =>
       buildBlueprintContext(task)
@@ -123,7 +131,7 @@ export async function runOrchestrator(
         model: CLAUDE_MODELS.blueprint,
         durationMs: 0,
         ...(response.usage && {
-          inputTokens:  response.usage.inputTokens,
+          inputTokens: response.usage.inputTokens,
           outputTokens: response.usage.outputTokens,
         }),
       });
@@ -136,9 +144,8 @@ export async function runOrchestrator(
       tracer.setProvider({ provider: "openai", model: MODELS.synthesis, durationMs: 0 });
     }
 
-  // ─── AUDIT ────────────────────────────────────────────────────
   } else if (mode === "audit") {
-    const repoArg  = process.argv.find((a) => a.startsWith("--repo="));
+    const repoArg = process.argv.find((a) => a.startsWith("--repo="));
     const repoPath = repoArg ? resolve(repoArg.split("=")[1] ?? ".") : resolve(".");
 
     logger.info(`Auditing repo: ${repoPath}`);
@@ -151,7 +158,7 @@ export async function runOrchestrator(
     tracer.setRouter(router.selectedAgents, router.matchedKeywords);
 
     const auditCtx = buildAuditContext(repo);
-    const prompt   = buildAuditPrompt(auditCtx, router);
+    const prompt = buildAuditPrompt(auditCtx, router);
 
     if (isClaudeAvailable()) {
       logger.info(`Provider: Claude (${CLAUDE_MODELS.architect})`);
@@ -164,7 +171,7 @@ export async function runOrchestrator(
         model: CLAUDE_MODELS.architect,
         durationMs: 0,
         ...(response.usage && {
-          inputTokens:  response.usage.inputTokens,
+          inputTokens: response.usage.inputTokens,
           outputTokens: response.usage.outputTokens,
         }),
       });
@@ -177,7 +184,6 @@ export async function runOrchestrator(
       tracer.setProvider({ provider: "openai", model: MODELS.synthesis, durationMs: 0 });
     }
 
-  // ─── SCAFFOLD ─────────────────────────────────────────────────
   } else if (mode === "scaffold") {
     const { router, context } = await tracer.phaseAsync("router", async () =>
       buildBlueprintContext(task)
@@ -199,7 +205,7 @@ export async function runOrchestrator(
         model: CLAUDE_MODELS.blueprint,
         durationMs: 0,
         ...(response.usage && {
-          inputTokens:  response.usage.inputTokens,
+          inputTokens: response.usage.inputTokens,
           outputTokens: response.usage.outputTokens,
         }),
       });
@@ -218,8 +224,8 @@ export async function runOrchestrator(
 
     if (scaffoldParsed.success) {
       const scaffoldData = scaffoldParsed.data as ScaffoldOutput;
-      const outArg       = process.argv.find((a) => a.startsWith("--out="));
-      const outputDir    = outArg
+      const outArg = process.argv.find((a) => a.startsWith("--out="));
+      const outputDir = outArg
         ? resolve(outArg.split("=")[1] ?? "./scaffold-output")
         : resolve("./scaffold-output");
 
@@ -239,19 +245,156 @@ export async function runOrchestrator(
       });
     }
 
-  // ─── MEMORY ───────────────────────────────────────────────────
   } else if (mode === "memory") {
-    const store  = await readMemoryStore();
+    const store = await readMemoryStore();
     const recent = store.entries.slice(-10).reverse();
 
-    rawOutput = JSON.stringify({
-      mode:    "memory",
-      total:   store.entries.length,
-      lastRun: store.lastRun ?? "never",
-      recent,
-    }, null, 2);
+    rawOutput = JSON.stringify(
+      {
+        mode: "memory",
+        total: store.entries.length,
+        lastRun: store.lastRun ?? "never",
+        recent,
+      },
+      null,
+      2
+    );
 
-  // ─── PLAN / ROUTE ─────────────────────────────────────────────
+  } else if (mode === "execute") {
+    const repoArg = process.argv.find((a) => a.startsWith("--repo="));
+    const repoPath = repoArg
+      ? resolve(repoArg.split("=")[1] ?? ".")
+      : resolve(".");
+
+    logger.info(`Repo: ${repoPath}`);
+
+    const router = await tracer.phaseAsync("router", async () => routeTask(task));
+    tracer.setRouter(router.selectedAgents, router.matchedKeywords);
+
+    const prompt = buildExecutionPrompt(task, router);
+
+    if (isClaudeAvailable()) {
+      logger.info(`Provider: Claude (${CLAUDE_MODELS.architect})`);
+
+      try {
+        const response = await tracer.phaseAsync("provider:claude", async () =>
+          callProvider(CLAUDE_MODELS.architect, ORCHESTRATOR_SYSTEM, prompt, 8192)
+        );
+
+        rawOutput = response.content;
+        tracer.setProvider({
+          provider: "anthropic",
+          model: CLAUDE_MODELS.architect,
+          durationMs: 0,
+          ...(response.usage && {
+            inputTokens: response.usage.inputTokens,
+            outputTokens: response.usage.outputTokens,
+          }),
+        });
+      } catch (error) {
+        logger.warn("Claude failed — falling back to OpenAI", { error });
+
+        const response = await tracer.phaseAsync("provider:openai", async () =>
+          callProvider(MODELS.synthesis, ORCHESTRATOR_SYSTEM, prompt, 8192)
+        );
+
+        rawOutput = response.content;
+        tracer.setProvider({
+          provider: "openai",
+          model: MODELS.synthesis,
+          durationMs: 0,
+          ...(response.usage && {
+            inputTokens: response.usage.inputTokens,
+            outputTokens: response.usage.outputTokens,
+          }),
+        });
+      }
+    } else {
+      logger.warn("Claude not configured — falling back to OpenAI direct call");
+
+      const response = await tracer.phaseAsync("provider:openai", async () =>
+        callProvider(MODELS.synthesis, ORCHESTRATOR_SYSTEM, prompt, 8192)
+      );
+
+      rawOutput = response.content;
+      tracer.setProvider({
+        provider: "openai",
+        model: MODELS.synthesis,
+        durationMs: 0,
+        ...(response.usage && {
+          inputTokens: response.usage.inputTokens,
+          outputTokens: response.usage.outputTokens,
+        }),
+      });
+    }
+
+    const execParsed = await tracer.phaseAsync("execution:parse", async () =>
+      parseOutput(rawOutput, "execute")
+    );
+
+    if (!execParsed.success) {
+      logger.warn("Execution parse failed — aborting", {
+        error: execParsed.error,
+      });
+    } else {
+      const proposal = execParsed.data as ExecutionOutput;
+
+      const decision = await requestApproval({
+        branchName: `agent/${task.slice(0, 30).replace(/\s+/g, "-")}`,
+        title: proposal.title,
+        description: proposal.description,
+        files: proposal.files.map(f => ({ ...f, content: f.content ?? "" })),
+        risks: proposal.risks,
+        rollbackPlan: proposal.rollbackPlan,
+      });
+
+      if (decision === "approve") {
+        const taskSlug = task.slice(0, 30).replace(/\s+/g, "-");
+        const commitMsg = `feat(agent): ${proposal.title}\n\nGenerated by ORQUESTADOR-PRIME`;
+
+        const writeResult = await tracer.phaseAsync("execution:write", async () =>
+          writeProposal(proposal.files.map(f => ({ ...f, content: f.content ?? "" })), repoPath, taskSlug, commitMsg)
+        );
+
+        logger.info(`Files written: ${writeResult.filesWritten.length}`);
+        logger.info(`Branch: ${writeResult.branchName}`);
+
+        if (isGitHubAvailable()) {
+          const { GitClient } = await import("../execution/gitClient.js");
+          const git = new GitClient(repoPath);
+          await git.pushBranch(writeResult.branchName);
+
+          const prBody = buildPRBody(
+            task,
+            writeResult.branchName,
+            proposal.files,
+            proposal.risks,
+            proposal.rollbackPlan,
+            "pending-trace"
+          );
+
+          const pr = await tracer.phaseAsync("execution:pr", async () =>
+            createPullRequest({
+              title: proposal.title,
+              body: prBody,
+              head: writeResult.branchName,
+              base: "dev",
+              draft: true,
+            })
+          );
+
+          logger.info(`PR opened: ${pr.url}`);
+        } else {
+          logger.warn("GitHub not configured — branch created locally only");
+        }
+      } else if (decision === "reject") {
+        logger.info("Execution rejected by user — no changes made");
+      } else {
+        logger.info("Review requested — branch NOT created yet");
+        logger.info("Re-run with the same task when ready to approve");
+      }
+    }
+
   } else {
     const router = await tracer.phaseAsync("router", async () => routeTask(task));
     tracer.setRouter(router.selectedAgents, router.matchedKeywords);
@@ -271,7 +414,6 @@ export async function runOrchestrator(
     tracer.setProvider({ provider: "openai", model: MODELS.synthesis, durationMs: 0 });
   }
 
-  // ─── PARSE FINAL (todos los modos) ────────────────────────────
   const parsed = await tracer.phaseAsync("parse", async () =>
     parseOutput(rawOutput, mode)
   );
@@ -286,31 +428,36 @@ export async function runOrchestrator(
   );
   printTrace(trace);
 
-  // Escribir memoria — solo para modos que generan trabajo real
   const MEMORY_MODES: OrchestratorMode[] = [
-    "plan", "route", "blueprint", "audit", "scaffold"
+    "plan",
+    "route",
+    "blueprint",
+    "audit",
+    "scaffold",
   ];
 
   if (MEMORY_MODES.includes(mode)) {
-    const blueprintData = parsed.success && mode === "blueprint"
-      ? (parsed.data as { projectOverview?: { type?: string; scope?: string } })
-      : null;
+    const blueprintData =
+      parsed.success && mode === "blueprint"
+        ? (parsed.data as { projectOverview?: { type?: string; scope?: string } })
+        : null;
 
     const memoryEntry: MemoryEntry = {
-      id:        trace.traceId,
-      type:      mode as MemoryEntryType,
+      id: trace.traceId,
+      type: mode as MemoryEntryType,
       task,
       timestamp: new Date().toISOString(),
-      agents:    trace.selectedAgents,
-      keywords:  trace.matchedKeywords,
-      traceId:   trace.traceId,
+      agents: trace.selectedAgents,
+      keywords: trace.matchedKeywords,
+      traceId: trace.traceId,
       ...(blueprintData?.projectOverview?.type && {
         projectType: blueprintData.projectOverview.type,
       }),
       ...(blueprintData?.projectOverview?.scope && {
         summary: blueprintData.projectOverview.scope,
       }),
-      ...(parsed.success && mode === "scaffold" && {
+      ...(parsed.success &&
+        mode === "scaffold" && {
         outputDir:
           process.argv.find((a) => a.startsWith("--out="))?.split("=")[1] ??
           "./scaffold-output",
@@ -326,7 +473,7 @@ export async function runOrchestrator(
     task,
     finalOutput: rawOutput,
     trace,
-    ...(parsed.success  && { structured: parsed.data  }),
+    ...(parsed.success && { structured: parsed.data }),
     ...(!parsed.success && { parseError: parsed.error }),
   };
 }

@@ -108,3 +108,48 @@ All notable changes to ORQUESTADOR-PRIME are documented here.
 - Two CLI modes: `plan` and `route`
 - Basic prompt templates for planning and routing
 - `dotenv` configuration
+
+## [2.1.0] — 2026-03-26
+
+### Phase 13 — Interactive CLI Init
+
+- `npm run init` — flujo interactivo tipo `npm create vite@latest`
+- `src/init/questions.ts` — preguntas con `@inquirer/prompts`
+- Selección de project type, stack por tipo, features con checkbox
+- `src/init/initContext.ts` — convierte respuestas en task string
+- `src/init/initRunner.ts` — orquesta preguntas → scaffold → disco
+- Stacks: Next.js, Next.js+Prisma, Express, Fastify, Hono, Remix, Astro, Vite+React, Medusa
+- Features: auth, rbac, payments, database, uploads, email, realtime,
+  search, analytics, admin, i18n, theming, cicd, docker
+- Output box con next steps al finalizar
+
+### Phase 14 — Execution Layer
+
+- `npm run execute` — modo CLI para ejecutar cambios reales en repos
+- `src/execution/gitClient.ts` — operaciones git locales con `simple-git`
+- `src/execution/githubClient.ts` — GitHub API con `@octokit/rest`
+- `src/execution/proposalWriter.ts` — escribe archivos en branch `agent/*`
+- `src/execution/approvalGate.ts` — human-in-the-loop antes de cualquier acción
+- `src/prompts/execution.ts` — prompt especializado para propuestas de cambio
+- `ExecutionOutputSchema` — Zod schema con files, risks, rollback, testing
+- Flujo completo: propuesta → approval gate → branch → commit → draft PR
+- NUNCA toca `main` o `dev` directamente
+- Fallback graceful cuando GitHub no está configurado
+
+### Added — MCPs
+
+- `github-mcp.yaml` — GitHub MCP para Continue/VS Code
+- `figma-mcp.yaml` — Figma MCP
+- `filesystem-mcp.yaml` — acceso al filesystem desde el editor
+- `chrome-devtools-mcp.yaml` — Chrome DevTools / Puppeteer
+- `database-mcp.yaml` — PostgreSQL desde el editor
+- `memory-mcp.yaml` — memoria persistente en Continue
+- `shell-mcp.yaml` — CLI seguro con ALLOWED_COMMANDS
+
+### Changed
+
+- `config.ts` — agregado `GITHUB_CONFIG`, `isGitHubAvailable()`
+- `types.ts` — agregado `ExecutionProposal`, `ExecutionFile`,
+  `ExecutionResult`, `ExecutionStatus`
+- `output/schemas.ts` — agregado `ExecutionOutputSchema`
+- `output/parser.ts` — agregado caso `execute` e `init`

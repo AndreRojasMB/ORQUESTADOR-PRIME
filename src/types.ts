@@ -1,9 +1,18 @@
 // src/types.ts
 
 import type { StructuredOutput } from "./output/schemas.js";
-import type { TraceRecord }      from "./observability/tracer.js";
+import type { TraceRecord } from "./observability/tracer.js";
 
-export type OrchestratorMode = "plan" | "route" | "blueprint" | "audit" | "scaffold" | "memory";
+export type OrchestratorMode =
+  | "plan"
+  | "route"
+  | "blueprint"
+  | "audit"
+  | "scaffold"
+  | "memory"
+  | "init"
+  | "execute";
+
 export type FutureMode = OrchestratorMode;
 
 export interface ParsedArgs {
@@ -12,12 +21,12 @@ export interface ParsedArgs {
 }
 
 export interface OrchestratorResult {
-  mode:         OrchestratorMode;
-  task:         string;
-  finalOutput:  string;
-  structured?:  StructuredOutput;
-  parseError?:  string;
-  trace:        TraceRecord;   // ← siempre presente
+  mode: OrchestratorMode;
+  task: string;
+  finalOutput: string;
+  structured?: StructuredOutput;
+  parseError?: string;
+  trace: TraceRecord; // ← siempre presente
 }
 
 // ─── Agent Metadata ───────────────────────────────────────────────
@@ -37,24 +46,24 @@ export type AgentDomain =
   | "ai";
 
 export interface AgentMetadata {
-  domain:      AgentDomain;
-  tier:        AgentTier;
-  tags:        string[];
+  domain: AgentDomain;
+  tier: AgentTier;
+  tags: string[];
   description: string;
 }
 
 export interface AgentEntry {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   agent: any;
-  meta:  AgentMetadata;
+  meta: AgentMetadata;
 }
 
 // ─── Router ───────────────────────────────────────────────────────
 
 export interface RouterResult {
-  selectedAgents:  string[];
+  selectedAgents: string[];
   matchedKeywords: string[];
-  summary:         string;
+  summary: string;
 }
 
 // ─── Blueprint ────────────────────────────────────────────────────
@@ -69,18 +78,54 @@ export type ProjectType =
   | "generic";
 
 export interface BlueprintContext {
-  projectType:      ProjectType;
+  projectType: ProjectType;
   detectedFeatures: string[];
   agentAssignments: BlueprintAgentAssignment[];
 }
 
 export interface BlueprintAgentAssignment {
-  agent:          string;
-  domain:         AgentDomain;
+  agent: string;
+  domain: AgentDomain;
   responsibility: string;
 }
 
 export type { ProviderName } from "./providers/types.js";
+
+// ─── Execution Layer ──────────────────────────────────────────────
+
+export type ExecutionStatus =
+  | "pending"
+  | "branch_created"
+  | "files_written"
+  | "pr_opened"
+  | "approved"
+  | "rejected";
+
+export interface ExecutionProposal {
+  branchName: string;
+  title: string;
+  description: string;
+  files: ExecutionFile[];
+  risks: string[];
+  rollbackPlan: string;
+}
+
+export interface ExecutionFile {
+  path: string;
+  operation: "create" | "modify" | "delete";
+  content?: string;
+  reason: string;
+}
+
+export interface ExecutionResult {
+  status: ExecutionStatus;
+  branchName: string;
+  prUrl?: string;
+  prNumber?: number;
+  filesWritten: string[];
+  approved: boolean;
+  message: string;
+}
 
 // ─── Memory Layer ─────────────────────────────────────────────────
 
@@ -92,20 +137,20 @@ export type MemoryEntryType =
   | "scaffold";
 
 export interface MemoryEntry {
-  id:          string;       // único por entrada
-  type:        MemoryEntryType;
-  task:        string;
-  timestamp:   string;       // ISO
-  projectType?: string;      // detectado por blueprint/scaffold
-  agents:      string[];     // agentes seleccionados
-  keywords:    string[];     // keywords del router
-  summary?:    string;       // resumen del output si existe
-  outputDir?:  string;       // para scaffold — dónde se generó
-  traceId:     string;       // link al TraceRecord
+  id: string; // único por entrada
+  type: MemoryEntryType;
+  task: string;
+  timestamp: string; // ISO
+  projectType?: string; // detectado por blueprint/scaffold
+  agents: string[]; // agentes seleccionados
+  keywords: string[]; // keywords del router
+  summary?: string; // resumen del output si existe
+  outputDir?: string; // para scaffold — dónde se generó
+  traceId: string; // link al TraceRecord
 }
 
 export interface MemoryStore {
-  version:  string;
-  entries:  MemoryEntry[];
-  lastRun?: string;          // ISO timestamp del último run
+  version: string;
+  entries: MemoryEntry[];
+  lastRun?: string; // ISO timestamp del último run
 }

@@ -1,5 +1,4 @@
 // src/config.ts
-
 import "dotenv/config";
 import { z } from "zod";
 
@@ -11,9 +10,14 @@ const envSchema = z.object({
   SPECIALIST_MODEL: z.string().default("gpt-4o"),
   SYNTHESIS_MODEL:  z.string().default("gpt-4o"),
 
-  // Modelos Claude — opcionales, solo activos si ANTHROPIC_API_KEY existe
   CLAUDE_ARCHITECT_MODEL: z.string().default("claude-opus-4-5"),
   CLAUDE_BLUEPRINT_MODEL: z.string().default("claude-opus-4-5"),
+
+  // GitHub — opcional, solo activo si GITHUB_TOKEN existe
+  GITHUB_TOKEN: z.string().optional(),
+  GITHUB_OWNER: z.string().optional(),
+  GITHUB_REPO:  z.string().optional(),
+  GITHUB_MCP_ENABLED: z.string().default("false"),
 });
 
 const _env = envSchema.safeParse(process.env);
@@ -42,9 +46,22 @@ export const PROVIDERS = {
   anthropic: { apiKey: env.ANTHROPIC_API_KEY },
 } as const;
 
-// Helper — indica si Claude está disponible en este entorno
+export const GITHUB_CONFIG = {
+  token:   env.GITHUB_TOKEN,
+  owner:   env.GITHUB_OWNER,
+  repo:    env.GITHUB_REPO,
+  enabled: env.GITHUB_MCP_ENABLED === "true" && !!env.GITHUB_TOKEN,
+} as const;
+
 export function isClaudeAvailable(): boolean {
   return !!env.ANTHROPIC_API_KEY;
+}
+
+export function isGitHubAvailable(): boolean {
+  return GITHUB_CONFIG.enabled &&
+    !!GITHUB_CONFIG.token &&
+    !!GITHUB_CONFIG.owner &&
+    !!GITHUB_CONFIG.repo;
 }
 
 export type ModelConfig = typeof MODELS;

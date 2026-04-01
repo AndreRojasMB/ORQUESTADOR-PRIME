@@ -1,0 +1,12 @@
+name: Git MCP
+version: 0.0.1
+schema: v1
+mcpServers:
+  - name: git
+    command: npx
+    args:
+      - -y
+      - "@modelcontextprotocol/server-git"
+      - "--repository"
+      - "${WORKSPACE_PATH}"
+    connectionTimeout: 20000

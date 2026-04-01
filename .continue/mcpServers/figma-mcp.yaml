@@ -7,6 +7,7 @@ mcpServers:
     args:
       - -y
       - "figma-developer-mcp"
-    env:
-      FIGMA_ACCESS_TOKEN: "${FIGMA_ACCESS_TOKEN}"
+      - "--figma-api-key"
+      - "${FIGMA_API_KEY}"
+      - "--stdio"
     connectionTimeout: 20000
