@@ -165,6 +165,8 @@ function detectProjectType(task: string): ProjectType {
   if (t.includes("saas"))                         return "saas";
   if (t.includes("dashboard"))                    return "dashboard";
   if (t.includes("landing"))                      return "landing";
+  if (t.includes("mobile") || t.includes("react native") || t.includes("expo")) return "mobile";
+  if (t.includes("monorepo") || t.includes("turborepo")) return "monorepo";
   if (t.includes("api") && !t.includes("frontend")) return "api";
   return "generic";
 }

@@ -75,6 +75,8 @@ export type ProjectType =
   | "dashboard"
   | "landing"
   | "erp"
+  | "mobile"
+  | "monorepo"
   | "generic";
 
 export interface BlueprintContext {

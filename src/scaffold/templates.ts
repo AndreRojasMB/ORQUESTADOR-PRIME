@@ -191,7 +191,56 @@ export function errorHandler(
 `,
 };
 
-// ─── Selector por tipo de proyecto ───────────────────────────────
+// ─── Extended templates ──────────────────────────────────────────
+
+import { fastifyTemplate }   from "./templates/fastify.js";
+import { honoTemplate }      from "./templates/hono.js";
+import { astroTemplate }     from "./templates/astro.js";
+import { viteReactTemplate } from "./templates/viteReact.js";
+import { remixTemplate }     from "./templates/remix.js";
+
+export { fastifyTemplate, honoTemplate, astroTemplate, viteReactTemplate, remixTemplate };
+
+// ─── Stack name → template mapping ──────────────────────────────
+
+export type StackName =
+  | "nextjs-ts"
+  | "nextjs-prisma"
+  | "express-ts"
+  | "fastify-ts"
+  | "hono-ts"
+  | "remix-ts"
+  | "astro-ts"
+  | "vite-react-ts"
+  | "nextjs-medusa"
+  | "expo-ts"
+  | "turborepo";
+
+const stackTemplateMap: Record<StackName, StackTemplate> = {
+  "nextjs-ts":      nextjsTemplate,
+  "nextjs-prisma":  nextjsTemplate,
+  "express-ts":     expressTemplate,
+  "fastify-ts":     fastifyTemplate,
+  "hono-ts":        honoTemplate,
+  "remix-ts":       remixTemplate,
+  "astro-ts":       astroTemplate,
+  "vite-react-ts":  viteReactTemplate,
+  "nextjs-medusa":  nextjsTemplate,
+  "expo-ts":        nextjsTemplate,   // fallback until dedicated mobile template
+  "turborepo":      nextjsTemplate,   // fallback until dedicated monorepo template
+};
+
+/**
+ * Select template by explicit stack name (from init CLI).
+ * Returns the matching template merged with common files.
+ */
+export function selectTemplateByStack(stackName: string): StackTemplate {
+  const tpl = stackTemplateMap[stackName as StackName];
+  if (tpl) return { ...commonFiles, ...tpl };
+  return { ...commonFiles, ...nextjsTemplate };
+}
+
+// ─── Selector por tipo de proyecto (legacy — used by scaffold mode) ──
 
 import type { ProjectType } from "../types.js";
 
@@ -206,6 +255,10 @@ export function selectTemplate(projectType: ProjectType): StackTemplate {
     case "ecommerce":
       return { ...commonFiles, ...nextjsTemplate };
     case "landing":
+      return { ...commonFiles, ...astroTemplate };
+    case "mobile":
+      return { ...commonFiles, ...nextjsTemplate };
+    case "monorepo":
       return { ...commonFiles, ...nextjsTemplate };
     case "generic":
     default:

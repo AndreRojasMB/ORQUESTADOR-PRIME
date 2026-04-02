@@ -5,10 +5,12 @@
 
 import { openaiProvider }    from "./openaiProvider.js";
 import { anthropicProvider } from "./anthropicProvider.js";
+import { openclawProvider }  from "./openclawProvider.js";
 import type { Provider }     from "./types.js";
 
 export function getProvider(model: string): Provider {
-  if (model.startsWith("claude-")) return anthropicProvider;
+  if (model.startsWith("claude-"))   return anthropicProvider;
+  if (model.startsWith("openclaw-")) return openclawProvider;
   return openaiProvider;
 }
 

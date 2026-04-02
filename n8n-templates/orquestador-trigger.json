@@ -1,0 +1,73 @@
+{
+  "name": "ORQUESTADOR-PRIME Trigger",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "orquestador",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "orquestador"
+    },
+    {
+      "parameters": {
+        "command": "=cd {{ $env.ORQUESTADOR_PATH || '/path/to/orquestador-prime' }} && npx tsx src/index.ts --mode={{ $json.body.mode || 'plan' }} \"{{ $json.body.task }}\""
+      },
+      "id": "execute-command",
+      "name": "Run Orchestrator",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const stdout = $input.first().json.stdout;\ntry {\n  const parsed = JSON.parse(stdout);\n  return [{ json: { ok: true, result: parsed } }];\n} catch {\n  return [{ json: { ok: true, result: stdout } }];\n}"
+      },
+      "id": "parse-output",
+      "name": "Parse Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}"
+      },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1000, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [{ "node": "Run Orchestrator", "type": "main", "index": 0 }]
+      ]
+    },
+    "Run Orchestrator": {
+      "main": [
+        [{ "node": "Parse Output", "type": "main", "index": 0 }]
+      ]
+    },
+    "Parse Output": {
+      "main": [
+        [{ "node": "Respond", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "description": "Receives { mode, task } via webhook, runs ORQUESTADOR-PRIME, returns structured JSON. Set ORQUESTADOR_PATH env var in n8n to point to the project directory."
+  }
+}

@@ -153,3 +153,114 @@ All notable changes to ORQUESTADOR-PRIME are documented here.
   `ExecutionResult`, `ExecutionStatus`
 - `output/schemas.ts` — agregado `ExecutionOutputSchema`
 - `output/parser.ts` — agregado caso `execute` e `init`
+
+---
+
+## [3.0.0] — 2026-04-02
+
+### Phase 15 — OpenClaw Integration
+
+#### Added
+
+- `src/openclaw/openclawClient.ts` — HTTP client for OpenClaw Gateway
+  (`/v1/chat/completions` for chat, `/tools/invoke` for skill execution)
+- `src/openclaw/openclawSkillRunner.ts` — invokes OpenClaw skills by name,
+  maps results back into `ProviderResponse` shape
+- `src/providers/openclawProvider.ts` — `Provider` implementation routing
+  through OpenClaw Gateway's OpenAI-compatible endpoint
+- `openclaw-skill/SKILL.md` — OpenClaw skill definition that exposes
+  ORQUESTADOR-PRIME modes (plan, route, blueprint, audit, scaffold) as
+  callable tools from any OpenClaw channel (Slack, Discord, CLI, etc.)
+
+#### Changed
+
+- `src/providers/types.ts` — added `"openclaw"` to `ProviderName` union
+- `src/providers/providerRouter.ts` — models starting with `openclaw-`
+  route to `openclawProvider`
+- `src/config.ts` — added `OPENCLAW_GATEWAY_URL`, `OPENCLAW_GATEWAY_TOKEN`,
+  `OPENCLAW_MODEL` env vars, `OPENCLAW_CONFIG` export, `isOpenClawAvailable()` helper
+
+### Phase 16 — n8n Integration
+
+#### Added
+
+- `src/n8n/n8nClient.ts` — HTTP client for n8n with two trigger paths:
+  webhook triggers (`POST /webhook/<path>`) and REST API execution
+  (`POST /api/v1/workflows/:id/execute` with `X-N8N-API-KEY`)
+- `src/n8n/n8nWorkflowRunner.ts` — high-level runner that normalizes
+  webhook vs API responses for orchestrator consumption
+- `n8n-templates/orquestador-trigger.json` — importable n8n workflow
+  (Webhook Trigger → Execute Command → Parse Output → Respond to Webhook)
+  that lets any n8n workflow invoke ORQUESTADOR-PRIME modes
+
+#### Changed
+
+- `src/config.ts` — added `N8N_BASE_URL`, `N8N_API_KEY`,
+  `N8N_WEBHOOK_BASE_URL` env vars, `N8N_CONFIG` export, `isN8nAvailable()` helper
+
+### Phase 17 — LightRAG Integration (RAG over Codebase)
+
+#### Added
+
+- `src/lightrag/lightragClient.ts` — HTTP client for LightRAG server
+  (`POST /documents/text` for indexing, `POST /documents/file` for uploads,
+  `POST /query` with mode selection: naive/local/global/hybrid)
+- `src/lightrag/lightragIndexer.ts` — indexes repository files into LightRAG
+  using existing `repoReader.ts` infrastructure, with stats tracking
+- `src/lightrag/lightragContext.ts` — queries LightRAG in hybrid mode,
+  formats codebase context snippets for prompt injection (max 4K chars,
+  non-fatal on errors)
+
+#### Changed
+
+- `src/config.ts` — added `LIGHTRAG_BASE_URL`, `LIGHTRAG_API_KEY` env vars,
+  `LIGHTRAG_CONFIG` export, `isLightRAGAvailable()` helper
+- `src/orchestrator/orchestrator.ts` — when LightRAG is available, queries
+  RAG context via `buildRAGContext()` and prepends it to prompts for
+  `plan`, `blueprint`, and `audit` modes (traced as `lightrag:query` phase)
+
+### Phase 18 — Coolify Integration (Auto Deploy)
+
+#### Added
+
+- `src/coolify/coolifyClient.ts` — HTTP client for Coolify REST API
+  (list/get/create/deploy/start/stop/restart applications, list servers
+  and projects, Bearer token auth via `COOLIFY_API_TOKEN`)
+- `src/coolify/coolifyDeployer.ts` — high-level deployer:
+  `deployFromRepo()` creates app + triggers deploy,
+  `redeployApplication()` restarts existing app,
+  `getDeploymentStatus()` fetches current state
+
+#### Changed
+
+- `src/config.ts` — added `COOLIFY_API_URL`, `COOLIFY_API_TOKEN`,
+  `COOLIFY_PROJECT_UUID`, `COOLIFY_SERVER_UUID` env vars,
+  `COOLIFY_CONFIG` export, `isCoolifyAvailable()` helper
+
+### Phase 19 — Multi-Stack Expansion
+
+#### Added
+
+- `src/scaffold/templates/fastify.ts` — Fastify + TypeScript template
+  (server bootstrap, health route, @fastify/cors + sensible)
+- `src/scaffold/templates/hono.ts` — Hono + TypeScript template
+  (edge-first, Cloudflare Workers wrangler.toml, middleware)
+- `src/scaffold/templates/astro.ts` — Astro + TypeScript template
+  (static site, Base layout, index + 404 pages)
+- `src/scaffold/templates/viteReact.ts` — Vite + React + TypeScript template
+  (SPA, App/main entry, vite.config.ts)
+- `src/scaffold/templates/remix.ts` — Remix + TypeScript template
+  (SSR, root layout, index route, health API route)
+
+#### Changed
+
+- `src/scaffold/templates.ts` — imports all 5 new templates, added
+  `StackName` type, `selectTemplateByStack()` for stack-specific selection,
+  `selectTemplate()` now routes landing to Astro, supports mobile/monorepo
+- `src/types.ts` — added `"mobile"` and `"monorepo"` to `ProjectType` union
+- `src/init/questions.ts` — added Mobile App and Monorepo project types,
+  React Native/Expo and Turborepo stack choices, mobile-specific features
+  (push, offline, deep linking, biometric, camera), monorepo features
+  (shared UI, shared config, API package), expanded generic stacks to all 7
+- `src/router/agentRouter.ts` — `detectProjectType()` now detects
+  "mobile", "react native", "expo", "monorepo", "turborepo" keywords

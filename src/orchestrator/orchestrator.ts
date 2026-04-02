@@ -24,7 +24,9 @@ import {
   CLAUDE_MODELS,
   isClaudeAvailable,
   isGitHubAvailable,
+  isLightRAGAvailable,
 } from "../config.js";
+import { buildRAGContext } from "../lightrag/lightragContext.js";
 import { allAgents } from "../agents/registry.js";
 import { registrySummary } from "../agents/selector.js";
 import {
@@ -107,6 +109,19 @@ export async function runOrchestrator(
     );
   }
 
+  // RAG context — optional, non-fatal
+  let ragPrefix = "";
+  const RAG_MODES: OrchestratorMode[] = ["plan", "blueprint", "audit"];
+  if (isLightRAGAvailable() && RAG_MODES.includes(mode)) {
+    const ragCtx = await tracer.phaseAsync("lightrag:query", async () =>
+      buildRAGContext(task, mode)
+    );
+    if (ragCtx.hasContext) {
+      ragPrefix = ragCtx.ragSnippets + "\n\n";
+      logger.debug(`LightRAG: ${ragCtx.ragSnippets.length} chars injected`);
+    }
+  }
+
   let rawOutput = "";
 
   if (mode === "blueprint") {
@@ -118,7 +133,7 @@ export async function runOrchestrator(
     logger.info(`Features     : ${context.detectedFeatures.join(", ") || "none"}`);
     logger.info(`Agents       : ${context.agentAssignments.map((a) => a.agent).join(", ")}`);
 
-    const prompt = buildBlueprintPrompt(task, router, context, memoryContext);
+    const prompt = ragPrefix + buildBlueprintPrompt(task, router, context, memoryContext);
 
     if (isClaudeAvailable()) {
       logger.info(`Provider: Claude (${CLAUDE_MODELS.blueprint})`);
@@ -158,7 +173,7 @@ export async function runOrchestrator(
     tracer.setRouter(router.selectedAgents, router.matchedKeywords);
 
     const auditCtx = buildAuditContext(repo);
-    const prompt = buildAuditPrompt(auditCtx, router);
+    const prompt = ragPrefix + buildAuditPrompt(auditCtx, router);
 
     if (isClaudeAvailable()) {
       logger.info(`Provider: Claude (${CLAUDE_MODELS.architect})`);
@@ -401,10 +416,11 @@ export async function runOrchestrator(
     logger.info(`Agents: ${router.selectedAgents.join(", ")}`);
     logger.info(`Provider: OpenAI (${MODELS.synthesis})`);
 
-    const prompt =
+    const basePrompt =
       mode === "route"
         ? buildRoutingPrompt(task, router)
         : buildPlanningPrompt(task, router, memoryContext);
+    const prompt = ragPrefix + basePrompt;
 
     const result = await tracer.phaseAsync("provider:openai", async () =>
       run(openaiOrchestrator, prompt)

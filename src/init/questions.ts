@@ -38,6 +38,8 @@ export async function askInitQuestions(): Promise<InitAnswers> {
       { name: "Dashboard / Admin",      value: "dashboard" },
       { name: "Landing Page",           value: "landing"   },
       { name: "ERP System",             value: "erp"       },
+      { name: "Mobile App",             value: "mobile"    },
+      { name: "Monorepo",               value: "monorepo"  },
       { name: "Generic / Other",        value: "generic"   },
     ],
   });
@@ -102,10 +104,22 @@ function getStackChoices(projectType: string) {
     erp: [
       { name: "Next.js + TypeScript + Prisma",  value: "nextjs-prisma" },
     ],
+    mobile: [
+      { name: "React Native + Expo",            value: "expo-ts"       },
+      { name: "Next.js + TypeScript (web PWA)", value: "nextjs-ts"     },
+    ],
+    monorepo: [
+      { name: "Turborepo (Next.js + API)",      value: "turborepo"     },
+      { name: "Next.js + TypeScript",           value: "nextjs-ts"     },
+    ],
     generic: [
       { name: "Next.js + TypeScript",           value: "nextjs-ts"     },
       { name: "Express + TypeScript",           value: "express-ts"    },
+      { name: "Fastify + TypeScript",           value: "fastify-ts"    },
+      { name: "Hono + TypeScript",              value: "hono-ts"       },
       { name: "Vite + React + TypeScript",      value: "vite-react-ts" },
+      { name: "Remix + TypeScript",             value: "remix-ts"      },
+      { name: "Astro + TypeScript",             value: "astro-ts"      },
     ],
   };
 
@@ -148,6 +162,18 @@ function getFeatureChoices(projectType: string) {
       { name: "Inventory management",       value: "inventory",     checked: true  },
       { name: "Invoicing / billing",        value: "invoicing",     checked: true  },
       { name: "Reporting / BI",             value: "reporting",     checked: false },
+    ],
+    mobile: [
+      { name: "Push notifications",         value: "push",          checked: true  },
+      { name: "Offline support",            value: "offline",       checked: false },
+      { name: "Deep linking",               value: "deeplink",      checked: false },
+      { name: "Biometric auth",             value: "biometric",     checked: false },
+      { name: "Camera / media",             value: "camera",        checked: false },
+    ],
+    monorepo: [
+      { name: "Shared UI package",          value: "shared-ui",     checked: true  },
+      { name: "Shared config (ESLint/TS)",  value: "shared-config", checked: true  },
+      { name: "API package",                value: "api-pkg",       checked: false },
     ],
   };
 
