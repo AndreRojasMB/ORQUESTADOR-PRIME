@@ -1,0 +1,98 @@
+{
+  "name": "WhatsApp Twilio Bridge — LOCAL TESTING ONLY",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "twilio-whatsapp",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Twilio Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [250, 300],
+      "webhookId": "twilio-whatsapp"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Normalize Twilio form-encoded payload to bridge.ts format\nconst item = $input.first().json;\nconst sender = (item.From || '').replace('whatsapp:', '');\nconst messageId = item.MessageSid || `twilio_${Date.now()}`;\nconst text = item.Body || '';\nconst profileName = item.ProfileName || undefined;\n\nreturn [{\n  json: {\n    sender,\n    messageId,\n    text,\n    timestamp: Date.now(),\n    profileName\n  }\n}];"
+      },
+      "id": "normalize-payload",
+      "name": "Normalize Twilio Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "command": "=echo '{{ JSON.stringify($json) }}' | cd {{ $env.ORQUESTADOR_PATH || '/path/to/orquestador-prime' }} && npx tsx scripts/whatsapp-test.ts {{ $env.WHATSAPP_HOOK_TOKEN || 'change-me' }}"
+      },
+      "id": "execute-bridge",
+      "name": "Call Bridge (LOCAL ONLY)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse bridge output and format TwiML response\nconst stdout = $input.first().json.stdout || '{}';\ntry {\n  const reply = JSON.parse(stdout);\n  const text = reply.text || 'No response from orchestrator.';\n  return [{ json: { body: text } }];\n} catch {\n  return [{ json: { body: 'Error processing your message.' } }];\n}"
+      },
+      "id": "format-response",
+      "name": "Format Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.body }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/plain"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-webhook",
+      "name": "Respond to Twilio",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "Twilio Webhook": {
+      "main": [
+        [{ "node": "Normalize Twilio Payload", "type": "main", "index": 0 }]
+      ]
+    },
+    "Normalize Twilio Payload": {
+      "main": [
+        [{ "node": "Call Bridge (LOCAL ONLY)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Call Bridge (LOCAL ONLY)": {
+      "main": [
+        [{ "node": "Format Reply", "type": "main", "index": 0 }]
+      ]
+    },
+    "Format Reply": {
+      "main": [
+        [{ "node": "Respond to Twilio", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "description": "LOCAL TESTING ONLY — uses Execute Command to call bridge.ts via CLI. For production, replace Execute Command with an HTTP Request to a lightweight adapter wrapping processInboundWebhook()."
+  }
+}

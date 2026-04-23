@@ -12,9 +12,12 @@
     "audit": "tsx src/index.ts --mode=audit",
     "scaffold": "tsx src/index.ts --mode=scaffold",
     "memory": "tsx src/index.ts --mode=memory",
+    "chat": "tsx src/index.ts --mode=chat",
     "init": "tsx src/index.ts --mode=init",
     "execute": "tsx src/index.ts --mode=execute",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "whatsapp:test": "tsx scripts/whatsapp-test.ts",
+    "bridge:whatsapp": "tsx src/whatsapp/httpBridge.ts"
   },
   "keywords": [],
   "author": "",

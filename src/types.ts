@@ -11,7 +11,8 @@ export type OrchestratorMode =
   | "scaffold"
   | "memory"
   | "init"
-  | "execute";
+  | "execute"
+  | "chat";
 
 export type FutureMode = OrchestratorMode;
 
@@ -149,6 +150,7 @@ export interface MemoryEntry {
   summary?: string; // resumen del output si existe
   outputDir?: string; // para scaffold — dónde se generó
   traceId: string; // link al TraceRecord
+  trace?: import("./observability/tracer.js").TraceRecord | undefined;
 }
 
 export interface MemoryStore {

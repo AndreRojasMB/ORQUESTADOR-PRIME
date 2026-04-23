@@ -3,6 +3,7 @@
 // Supports chat completions (/v1/chat/completions) and tool invocation (/tools/invoke).
 
 import { OPENCLAW_CONFIG } from "../config.js";
+import { sandboxedFetch } from "../security/requestSandbox.js";
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -67,7 +68,7 @@ export async function chatCompletions(
 ): Promise<OpenClawChatResponse> {
   const url = `${baseUrl()}/v1/chat/completions`;
 
-  const res = await fetch(url, {
+  const res = await sandboxedFetch(url, {
     method: "POST",
     headers: headers(),
     body: JSON.stringify({
@@ -91,7 +92,7 @@ export async function toolInvoke(
 ): Promise<OpenClawToolInvokeResponse> {
   const url = `${baseUrl()}/tools/invoke`;
 
-  const res = await fetch(url, {
+  const res = await sandboxedFetch(url, {
     method: "POST",
     headers: headers(),
     body: JSON.stringify(request),

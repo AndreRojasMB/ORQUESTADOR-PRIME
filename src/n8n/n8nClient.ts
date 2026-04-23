@@ -5,6 +5,7 @@
 //   2. REST API — POST /api/v1/workflows/:id/execute
 
 import { N8N_CONFIG } from "../config.js";
+import { sandboxedFetch } from "../security/requestSandbox.js";
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -62,7 +63,7 @@ export async function triggerWebhook(
 ): Promise<N8nWebhookResponse> {
   const url = `${webhookBaseUrl()}/webhook/${webhookPath}`;
 
-  const res = await fetch(url, {
+  const res = await sandboxedFetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -87,7 +88,7 @@ export async function executeWorkflow(
 ): Promise<N8nExecuteResponse> {
   const url = `${baseUrl()}/api/v1/workflows/${request.workflowId}/execute`;
 
-  const res = await fetch(url, {
+  const res = await sandboxedFetch(url, {
     method: "POST",
     headers: apiHeaders(),
     body: JSON.stringify(request.payload ?? {}),

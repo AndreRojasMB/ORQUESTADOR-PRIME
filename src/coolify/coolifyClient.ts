@@ -4,6 +4,7 @@
 // Base route: http://<host>:8000/api/v1
 
 import { COOLIFY_CONFIG } from "../config.js";
+import { sandboxedFetch } from "../security/requestSandbox.js";
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -78,7 +79,7 @@ async function request<T>(
 ): Promise<CoolifyApiResponse<T>> {
   const url = `${baseUrl()}/api/v1${path}`;
 
-  const res = await fetch(url, {
+  const res = await sandboxedFetch(url, {
     method,
     headers: headers(),
     ...(body !== undefined && { body: JSON.stringify(body) }),

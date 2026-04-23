@@ -1,13 +1,23 @@
 import { parseArgs, runOrchestrator } from "./orchestrator/orchestrator.js";
 import { runInit } from "./init/initRunner.js";
+import { runChat } from "./chat/chatMode.js";
+import { printBanner } from "./banner.js";
 import { logger } from "./observability/logger.js";
 
 async function main() {
   const { task, mode } = parseArgs(process.argv.slice(2));
 
+  await printBanner();
+
   // Modo init — flujo interactivo
   if (mode === "init") {
     await runInit();
+    return;
+  }
+
+  // Modo chat — configuración interactiva
+  if (mode === "chat") {
+    await runChat();
     return;
   }
 
@@ -27,6 +37,7 @@ async function main() {
         '       npm run audit     -- --repo=./path',
         '       npm run scaffold  -- "your project" --out=./dir',
         '       npm run memory',
+        '       npm run chat',
         '       npm run init',
       ].join("\n")
     );

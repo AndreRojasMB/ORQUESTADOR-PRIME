@@ -5,6 +5,7 @@
 import { readFile } from "fs/promises";
 import { basename } from "path";
 import { LIGHTRAG_CONFIG } from "../config.js";
+import { sandboxedFetch } from "../security/requestSandbox.js";
 
 // ─── Types ───────────────────────────────────────────────────────
 
@@ -62,7 +63,7 @@ export async function insertText(
 ): Promise<LightRAGInsertResponse> {
   const url = `${baseUrl()}/documents/text`;
 
-  const res = await fetch(url, {
+  const res = await sandboxedFetch(url, {
     method: "POST",
     headers: headers(),
     body: JSON.stringify({
@@ -94,7 +95,7 @@ export async function insertFile(
   const formData = new FormData();
   formData.append("file", new Blob([fileContent]), fileName);
 
-  const res = await fetch(url, {
+  const res = await sandboxedFetch(url, {
     method: "POST",
     headers: authHeaders(),
     body: formData,
@@ -117,7 +118,7 @@ export async function query(
 ): Promise<LightRAGQueryResponse> {
   const url = `${baseUrl()}/query`;
 
-  const res = await fetch(url, {
+  const res = await sandboxedFetch(url, {
     method: "POST",
     headers: headers(),
     body: JSON.stringify({

@@ -34,6 +34,8 @@ import {
   getMemoryPath,
   readMemoryStore,
 } from "../memory/memoryStore.js";
+import { readUserConfig } from "../config/userConfigStore.js";
+import { AgentLimiter } from "../security/agentLimiter.js";
 import { buildMemoryContext } from "../memory/memoryContext.js";
 import type {
   OrchestratorMode,
@@ -71,7 +73,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
         value === "scaffold" ||
         value === "memory" ||
         value === "init" ||
-        value === "execute"
+        value === "execute" ||
+        value === "chat"
       ) {
         mode = value;
         continue;
@@ -102,6 +105,25 @@ export async function runOrchestrator(
   logger.section(`ORQUESTADOR-PRIME · ${mode.toUpperCase()}`);
   logger.info(`Task: ${task}`);
 
+  // User config — merge overrides (non-fatal)
+  const userConfig = await readUserConfig();
+  const disabledAgents = new Set(userConfig.agents.disabled);
+  if (disabledAgents.size > 0) {
+    logger.debug(`Disabled agents: ${[...disabledAgents].join(", ")}`);
+  }
+
+  // Security: agent token budget limiter
+  const limiter = new AgentLimiter();
+
+  // Helper: filter disabled agents from router results
+  const filterRouter = (r: import("../types.js").RouterResult) => {
+    if (disabledAgents.size === 0) return r;
+    return {
+      ...r,
+      selectedAgents: r.selectedAgents.filter((a) => !disabledAgents.has(a)),
+    };
+  };
+
   const memoryContext = await buildMemoryContext(task, [], mode);
   if (memoryContext.hasContext) {
     logger.debug(
@@ -125,9 +147,10 @@ export async function runOrchestrator(
   let rawOutput = "";
 
   if (mode === "blueprint") {
-    const { router, context } = await tracer.phaseAsync("router", async () =>
+    const { router: rawRouter, context } = await tracer.phaseAsync("router", async () =>
       buildBlueprintContext(task)
     );
+    const router = filterRouter(rawRouter);
     tracer.setRouter(router.selectedAgents, router.matchedKeywords);
     logger.info(`Project type : ${context.projectType}`);
     logger.info(`Features     : ${context.detectedFeatures.join(", ") || "none"}`);
@@ -167,9 +190,9 @@ export async function runOrchestrator(
     const repo = await tracer.phaseAsync("repo:read", async () => readRepo(repoPath));
     logger.info(`Files found: ${repo.totalFiles} — read: ${repo.keyFiles.length}`);
 
-    const router = await tracer.phaseAsync("router", async () =>
+    const router = filterRouter(await tracer.phaseAsync("router", async () =>
       routeTask("audit security architecture backend frontend devops", false)
-    );
+    ));
     tracer.setRouter(router.selectedAgents, router.matchedKeywords);
 
     const auditCtx = buildAuditContext(repo);
@@ -200,9 +223,10 @@ export async function runOrchestrator(
     }
 
   } else if (mode === "scaffold") {
-    const { router, context } = await tracer.phaseAsync("router", async () =>
+    const { router: rawScaffoldRouter, context } = await tracer.phaseAsync("router", async () =>
       buildBlueprintContext(task)
     );
+    const router = filterRouter(rawScaffoldRouter);
     tracer.setRouter(router.selectedAgents, router.matchedKeywords);
     logger.info(`Project type : ${context.projectType}`);
     logger.info(`Features     : ${context.detectedFeatures.join(", ") || "none"}`);
@@ -283,7 +307,7 @@ export async function runOrchestrator(
 
     logger.info(`Repo: ${repoPath}`);
 
-    const router = await tracer.phaseAsync("router", async () => routeTask(task));
+    const router = filterRouter(await tracer.phaseAsync("router", async () => routeTask(task)));
     tracer.setRouter(router.selectedAgents, router.matchedKeywords);
 
     const prompt = buildExecutionPrompt(task, router);
@@ -411,7 +435,7 @@ export async function runOrchestrator(
     }
 
   } else {
-    const router = await tracer.phaseAsync("router", async () => routeTask(task));
+    const router = filterRouter(await tracer.phaseAsync("router", async () => routeTask(task)));
     tracer.setRouter(router.selectedAgents, router.matchedKeywords);
     logger.info(`Agents: ${router.selectedAgents.join(", ")}`);
     logger.info(`Provider: OpenAI (${MODELS.synthesis})`);
@@ -444,6 +468,19 @@ export async function runOrchestrator(
   );
   printTrace(trace);
 
+  // Log agent activations and track token usage
+  for (const agent of trace.selectedAgents) {
+    limiter.logActivation(agent, task);
+  }
+  if (trace.provider?.inputTokens || trace.provider?.outputTokens) {
+    const totalTokens = (trace.provider.inputTokens ?? 0) + (trace.provider.outputTokens ?? 0);
+    limiter.spend(trace.provider.model, totalTokens);
+  }
+  const budgetSummary = limiter.getSummary();
+  if (Object.keys(budgetSummary).length > 0) {
+    logger.debug("Agent token budgets", budgetSummary);
+  }
+
   const MEMORY_MODES: OrchestratorMode[] = [
     "plan",
     "route",
@@ -466,6 +503,7 @@ export async function runOrchestrator(
       agents: trace.selectedAgents,
       keywords: trace.matchedKeywords,
       traceId: trace.traceId,
+      trace,
       ...(blueprintData?.projectOverview?.type && {
         projectType: blueprintData.projectOverview.type,
       }),
