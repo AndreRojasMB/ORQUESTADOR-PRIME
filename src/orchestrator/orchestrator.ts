@@ -43,7 +43,10 @@ import type {
   OrchestratorResult,
   MemoryEntry,
   MemoryEntryType,
+  TrajectorySource,
 } from "../types.js";
+import { buildTrajectory } from "../trajectory/trajectoryBuilder.js";
+import { appendTrajectory } from "../trajectory/trajectoryStore.js";
 
 export type { OrchestratorMode };
 
@@ -99,7 +102,8 @@ const openaiOrchestrator = new Agent({
 
 export async function runOrchestrator(
   task: string,
-  mode: OrchestratorMode
+  mode: OrchestratorMode,
+  source?: TrajectorySource,
 ): Promise<OrchestratorResult> {
   const tracer = new Tracer(mode, task);
   logger.section(`ORQUESTADOR-PRIME · ${mode.toUpperCase()}`);
@@ -489,6 +493,8 @@ export async function runOrchestrator(
     "scaffold",
   ];
 
+  let memoryEntryId: string | null = null;
+
   if (MEMORY_MODES.includes(mode)) {
     const blueprintData =
       parsed.success && mode === "blueprint"
@@ -520,9 +526,11 @@ export async function runOrchestrator(
 
     await appendMemoryEntry(memoryEntry);
     logger.debug(`Memory saved → ${getMemoryPath()}`);
+    memoryEntryId = memoryEntry.id;
   }
 
-  return {
+  // ─── Trajectory ──────────────────────────────────────────────
+  const orchestratorResult: OrchestratorResult = {
     mode,
     task,
     finalOutput: rawOutput,
@@ -530,4 +538,21 @@ export async function runOrchestrator(
     ...(parsed.success && { structured: parsed.data }),
     ...(!parsed.success && { parseError: parsed.error }),
   };
+
+  try {
+    const trajectory = buildTrajectory({
+      trace,
+      result: orchestratorResult,
+      source,
+      memoryEntryId,
+    });
+    await appendTrajectory(trajectory);
+    logger.debug(`Trajectory saved → ${trajectory.id}`);
+  } catch (err) {
+    logger.warn("Trajectory write failed — continuing", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+  }
+
+  return orchestratorResult;
 }

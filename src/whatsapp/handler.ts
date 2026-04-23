@@ -140,7 +140,7 @@ export async function handleWhatsAppMessage(
     logAudit(buildAuditEntry(message, mode, mode, "allowed"));
 
     // 7. Run orchestrator
-    const result = await runOrchestrator(task, mode);
+    const result = await runOrchestrator(task, mode, "whatsapp");
 
     // 8. Format reply
     const text = formatReply(result);

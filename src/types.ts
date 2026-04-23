@@ -2,6 +2,7 @@
 
 import type { StructuredOutput } from "./output/schemas.js";
 import type { TraceRecord } from "./observability/tracer.js";
+import type { ProviderName } from "./providers/types.js";
 
 export type OrchestratorMode =
   | "plan"
@@ -92,7 +93,7 @@ export interface BlueprintAgentAssignment {
   responsibility: string;
 }
 
-export type { ProviderName } from "./providers/types.js";
+export type { ProviderName };
 
 // ─── Execution Layer ──────────────────────────────────────────────
 
@@ -157,4 +158,57 @@ export interface MemoryStore {
   version: string;
   entries: MemoryEntry[];
   lastRun?: string; // ISO timestamp del último run
+}
+
+// ─── Trajectory Layer ────────────────────────────────────────────
+
+export type TrajectorySource = "cli" | "whatsapp" | "omi" | "dashboard" | null;
+export type ApprovalStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "auto"
+  | null;
+export type OutcomeStatus = "merged" | "reverted" | "ci_failed" | null;
+
+export interface TrajectoryProviderCall {
+  provider: ProviderName;
+  model: string;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  durationMs: number;
+}
+
+export interface TrajectoryError {
+  phase: string;
+  message: string;
+  timestamp: string;
+}
+
+export interface Trajectory {
+  id: string;
+  createdAt: string;
+  traceId: string;
+  memoryEntryId: string | null;
+  source: TrajectorySource;
+  userMessage: string;
+  intent: { mode: OrchestratorMode; task: string };
+  agentsUsed: string[];
+  providerCalls: TrajectoryProviderCall[];
+  toolCalls: string[];
+  errors: TrajectoryError[];
+  durationMs: number;
+  result: {
+    parseSuccess: boolean;
+    structured: unknown | null;
+    rawLength: number;
+  };
+  approvalStatus: ApprovalStatus;
+  outcome: OutcomeStatus;
+  judgeScore: number | null;
+}
+
+export interface TrajectoryStore {
+  version: string;
+  trajectories: Trajectory[];
 }
