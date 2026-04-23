@@ -4,7 +4,7 @@
 // no sabe si está hablando con OpenAI o Anthropic.
 // V2 extension: agregar GeminiProvider implementando esta interfaz.
 
-export type ProviderName = "openai" | "anthropic" | "openclaw";
+export type ProviderName = "openai" | "anthropic" | "openclaw" | "kimi";
 
 export interface ProviderMessage {
   role:    "user" | "assistant" | "system";

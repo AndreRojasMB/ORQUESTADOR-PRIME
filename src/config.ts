@@ -29,6 +29,11 @@ const envSchema = z.object({
   N8N_API_KEY:          z.string().optional(),
   N8N_WEBHOOK_BASE_URL: z.string().optional(),
 
+  // Kimi — opcional, solo activo si KIMI_API_KEY existe
+  KIMI_API_KEY:  z.string().optional(),
+  KIMI_MODEL:    z.string().default("kimi-k2.6"),
+  KIMI_THINKING: z.string().default("false"),
+
   // LightRAG — opcional, solo activo si LIGHTRAG_API_KEY existe
   LIGHTRAG_BASE_URL: z.string().default("http://localhost:9621"),
   LIGHTRAG_API_KEY:  z.string().optional(),
@@ -64,6 +69,12 @@ export const CLAUDE_MODELS = {
 export const PROVIDERS = {
   openai:    { apiKey: env.OPENAI_API_KEY },
   anthropic: { apiKey: env.ANTHROPIC_API_KEY },
+} as const;
+
+export const KIMI_CONFIG = {
+  apiKey:   env.KIMI_API_KEY,
+  model:    env.KIMI_MODEL,
+  thinking: env.KIMI_THINKING === "true",
 } as const;
 
 export const OPENCLAW_CONFIG = {
@@ -115,6 +126,10 @@ export function isCoolifyAvailable(): boolean {
 
 export function isN8nAvailable(): boolean {
   return !!env.N8N_API_KEY;
+}
+
+export function isKimiAvailable(): boolean {
+  return !!env.KIMI_API_KEY;
 }
 
 export function isGitHubAvailable(): boolean {

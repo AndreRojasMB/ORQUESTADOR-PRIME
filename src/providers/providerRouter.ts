@@ -6,11 +6,13 @@
 import { openaiProvider }    from "./openaiProvider.js";
 import { anthropicProvider } from "./anthropicProvider.js";
 import { openclawProvider }  from "./openclawProvider.js";
+import { kimiProvider }      from "./kimiProvider.js";
 import type { Provider }     from "./types.js";
 
 export function getProvider(model: string): Provider {
   if (model.startsWith("claude-"))   return anthropicProvider;
   if (model.startsWith("openclaw-")) return openclawProvider;
+  if (model.startsWith("kimi-"))     return kimiProvider;
   return openaiProvider;
 }
 
