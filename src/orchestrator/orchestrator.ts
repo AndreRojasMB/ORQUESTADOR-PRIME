@@ -47,6 +47,8 @@ import type {
 } from "../types.js";
 import { buildTrajectory } from "../trajectory/trajectoryBuilder.js";
 import { appendTrajectory } from "../trajectory/trajectoryStore.js";
+import { ensureDefaults } from "../skills/skillStore.js";
+import { getSkillsForAgents } from "../skills/skillInjector.js";
 
 export type { OrchestratorMode };
 
@@ -116,6 +118,15 @@ export async function runOrchestrator(
     logger.debug(`Disabled agents: ${[...disabledAgents].join(", ")}`);
   }
 
+  // Skills — ensure defaults exist (non-fatal)
+  try { await ensureDefaults(); } catch { /* non-fatal */ }
+
+  // Helper: build skill prefix for a set of agents
+  const buildSkillPrefix = async (agents: string[]): Promise<string> => {
+    const content = await getSkillsForAgents(agents, userConfig.skills);
+    return content ? content + "\n\n" : "";
+  };
+
   // Security: agent token budget limiter
   const limiter = new AgentLimiter();
 
@@ -160,7 +171,8 @@ export async function runOrchestrator(
     logger.info(`Features     : ${context.detectedFeatures.join(", ") || "none"}`);
     logger.info(`Agents       : ${context.agentAssignments.map((a) => a.agent).join(", ")}`);
 
-    const prompt = ragPrefix + buildBlueprintPrompt(task, router, context, memoryContext);
+    const skillPrefix = await buildSkillPrefix(router.selectedAgents);
+    const prompt = ragPrefix + skillPrefix + buildBlueprintPrompt(task, router, context, memoryContext);
 
     if (isClaudeAvailable()) {
       logger.info(`Provider: Claude (${CLAUDE_MODELS.blueprint})`);
@@ -200,7 +212,8 @@ export async function runOrchestrator(
     tracer.setRouter(router.selectedAgents, router.matchedKeywords);
 
     const auditCtx = buildAuditContext(repo);
-    const prompt = ragPrefix + buildAuditPrompt(auditCtx, router);
+    const auditSkillPrefix = await buildSkillPrefix(router.selectedAgents);
+    const prompt = ragPrefix + auditSkillPrefix + buildAuditPrompt(auditCtx, router);
 
     if (isClaudeAvailable()) {
       logger.info(`Provider: Claude (${CLAUDE_MODELS.architect})`);
@@ -235,7 +248,8 @@ export async function runOrchestrator(
     logger.info(`Project type : ${context.projectType}`);
     logger.info(`Features     : ${context.detectedFeatures.join(", ") || "none"}`);
 
-    const prompt = buildScaffoldPrompt(task, router, context);
+    const scaffoldSkillPrefix = await buildSkillPrefix(router.selectedAgents);
+    const prompt = scaffoldSkillPrefix + buildScaffoldPrompt(task, router, context);
 
     if (isClaudeAvailable()) {
       logger.info(`Provider: Claude (${CLAUDE_MODELS.blueprint})`);
@@ -314,7 +328,8 @@ export async function runOrchestrator(
     const router = filterRouter(await tracer.phaseAsync("router", async () => routeTask(task)));
     tracer.setRouter(router.selectedAgents, router.matchedKeywords);
 
-    const prompt = buildExecutionPrompt(task, router);
+    const execSkillPrefix = await buildSkillPrefix(router.selectedAgents);
+    const prompt = execSkillPrefix + buildExecutionPrompt(task, router);
 
     if (isClaudeAvailable()) {
       logger.info(`Provider: Claude (${CLAUDE_MODELS.architect})`);
@@ -448,7 +463,8 @@ export async function runOrchestrator(
       mode === "route"
         ? buildRoutingPrompt(task, router)
         : buildPlanningPrompt(task, router, memoryContext);
-    const prompt = ragPrefix + basePrompt;
+    const defaultSkillPrefix = await buildSkillPrefix(router.selectedAgents);
+    const prompt = ragPrefix + defaultSkillPrefix + basePrompt;
 
     const result = await tracer.phaseAsync("provider:openai", async () =>
       run(openaiOrchestrator, prompt)

@@ -9,6 +9,11 @@ export interface RoutingRule {
   agents: string[];
 }
 
+export interface SkillsConfig {
+  enabled: string[];
+  agentMap: Record<string, string[]>;
+}
+
 export interface UserConfig {
   version: string;
   agents: {
@@ -23,6 +28,7 @@ export interface UserConfig {
   };
   allowedDomains: string[];
   whatsapp: WhatsAppConfig;
+  skills?: SkillsConfig;
 }
 
 export const DEFAULT_USER_CONFIG: UserConfig = {
@@ -40,5 +46,9 @@ export const DEFAULT_USER_CONFIG: UserConfig = {
     n8nWebhookPath: "orquestador-whatsapp",
     hookToken: "",
     replyVia: "n8n",
+  },
+  skills: {
+    enabled: [],
+    agentMap: {},
   },
 };

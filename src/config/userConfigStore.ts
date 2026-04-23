@@ -64,6 +64,10 @@ export function mergeWithDefaults(partial: Partial<UserConfig>): UserConfig {
       replyVia:
         partial.whatsapp?.replyVia ?? DEFAULT_USER_CONFIG.whatsapp.replyVia,
     },
+    skills: {
+      enabled: partial.skills?.enabled ?? DEFAULT_USER_CONFIG.skills!.enabled,
+      agentMap: { ...DEFAULT_USER_CONFIG.skills!.agentMap, ...partial.skills?.agentMap },
+    },
   };
 }
 
