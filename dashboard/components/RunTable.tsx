@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Badge } from "./Badge";
-import type { MemoryEntry } from "@/lib/types";
+import type { MemoryEntry, Trajectory } from "@/lib/types";
 
 interface RunTableProps {
   entries: MemoryEntry[];
   compact?: boolean;
+  trajectoryMap?: Map<string, Trajectory>;
 }
 
 function formatTime(iso: string): string {
@@ -27,7 +28,15 @@ function truncate(text: string, max: number): string {
   return text.slice(0, max) + "...";
 }
 
-export function RunTable({ entries, compact = false }: RunTableProps) {
+const SOURCE_COLORS: Record<string, string> = {
+  cli: "bg-zinc-700/50 text-zinc-300",
+  whatsapp: "bg-green-900/50 text-green-300",
+  omi: "bg-violet-900/50 text-violet-300",
+  dashboard: "bg-blue-900/50 text-blue-300",
+  unknown: "bg-zinc-800 text-zinc-500",
+};
+
+export function RunTable({ entries, compact = false, trajectoryMap }: RunTableProps) {
   if (entries.length === 0) {
     return (
       <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-8 text-center">
@@ -51,6 +60,7 @@ export function RunTable({ entries, compact = false }: RunTableProps) {
             <th className="px-4 py-3">Time</th>
             <th className="px-4 py-3">Mode</th>
             <th className="px-4 py-3">Task</th>
+            {!compact && trajectoryMap && <th className="px-4 py-3">Source</th>}
             {!compact && <th className="px-4 py-3">Agents</th>}
             {!compact && <th className="px-4 py-3">Keywords</th>}
           </tr>
@@ -79,6 +89,20 @@ export function RunTable({ entries, compact = false }: RunTableProps) {
                   {truncate(entry.task || "(no task)", compact ? 50 : 80)}
                 </Link>
               </td>
+              {!compact && trajectoryMap && (
+                <td className="px-4 py-3">
+                  {(() => {
+                    const traj = trajectoryMap.get(entry.traceId);
+                    const source = traj?.source ?? "unknown";
+                    const color = SOURCE_COLORS[source] ?? SOURCE_COLORS.unknown;
+                    return (
+                      <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${color}`}>
+                        {source}
+                      </span>
+                    );
+                  })()}
+                </td>
+              )}
               {!compact && (
                 <td className="px-4 py-3 text-xs text-zinc-500">
                   {entry.agents.length > 0

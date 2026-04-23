@@ -7,8 +7,8 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import type { MemoryStore, MemoryEntry, UserConfig } from "./types";
-import { EMPTY_MEMORY_STORE, DEFAULT_USER_CONFIG } from "./types";
+import type { MemoryStore, MemoryEntry, UserConfig, TrajectoryStore, Trajectory } from "./types";
+import { EMPTY_MEMORY_STORE, EMPTY_TRAJECTORY_STORE, DEFAULT_USER_CONFIG } from "./types";
 
 // ─── Data directory ─────────────────────────────────────────────
 
@@ -56,6 +56,40 @@ export async function getRecentEntries(n = 5): Promise<MemoryEntry[]> {
 export async function getEntryById(id: string): Promise<MemoryEntry | null> {
   const store = await readMemoryStore();
   return store.entries.find((e) => e.id === id) ?? null;
+}
+
+// ─── Trajectories ───────────────────────────────────────────────
+
+function trajectoryPath(): string {
+  return join(getDataDir(), "trajectories.json");
+}
+
+export async function readTrajectoryStore(): Promise<TrajectoryStore> {
+  const store = await readJsonFile<TrajectoryStore>(trajectoryPath(), {
+    ...EMPTY_TRAJECTORY_STORE,
+    trajectories: [],
+  });
+
+  if (!Array.isArray(store.trajectories)) {
+    store.trajectories = [];
+  }
+
+  return store;
+}
+
+export async function getTrajectories(): Promise<Trajectory[]> {
+  const store = await readTrajectoryStore();
+  return store.trajectories;
+}
+
+export async function getTrajectoryById(id: string): Promise<Trajectory | null> {
+  const store = await readTrajectoryStore();
+  return store.trajectories.find((t) => t.id === id) ?? null;
+}
+
+export async function getTrajectoryByTraceId(traceId: string): Promise<Trajectory | null> {
+  const store = await readTrajectoryStore();
+  return store.trajectories.find((t) => t.traceId === traceId) ?? null;
 }
 
 // ─── Config ─────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { readMemoryStore, getRecentEntries, readConfig } from "@/lib/data";
+import { readMemoryStore, getRecentEntries, readConfig, getTrajectories } from "@/lib/data";
 import { Card } from "@/components/Card";
 import { RunTable } from "@/components/RunTable";
 
@@ -18,15 +18,22 @@ function relativeTime(iso: string): string {
 }
 
 export default async function OverviewPage() {
-  const [store, recent, config] = await Promise.all([
+  const [store, recent, config, trajectories] = await Promise.all([
     readMemoryStore(),
     getRecentEntries(5),
     readConfig(),
+    getTrajectories(),
   ]);
 
   const totalRuns = store.entries.length;
   const lastRun = store.lastRun ? relativeTime(store.lastRun) : "never";
   const activeModes = new Set(store.entries.map((e) => e.type)).size;
+
+  const sourceBreakdown: Record<string, number> = {};
+  for (const t of trajectories) {
+    const key = t.source ?? "unknown";
+    sourceBreakdown[key] = (sourceBreakdown[key] ?? 0) + 1;
+  }
 
   return (
     <div className="space-y-8">
@@ -38,11 +45,22 @@ export default async function OverviewPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <Card label="Total Runs" value={totalRuns} />
         <Card label="Last Run" value={lastRun} />
         <Card label="Agents" value={13} sub="registered" />
         <Card label="Active Modes" value={activeModes} sub={`of 5 available`} />
+        <Card
+          label="Trajectories"
+          value={trajectories.length}
+          sub={
+            Object.keys(sourceBreakdown).length > 0
+              ? Object.entries(sourceBreakdown)
+                  .map(([k, v]) => `${k}: ${v}`)
+                  .join(", ")
+              : "none recorded"
+          }
+        />
       </div>
 
       {/* Status row */}

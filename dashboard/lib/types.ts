@@ -136,11 +136,64 @@ export interface AgentMeta {
   description: string;
 }
 
+// ─── Trajectory (from src/types.ts) ─────────────────────────────
+
+export type TrajectorySource = "cli" | "whatsapp" | "omi" | "dashboard" | null;
+export type ApprovalStatus = "pending" | "approved" | "rejected" | "auto" | null;
+export type OutcomeStatus = "merged" | "reverted" | "ci_failed" | null;
+
+export interface TrajectoryProviderCall {
+  provider: ProviderName;
+  model: string;
+  inputTokens: number | null;
+  outputTokens: number | null;
+  durationMs: number;
+}
+
+export interface TrajectoryError {
+  phase: string;
+  message: string;
+  timestamp: string;
+}
+
+export interface Trajectory {
+  id: string;
+  createdAt: string;
+  traceId: string;
+  memoryEntryId: string | null;
+  source: TrajectorySource;
+  userMessage: string;
+  intent: { mode: OrchestratorMode; task: string };
+  agentsUsed: string[];
+  providerCalls: TrajectoryProviderCall[];
+  toolCalls: string[];
+  errors: TrajectoryError[];
+  durationMs: number;
+  result: {
+    parseSuccess: boolean;
+    structured: unknown | null;
+    rawLength: number;
+  };
+  approvalStatus: ApprovalStatus;
+  outcome: OutcomeStatus;
+  judgeScore: number | null;
+}
+
+export interface TrajectoryStore {
+  version: string;
+  trajectories: Trajectory[];
+}
+
 // ─── Defaults ───────────────────────────────────────────────────
 
 export const EMPTY_MEMORY_STORE: MemoryStore = {
   version: "1.0",
   entries: [],
+};
+
+export const EMPTY_TRAJECTORY_STORE: TrajectoryStore = {
+  version: "1.0",
+  trajectories: [],
 };
 
 export const DEFAULT_USER_CONFIG: UserConfig = {
