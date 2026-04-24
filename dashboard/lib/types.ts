@@ -291,6 +291,32 @@ export interface ExecutionResultStoreData {
   results: ExecutionResult[];
 }
 
+// ─── Second approvals (mirrors src/actions/types.ts) ────────────
+
+export type SecondApprovalStatus =
+  | "granted"
+  | "consumed"
+  | "expired"
+  | "revoked";
+
+export interface SecondApproval {
+  id: string;
+  proposalId: string;
+  grantedBy: string;
+  grantedAt: string;
+  expiresAt: string;
+  status: SecondApprovalStatus;
+  consumedAt: string | null;
+  revokedAt: string | null;
+  proposalParameterHash: string;
+  proposalStatusAtGrant: ActionStatus;
+}
+
+export interface SecondApprovalStoreData {
+  version: string;
+  approvals: SecondApproval[];
+}
+
 // ─── Defaults ───────────────────────────────────────────────────
 
 export const EMPTY_MEMORY_STORE: MemoryStore = {
@@ -311,6 +337,11 @@ export const EMPTY_ACTION_STORE: ActionStoreData = {
 export const EMPTY_EXECUTION_RESULT_STORE: ExecutionResultStoreData = {
   version: "1.0",
   results: [],
+};
+
+export const EMPTY_SECOND_APPROVAL_STORE: SecondApprovalStoreData = {
+  version: "1.0",
+  approvals: [],
 };
 
 export const DEFAULT_USER_CONFIG: UserConfig = {

@@ -17,12 +17,15 @@ import type {
   ActionProposal,
   ExecutionResult,
   ExecutionResultStoreData,
+  SecondApproval,
+  SecondApprovalStoreData,
 } from "./types";
 import {
   EMPTY_MEMORY_STORE,
   EMPTY_TRAJECTORY_STORE,
   EMPTY_ACTION_STORE,
   EMPTY_EXECUTION_RESULT_STORE,
+  EMPTY_SECOND_APPROVAL_STORE,
   DEFAULT_USER_CONFIG,
 } from "./types";
 
@@ -176,6 +179,52 @@ export async function getExecutionResultsByProposalId(
 export async function getRecentExecutionResults(n = 10): Promise<ExecutionResult[]> {
   const store = await readExecutionResultStore();
   return store.results.slice(-n).reverse();
+}
+
+// ─── Second approvals ───────────────────────────────────────────
+
+function secondApprovalsPath(): string {
+  return join(getDataDir(), "action-second-approvals.json");
+}
+
+export async function readSecondApprovalStore(): Promise<SecondApprovalStoreData> {
+  const store = await readJsonFile<SecondApprovalStoreData>(secondApprovalsPath(), {
+    ...EMPTY_SECOND_APPROVAL_STORE,
+    approvals: [],
+  });
+
+  if (!Array.isArray(store.approvals)) {
+    store.approvals = [];
+  }
+
+  return store;
+}
+
+export async function getSecondApprovals(): Promise<SecondApproval[]> {
+  const store = await readSecondApprovalStore();
+  return store.approvals;
+}
+
+export async function getSecondApprovalsByProposalId(
+  proposalId: string,
+): Promise<SecondApproval[]> {
+  const store = await readSecondApprovalStore();
+  return store.approvals.filter((a) => a.proposalId === proposalId);
+}
+
+export async function getActiveSecondApprovals(
+  now: number = Date.now(),
+): Promise<SecondApproval[]> {
+  const store = await readSecondApprovalStore();
+  return store.approvals.filter(
+    (a) => a.status === "granted" && Date.parse(a.expiresAt) > now,
+  );
+}
+
+// ─── Feature flag surface (read-only) ───────────────────────────
+
+export function getRealExecutionEnabled(): boolean {
+  return process.env.ACTIONS_REAL_EXECUTION_ENABLED === "true";
 }
 
 // ─── Config ─────────────────────────────────────────────────────

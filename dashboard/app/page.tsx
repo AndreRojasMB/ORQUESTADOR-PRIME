@@ -5,11 +5,19 @@ import {
   getTrajectories,
   getActions,
   getExecutionResults,
+  getSecondApprovals,
+  getRealExecutionEnabled,
 } from "@/lib/data";
 import { classifyForDistillation } from "@/lib/distillation";
 import { Card } from "@/components/Card";
 import { RunTable } from "@/components/RunTable";
-import type { DistillationTier } from "@/lib/types";
+import type { DistillationTier, ActionCategory } from "@/lib/types";
+
+const PREVIEW_CATEGORIES = new Set<ActionCategory>([
+  "file-write",
+  "git-branch",
+  "pr-create",
+]);
 
 function relativeTime(iso: string): string {
   try {
@@ -34,14 +42,55 @@ const TIER_PILL: Record<DistillationTier, string> = {
 };
 
 export default async function OverviewPage() {
-  const [store, recent, config, trajectories, actions, executions] = await Promise.all([
-    readMemoryStore(),
-    getRecentEntries(5),
-    readConfig(),
-    getTrajectories(),
-    getActions(),
-    getExecutionResults(),
-  ]);
+  const [store, recent, config, trajectories, actions, executions, approvals] =
+    await Promise.all([
+      readMemoryStore(),
+      getRecentEntries(5),
+      readConfig(),
+      getTrajectories(),
+      getActions(),
+      getExecutionResults(),
+      getSecondApprovals(),
+    ]);
+
+  const realExecutionEnabled = getRealExecutionEnabled();
+  const now = Date.now();
+
+  let approvalsActive = 0;
+  let approvalsExpired = 0;
+  let approvalsRevoked = 0;
+  let approvalsConsumed = 0;
+  let nextExpiryMs: number | null = null;
+  for (const a of approvals) {
+    if (a.status === "granted") {
+      const exp = Date.parse(a.expiresAt);
+      if (Number.isFinite(exp) && exp > now) {
+        approvalsActive++;
+        const remaining = exp - now;
+        if (nextExpiryMs === null || remaining < nextExpiryMs) {
+          nextExpiryMs = remaining;
+        }
+      } else {
+        // Treat expired-but-not-swept grants as expired for dashboard display.
+        approvalsExpired++;
+      }
+    } else if (a.status === "expired") approvalsExpired++;
+    else if (a.status === "revoked") approvalsRevoked++;
+    else if (a.status === "consumed") approvalsConsumed++;
+  }
+
+  const approvalsTotal = approvals.length;
+  const previewDispatches = executions.filter(
+    (r) => PREVIEW_CATEGORIES.has(r.category) && r.outcome === "dry-run",
+  ).length;
+
+  function formatRemaining(ms: number): string {
+    const totalSec = Math.floor(ms / 1000);
+    const mins = Math.floor(totalSec / 60);
+    const secs = totalSec % 60;
+    if (mins >= 1) return `${mins}m ${secs.toString().padStart(2, "0")}s`;
+    return `${secs}s`;
+  }
 
   const dispatchTotal = executions.length;
   let dispatchSuccess = 0;
@@ -107,6 +156,26 @@ export default async function OverviewPage() {
         </p>
       </div>
 
+      {/* Real-execution banner — advisory only */}
+      <div
+        className={`rounded-lg border px-4 py-2 text-xs ${
+          realExecutionEnabled
+            ? "border-amber-900/60 bg-amber-950/30 text-amber-300"
+            : "border-zinc-800 bg-zinc-900/60 text-zinc-400"
+        }`}
+      >
+        {realExecutionEnabled ? (
+          <>
+            Real execution: <span className="font-medium text-amber-300">ENABLED</span> as this dashboard sees it. Dispatch still requires the CLI and a valid second approval.
+          </>
+        ) : (
+          <>
+            Real execution: <span className="font-medium text-zinc-300">disabled</span>{" "}
+            (ACTIONS_REAL_EXECUTION_ENABLED=false). Previews and approvals are advisory only.
+          </>
+        )}
+      </div>
+
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <Card label="Total Runs" value={totalRuns} />
@@ -143,6 +212,33 @@ export default async function OverviewPage() {
           label="Pending Approvals"
           value={pendingApprovals}
           sub={actions.length > 0 ? `of ${actions.length} actions` : "no actions"}
+        />
+        <Card
+          label="Second Approvals"
+          value={approvalsTotal}
+          sub={
+            approvalsTotal > 0
+              ? `active: ${approvalsActive} · expired: ${approvalsExpired} · revoked: ${approvalsRevoked} · consumed: ${approvalsConsumed}`
+              : "none recorded"
+          }
+        />
+        <Card
+          label="Active Grants"
+          value={approvalsActive}
+          sub={
+            approvalsActive > 0 && nextExpiryMs !== null
+              ? `next expires in ${formatRemaining(nextExpiryMs)}`
+              : "none"
+          }
+        />
+        <Card
+          label="Preview Categories"
+          value={previewDispatches}
+          sub={
+            realExecutionEnabled
+              ? "real exec: ON — dispatch requires second approval"
+              : "real exec: OFF — dry-run only"
+          }
         />
         <Card
           label="Dispatches"

@@ -1,11 +1,19 @@
 import Link from "next/link";
-import { getActions, getExecutionResults } from "@/lib/data";
+import {
+  getActions,
+  getExecutionResults,
+  getSecondApprovals,
+  getRealExecutionEnabled,
+} from "@/lib/data";
 import type {
   ActionProposal,
   ActionStatus,
+  ActionCategory,
   ActionRiskLevel,
   ExecutionOutcome,
   ExecutionResult,
+  SecondApproval,
+  SecondApprovalStatus,
 } from "@/lib/types";
 
 type SearchParams = Promise<{
@@ -62,6 +70,58 @@ function buildExecutionMap(results: ExecutionResult[]): Map<string, ExecutionRes
     arr.sort((a, b) => (a.finishedAt < b.finishedAt ? 1 : -1));
   }
   return map;
+}
+
+const PREVIEW_CATEGORIES = new Set<ActionCategory>([
+  "file-write",
+  "git-branch",
+  "pr-create",
+]);
+
+const APPROVAL_COLORS: Record<SecondApprovalStatus, string> = {
+  granted: "bg-green-900/50 text-green-300",
+  consumed: "bg-zinc-700/50 text-zinc-300",
+  expired: "bg-amber-900/50 text-amber-300",
+  revoked: "bg-red-900/50 text-red-300",
+};
+
+type EffectiveApprovalStatus = SecondApprovalStatus | "active";
+
+function effectiveApprovalStatus(
+  a: SecondApproval,
+  now: number,
+): EffectiveApprovalStatus {
+  if (a.status === "granted" && Date.parse(a.expiresAt) > now) return "active";
+  if (a.status === "granted" && Date.parse(a.expiresAt) <= now) return "expired";
+  return a.status;
+}
+
+function formatTimeLeft(iso: string, now: number): string {
+  const ms = Date.parse(iso) - now;
+  if (!Number.isFinite(ms) || ms <= 0) return "0s";
+  const totalSec = Math.floor(ms / 1000);
+  const mins = Math.floor(totalSec / 60);
+  const secs = totalSec % 60;
+  if (mins >= 1) return `${mins}m ${secs.toString().padStart(2, "0")}s`;
+  return `${secs}s`;
+}
+
+function buildApprovalMap(approvals: SecondApproval[]): Map<string, SecondApproval[]> {
+  const map = new Map<string, SecondApproval[]>();
+  for (const a of approvals) {
+    const arr = map.get(a.proposalId);
+    if (arr) arr.push(a);
+    else map.set(a.proposalId, [a]);
+  }
+  for (const arr of map.values()) {
+    arr.sort((a, b) => (a.grantedAt < b.grantedAt ? 1 : -1));
+  }
+  return map;
+}
+
+function truncateHash(hash: string, max = 12): string {
+  if (!hash) return "";
+  return hash.length <= max ? hash : hash.slice(0, max) + "…";
 }
 
 const STATUS_VALUES: ActionStatus[] = [
@@ -140,12 +200,16 @@ export default async function ActionsPage({
   const riskFilter = firstParam(sp.risk);
   const execFilter = firstParam(sp.exec);
 
-  const [allActions, allExecutions] = await Promise.all([
+  const [allActions, allExecutions, allApprovals] = await Promise.all([
     getActions(),
     getExecutionResults(),
+    getSecondApprovals(),
   ]);
 
   const execMap = buildExecutionMap(allExecutions);
+  const approvalMap = buildApprovalMap(allApprovals);
+  const now = Date.now();
+  const realExecutionEnabled = getRealExecutionEnabled();
 
   const filtered = allActions.filter((a) => {
     if (statusFilter && statusFilter !== "all" && a.status !== statusFilter) return false;
@@ -176,6 +240,27 @@ export default async function ActionsPage({
             : ""}
           ).
         </p>
+      </div>
+
+      {/* Real-execution banner — advisory only; dashboard cannot trigger dispatch */}
+      <div
+        className={`rounded-lg border px-4 py-2 text-xs ${
+          realExecutionEnabled
+            ? "border-amber-900/60 bg-amber-950/30 text-amber-300"
+            : "border-zinc-800 bg-zinc-900/60 text-zinc-400"
+        }`}
+      >
+        {realExecutionEnabled ? (
+          <>
+            Real execution: <span className="font-medium text-amber-300">ENABLED</span> as
+            this dashboard sees it. Dispatch still requires the CLI and a valid second approval.
+          </>
+        ) : (
+          <>
+            Real execution: <span className="font-medium text-zinc-300">disabled</span>{" "}
+            (ACTIONS_REAL_EXECUTION_ENABLED=false). Previews and approvals are advisory only.
+          </>
+        )}
       </div>
 
       {/* Filters */}
@@ -272,6 +357,8 @@ export default async function ActionsPage({
                 <th className="px-4 py-3">Dispatches</th>
                 <th className="px-4 py-3">Last Outcome</th>
                 <th className="px-4 py-3">Last Run</th>
+                <th className="px-4 py-3">2nd Approval</th>
+                <th className="px-4 py-3">Preview</th>
                 <th className="px-4 py-3">Title</th>
               </tr>
             </thead>
@@ -281,12 +368,85 @@ export default async function ActionsPage({
                   key={a.id}
                   action={a}
                   executions={execMap.get(a.id) ?? []}
+                  approvals={approvalMap.get(a.id) ?? []}
+                  now={now}
                 />
               ))}
             </tbody>
           </table>
         </div>
       )}
+
+      {/* Recent Second Approvals — read-only summary */}
+      <div>
+        <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-zinc-500">
+          Recent Second Approvals
+        </h2>
+        {allApprovals.length === 0 ? (
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-6 text-center">
+            <p className="text-sm text-zinc-500">None recorded.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-zinc-800">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-zinc-800 bg-zinc-900/50 text-left text-xs uppercase tracking-wider text-zinc-500">
+                  <th className="px-4 py-3">Granted</th>
+                  <th className="px-4 py-3">Proposal</th>
+                  <th className="px-4 py-3">Granted By</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Expires / Resolved</th>
+                  <th className="px-4 py-3">Param Hash</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/50">
+                {[...allApprovals]
+                  .sort((a, b) => (a.grantedAt < b.grantedAt ? 1 : -1))
+                  .slice(0, 5)
+                  .map((a) => {
+                    const eff = effectiveApprovalStatus(a, now);
+                    const pillColor =
+                      eff === "active"
+                        ? APPROVAL_COLORS.granted
+                        : APPROVAL_COLORS[eff];
+                    const label =
+                      eff === "active"
+                        ? `active · ${formatTimeLeft(a.expiresAt, now)} left`
+                        : eff;
+                    const resolved =
+                      a.consumedAt
+                        ? `consumed ${formatTime(a.consumedAt)}`
+                        : a.revokedAt
+                          ? `revoked ${formatTime(a.revokedAt)}`
+                          : `expires ${formatTime(a.expiresAt)}`;
+                    return (
+                      <tr key={a.id}>
+                        <td className="whitespace-nowrap px-4 py-3 text-xs text-zinc-400">
+                          {formatTime(a.grantedAt)}
+                        </td>
+                        <td className="px-4 py-3 font-mono text-xs text-zinc-400">
+                          {a.proposalId}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-zinc-400">
+                          {a.grantedBy}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Pill label={label} className={pillColor} />
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-3 text-xs text-zinc-500">
+                          {resolved}
+                        </td>
+                        <td className="px-4 py-3 font-mono text-xs text-zinc-500">
+                          {truncateHash(a.proposalParameterHash)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -294,9 +454,13 @@ export default async function ActionsPage({
 function ActionRow({
   action,
   executions,
+  approvals,
+  now,
 }: {
   action: ActionProposal;
   executions: ExecutionResult[];
+  approvals: SecondApproval[];
+  now: number;
 }) {
   const sourceColor = SOURCE_COLORS[action.source] ?? "bg-zinc-800 text-zinc-400";
   const riskColor = RISK_COLORS[action.riskLevel] ?? "bg-zinc-800 text-zinc-400";
@@ -305,6 +469,21 @@ function ActionRow({
   const lastOutcomeColor = last
     ? EXEC_COLORS[last.outcome] ?? "bg-zinc-800 text-zinc-400"
     : "bg-zinc-800 text-zinc-500";
+
+  const latestApproval = approvals[0];
+  const approvalEff = latestApproval ? effectiveApprovalStatus(latestApproval, now) : null;
+  const approvalPillColor = latestApproval
+    ? approvalEff === "active"
+      ? APPROVAL_COLORS.granted
+      : APPROVAL_COLORS[approvalEff as SecondApprovalStatus]
+    : "bg-zinc-800 text-zinc-500";
+  const approvalLabel = latestApproval
+    ? approvalEff === "active"
+      ? `active · ${formatTimeLeft(latestApproval.expiresAt, now)} left`
+      : (approvalEff as string)
+    : null;
+
+  const isPreviewCategory = PREVIEW_CATEGORIES.has(action.category);
 
   return (
     <tr className="transition-colors hover:bg-zinc-900/50">
@@ -339,6 +518,23 @@ function ActionRow({
           </>
         ) : (
           <span className="text-zinc-600">—</span>
+        )}
+      </td>
+      <td className="whitespace-nowrap px-4 py-3">
+        {approvalLabel ? (
+          <Pill label={approvalLabel} className={approvalPillColor} />
+        ) : (
+          <span className="text-xs text-zinc-600">—</span>
+        )}
+      </td>
+      <td className="px-4 py-3">
+        {isPreviewCategory ? (
+          <Pill
+            label="preview-only"
+            className="bg-amber-900/50 text-amber-300"
+          />
+        ) : (
+          <span className="text-xs text-zinc-600">—</span>
         )}
       </td>
       <td className="px-4 py-3 text-zinc-300">{action.title}</td>
