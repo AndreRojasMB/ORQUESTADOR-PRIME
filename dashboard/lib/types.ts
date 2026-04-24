@@ -263,6 +263,34 @@ export interface ActionStoreData {
   proposals: ActionProposal[];
 }
 
+// ─── Execution results (mirrors src/actions/types.ts) ───────────
+
+export type ExecutionOutcome =
+  | "success"
+  | "failure"
+  | "dry-run"
+  | "deferred"
+  | "blocked";
+
+export interface ExecutionResult {
+  id: string;
+  proposalId: string;
+  category: ActionCategory;
+  startedAt: string;
+  finishedAt: string;
+  durationMs: number;
+  outcome: ExecutionOutcome;
+  ok: boolean;
+  message: string;
+  output: unknown;
+  actor: string;
+}
+
+export interface ExecutionResultStoreData {
+  version: string;
+  results: ExecutionResult[];
+}
+
 // ─── Defaults ───────────────────────────────────────────────────
 
 export const EMPTY_MEMORY_STORE: MemoryStore = {
@@ -278,6 +306,11 @@ export const EMPTY_TRAJECTORY_STORE: TrajectoryStore = {
 export const EMPTY_ACTION_STORE: ActionStoreData = {
   version: "1.0",
   proposals: [],
+};
+
+export const EMPTY_EXECUTION_RESULT_STORE: ExecutionResultStoreData = {
+  version: "1.0",
+  results: [],
 };
 
 export const DEFAULT_USER_CONFIG: UserConfig = {

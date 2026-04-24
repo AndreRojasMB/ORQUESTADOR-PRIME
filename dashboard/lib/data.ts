@@ -15,11 +15,14 @@ import type {
   Trajectory,
   ActionStoreData,
   ActionProposal,
+  ExecutionResult,
+  ExecutionResultStoreData,
 } from "./types";
 import {
   EMPTY_MEMORY_STORE,
   EMPTY_TRAJECTORY_STORE,
   EMPTY_ACTION_STORE,
+  EMPTY_EXECUTION_RESULT_STORE,
   DEFAULT_USER_CONFIG,
 } from "./types";
 
@@ -137,6 +140,42 @@ export async function getActionsByTraceId(traceId: string): Promise<ActionPropos
 export async function getActionsByTrajectoryId(trajectoryId: string): Promise<ActionProposal[]> {
   const store = await readActionStore();
   return store.proposals.filter((p) => p.trajectoryId === trajectoryId);
+}
+
+// ─── Execution results ──────────────────────────────────────────
+
+function actionExecutionsPath(): string {
+  return join(getDataDir(), "action-executions.json");
+}
+
+export async function readExecutionResultStore(): Promise<ExecutionResultStoreData> {
+  const store = await readJsonFile<ExecutionResultStoreData>(actionExecutionsPath(), {
+    ...EMPTY_EXECUTION_RESULT_STORE,
+    results: [],
+  });
+
+  if (!Array.isArray(store.results)) {
+    store.results = [];
+  }
+
+  return store;
+}
+
+export async function getExecutionResults(): Promise<ExecutionResult[]> {
+  const store = await readExecutionResultStore();
+  return store.results;
+}
+
+export async function getExecutionResultsByProposalId(
+  proposalId: string,
+): Promise<ExecutionResult[]> {
+  const store = await readExecutionResultStore();
+  return store.results.filter((r) => r.proposalId === proposalId);
+}
+
+export async function getRecentExecutionResults(n = 10): Promise<ExecutionResult[]> {
+  const store = await readExecutionResultStore();
+  return store.results.slice(-n).reverse();
 }
 
 // ─── Config ─────────────────────────────────────────────────────

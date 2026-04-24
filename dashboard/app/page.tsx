@@ -4,6 +4,7 @@ import {
   readConfig,
   getTrajectories,
   getActions,
+  getExecutionResults,
 } from "@/lib/data";
 import { classifyForDistillation } from "@/lib/distillation";
 import { Card } from "@/components/Card";
@@ -33,13 +34,26 @@ const TIER_PILL: Record<DistillationTier, string> = {
 };
 
 export default async function OverviewPage() {
-  const [store, recent, config, trajectories, actions] = await Promise.all([
+  const [store, recent, config, trajectories, actions, executions] = await Promise.all([
     readMemoryStore(),
     getRecentEntries(5),
     readConfig(),
     getTrajectories(),
     getActions(),
+    getExecutionResults(),
   ]);
+
+  const dispatchTotal = executions.length;
+  let dispatchSuccess = 0;
+  let dispatchDryRun = 0;
+  let dispatchFailOrBlocked = 0;
+  let dispatchDeferred = 0;
+  for (const r of executions) {
+    if (r.outcome === "success") dispatchSuccess++;
+    else if (r.outcome === "dry-run") dispatchDryRun++;
+    else if (r.outcome === "failure" || r.outcome === "blocked") dispatchFailOrBlocked++;
+    else if (r.outcome === "deferred") dispatchDeferred++;
+  }
 
   const totalRuns = store.entries.length;
   const lastRun = store.lastRun ? relativeTime(store.lastRun) : "never";
@@ -129,6 +143,21 @@ export default async function OverviewPage() {
           label="Pending Approvals"
           value={pendingApprovals}
           sub={actions.length > 0 ? `of ${actions.length} actions` : "no actions"}
+        />
+        <Card
+          label="Dispatches"
+          value={dispatchTotal}
+          sub={dispatchTotal > 0 ? `${dispatchSuccess} success` : "none recorded"}
+        />
+        <Card
+          label="Dry-runs"
+          value={dispatchDryRun}
+          sub="tool-invoke dry-runs"
+        />
+        <Card
+          label="Failed/Blocked"
+          value={dispatchFailOrBlocked}
+          sub={`deferred: ${dispatchDeferred}`}
         />
       </div>
 

@@ -5,6 +5,7 @@ import {
   getTrajectoryByTraceId,
   getActionsByTraceId,
   getActionsByTrajectoryId,
+  getExecutionResultsByProposalId,
 } from "@/lib/data";
 import { classifyForDistillation } from "@/lib/distillation";
 import { Badge } from "@/components/Badge";
@@ -12,6 +13,7 @@ import { PhaseTimeline } from "@/components/PhaseTimeline";
 import type {
   Trajectory,
   ActionProposal,
+  ExecutionResult,
   DistillationResult,
   OutcomeStatus,
   ApprovalStatus,
@@ -52,6 +54,13 @@ export default async function RunDetailPage({ params }: { params: Params }) {
     ? await getActionsByTrajectoryId(trajectory.id)
     : [];
   const relatedActions = dedupeActions([...actionsByTrace, ...actionsByTrajectory]);
+
+  const executionsByProposal = new Map<string, ExecutionResult[]>();
+  for (const action of relatedActions) {
+    const runs = await getExecutionResultsByProposalId(action.id);
+    runs.sort((a, b) => (a.finishedAt < b.finishedAt ? 1 : -1));
+    executionsByProposal.set(action.id, runs);
+  }
 
   return (
     <div className="space-y-8">
@@ -162,7 +171,11 @@ export default async function RunDetailPage({ params }: { params: Params }) {
         {relatedActions.length > 0 ? (
           <div className="space-y-2">
             {relatedActions.map((a) => (
-              <ActionRow key={a.id} action={a} />
+              <ActionRow
+                key={a.id}
+                action={a}
+                executions={executionsByProposal.get(a.id) ?? []}
+              />
             ))}
           </div>
         ) : (
@@ -390,6 +403,25 @@ const ACTION_STATUS_COLORS: Record<string, string> = {
   expired: "bg-zinc-800 text-zinc-500",
 };
 
+const EXEC_OUTCOME_COLORS: Record<string, string> = {
+  success: "bg-green-900/50 text-green-300",
+  failure: "bg-red-900/50 text-red-300",
+  "dry-run": "bg-blue-900/50 text-blue-300",
+  deferred: "bg-amber-900/50 text-amber-300",
+  blocked: "bg-red-900/50 text-red-300",
+};
+
+const EXEC_HISTORY_LIMIT = 3;
+
+function execFormatMs(ms: number): string {
+  return ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${ms}ms`;
+}
+
+function truncateMessage(message: string, max = 180): string {
+  if (message.length <= max) return message;
+  return message.slice(0, max) + "…";
+}
+
 function Pill({ label, className }: { label: string; className: string }) {
   return (
     <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${className}`}>
@@ -412,7 +444,16 @@ function TierPill({ tier }: { tier: string }) {
   return <Pill label={tier} className={TIER_COLORS[tier] ?? "bg-zinc-800 text-zinc-400"} />;
 }
 
-function ActionRow({ action }: { action: ActionProposal }) {
+function ActionRow({
+  action,
+  executions,
+}: {
+  action: ActionProposal;
+  executions: ExecutionResult[];
+}) {
+  const shown = executions.slice(0, EXEC_HISTORY_LIMIT);
+  const extra = executions.length - shown.length;
+
   return (
     <div className="rounded border border-zinc-800 bg-zinc-900 px-4 py-3">
       <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -434,6 +475,39 @@ function ActionRow({ action }: { action: ActionProposal }) {
       {action.description && (
         <p className="mt-1 text-xs text-zinc-500">{action.description}</p>
       )}
+
+      <div className="mt-3 border-t border-zinc-800 pt-2">
+        <p className="mb-1 text-xs uppercase tracking-wider text-zinc-500">
+          Execution History
+        </p>
+        {shown.length === 0 ? (
+          <p className="text-xs text-zinc-600">No executions recorded.</p>
+        ) : (
+          <div className="space-y-1.5">
+            {shown.map((r) => (
+              <div key={r.id} className="text-xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Pill
+                    label={r.outcome}
+                    className={EXEC_OUTCOME_COLORS[r.outcome] ?? "bg-zinc-800 text-zinc-400"}
+                  />
+                  <span className="text-zinc-400">{execFormatMs(r.durationMs)}</span>
+                  <span className="text-zinc-500">·</span>
+                  <span className="text-zinc-400">{r.actor}</span>
+                  <span className="text-zinc-500">·</span>
+                  <span className="text-zinc-500">{formatTimestamp(r.finishedAt)}</span>
+                </div>
+                {r.message && (
+                  <p className="mt-0.5 text-zinc-500">{truncateMessage(r.message)}</p>
+                )}
+              </div>
+            ))}
+            {extra > 0 && (
+              <p className="text-xs text-zinc-600">+{extra} earlier execution{extra === 1 ? "" : "s"}</p>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

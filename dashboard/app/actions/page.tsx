@@ -1,15 +1,68 @@
 import Link from "next/link";
-import { getActions } from "@/lib/data";
+import { getActions, getExecutionResults } from "@/lib/data";
 import type {
   ActionProposal,
   ActionStatus,
   ActionRiskLevel,
+  ExecutionOutcome,
+  ExecutionResult,
 } from "@/lib/types";
 
 type SearchParams = Promise<{
   status?: string | string[];
   risk?: string | string[];
+  exec?: string | string[];
 }>;
+
+const EXEC_VALUES: Array<ExecutionOutcome | "none"> = [
+  "success",
+  "failure",
+  "dry-run",
+  "deferred",
+  "blocked",
+  "none",
+];
+
+const EXEC_COLORS: Record<string, string> = {
+  success: "bg-green-900/50 text-green-300",
+  failure: "bg-red-900/50 text-red-300",
+  "dry-run": "bg-blue-900/50 text-blue-300",
+  deferred: "bg-amber-900/50 text-amber-300",
+  blocked: "bg-red-900/50 text-red-300",
+};
+
+function relativeTime(iso: string): string {
+  try {
+    const ms = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(ms / 60_000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  } catch {
+    return "unknown";
+  }
+}
+
+function formatMs(ms: number): string {
+  return ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${ms}ms`;
+}
+
+function buildExecutionMap(results: ExecutionResult[]): Map<string, ExecutionResult[]> {
+  const map = new Map<string, ExecutionResult[]>();
+  for (const r of results) {
+    const arr = map.get(r.proposalId);
+    if (arr) arr.push(r);
+    else map.set(r.proposalId, [r]);
+  }
+  // Newest first within each bucket.
+  for (const arr of map.values()) {
+    arr.sort((a, b) => (a.finishedAt < b.finishedAt ? 1 : -1));
+  }
+  return map;
+}
 
 const STATUS_VALUES: ActionStatus[] = [
   "proposed",
@@ -85,12 +138,26 @@ export default async function ActionsPage({
   const sp = await searchParams;
   const statusFilter = firstParam(sp.status);
   const riskFilter = firstParam(sp.risk);
+  const execFilter = firstParam(sp.exec);
 
-  const allActions = await getActions();
+  const [allActions, allExecutions] = await Promise.all([
+    getActions(),
+    getExecutionResults(),
+  ]);
+
+  const execMap = buildExecutionMap(allExecutions);
 
   const filtered = allActions.filter((a) => {
     if (statusFilter && statusFilter !== "all" && a.status !== statusFilter) return false;
     if (riskFilter && riskFilter !== "all" && a.riskLevel !== riskFilter) return false;
+    if (execFilter && execFilter !== "all") {
+      const runs = execMap.get(a.id) ?? [];
+      if (execFilter === "none") {
+        if (runs.length > 0) return false;
+      } else {
+        if (!runs.some((r) => r.outcome === execFilter)) return false;
+      }
+    }
     return true;
   });
 
@@ -150,13 +217,30 @@ export default async function ActionsPage({
             ))}
           </select>
         </div>
+        <div>
+          <label className="mb-1 block text-xs uppercase tracking-wider text-zinc-500">
+            Execution
+          </label>
+          <select
+            name="exec"
+            defaultValue={execFilter ?? "all"}
+            className="rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-200"
+          >
+            <option value="all">all</option>
+            {EXEC_VALUES.map((e) => (
+              <option key={e} value={e}>
+                {e}
+              </option>
+            ))}
+          </select>
+        </div>
         <button
           type="submit"
           className="rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-700"
         >
           Apply
         </button>
-        {(statusFilter || riskFilter) && (
+        {(statusFilter || riskFilter || execFilter) && (
           <Link
             href="/actions"
             className="text-xs text-zinc-500 hover:text-zinc-300"
@@ -185,12 +269,19 @@ export default async function ActionsPage({
                 <th className="px-4 py-3">Risk</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Source</th>
+                <th className="px-4 py-3">Dispatches</th>
+                <th className="px-4 py-3">Last Outcome</th>
+                <th className="px-4 py-3">Last Run</th>
                 <th className="px-4 py-3">Title</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-800/50">
               {sorted.map((a) => (
-                <ActionRow key={a.id} action={a} />
+                <ActionRow
+                  key={a.id}
+                  action={a}
+                  executions={execMap.get(a.id) ?? []}
+                />
               ))}
             </tbody>
           </table>
@@ -200,10 +291,20 @@ export default async function ActionsPage({
   );
 }
 
-function ActionRow({ action }: { action: ActionProposal }) {
+function ActionRow({
+  action,
+  executions,
+}: {
+  action: ActionProposal;
+  executions: ExecutionResult[];
+}) {
   const sourceColor = SOURCE_COLORS[action.source] ?? "bg-zinc-800 text-zinc-400";
   const riskColor = RISK_COLORS[action.riskLevel] ?? "bg-zinc-800 text-zinc-400";
   const statusColor = STATUS_COLORS[action.status] ?? "bg-zinc-800 text-zinc-400";
+  const last = executions[0];
+  const lastOutcomeColor = last
+    ? EXEC_COLORS[last.outcome] ?? "bg-zinc-800 text-zinc-400"
+    : "bg-zinc-800 text-zinc-500";
 
   return (
     <tr className="transition-colors hover:bg-zinc-900/50">
@@ -221,6 +322,24 @@ function ActionRow({ action }: { action: ActionProposal }) {
       </td>
       <td className="px-4 py-3">
         <Pill label={action.source} className={sourceColor} />
+      </td>
+      <td className="px-4 py-3 text-xs text-zinc-300">{executions.length}</td>
+      <td className="px-4 py-3">
+        {last ? (
+          <Pill label={last.outcome} className={lastOutcomeColor} />
+        ) : (
+          <span className="text-xs text-zinc-600">—</span>
+        )}
+      </td>
+      <td className="whitespace-nowrap px-4 py-3 text-xs text-zinc-400">
+        {last ? (
+          <>
+            <span>{relativeTime(last.finishedAt)}</span>
+            <span className="ml-2 text-zinc-600">{formatMs(last.durationMs)}</span>
+          </>
+        ) : (
+          <span className="text-zinc-600">—</span>
+        )}
       </td>
       <td className="px-4 py-3 text-zinc-300">{action.title}</td>
     </tr>
