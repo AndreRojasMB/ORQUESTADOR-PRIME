@@ -1,6 +1,6 @@
 import { Agent } from "@openai/agents";
 import { MODELS } from "../config.js";
-import { MOTION_RULES } from "./rules/designMotion.js";
+import { MOTION_RULES, ANIMATION_LIBRARY_RULES } from "./rules/designMotion.js";
 
 export const motionFxAgent = new Agent({
   name: "UI Motion & Visual FX Agent",
@@ -24,5 +24,7 @@ When to involve other agents:
 - You define how things move — others define where and why
 
 ${MOTION_RULES}
+
+${ANIMATION_LIBRARY_RULES}
 `.trim(),
 });

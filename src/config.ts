@@ -41,6 +41,9 @@ const envSchema = z.object({
   // Omi — opcional, secret para validar webhooks entrantes
   OMI_WEBHOOK_SECRET: z.string().optional(),
 
+  // Context format — prompt-only; default text preserves pre-31B behavior
+  CONTEXT_FORMAT: z.enum(["text", "toon"]).default("text"),
+
   // Coolify — opcional, solo activo si COOLIFY_API_TOKEN existe
   COOLIFY_API_URL:      z.string().default("http://localhost:8000"),
   COOLIFY_API_TOKEN:    z.string().optional(),
@@ -107,6 +110,8 @@ export const COOLIFY_CONFIG = {
 export const OMI_CONFIG = {
   webhookSecret: env.OMI_WEBHOOK_SECRET,
 } as const;
+
+export const CONTEXT_FORMAT: "text" | "toon" = env.CONTEXT_FORMAT;
 
 export const GITHUB_CONFIG = {
   token:   env.GITHUB_TOKEN,

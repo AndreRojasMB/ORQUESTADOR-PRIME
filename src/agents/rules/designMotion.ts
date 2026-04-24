@@ -84,6 +84,64 @@ Color:
 - Ensure 4.5:1 contrast ratio for text, 3:1 for large text and UI
 `.trim();
 
+export const ANIMATION_LIBRARY_RULES = `
+Motion Library Selection:
+- Use motion only when it clarifies state, direction, or hierarchy. When in doubt, do nothing.
+- Default to CSS transitions for single-property state changes (hover, focus, toggle).
+- Reach for a library only when CSS can't express the need.
+
+When to pick CSS:
+- Micro-interactions on a single element (one transform + opacity, < 300ms).
+- Any state change that's already covered by a :hover / :focus / data-attribute rule.
+- No dependency, no JS cost — always the first choice.
+
+When to pick Framer Motion:
+- React projects that already use it, or need AnimatePresence for mount/unmount.
+- Layout animations driven by React state changes.
+- Drag/gesture interactions on components.
+- Preferred for component-local motion inside a React tree.
+
+When to pick GSAP:
+- Long, multi-target choreography or scroll-linked sequences (ScrollTrigger).
+- High-density timelines where frame-accurate control matters.
+- Projects already using GSAP — do not introduce a second heavy library.
+
+When to pick Anime.js (optional):
+- SVG path draw-on, line morph, or shape stroke animation (its strongest use case).
+- Grid / text-split stagger with \`anime.stagger()\` where Framer's stagger is too coarse.
+- Short DOM timelines that don't justify GSAP's footprint.
+- Projects that already depend on Anime.js.
+
+Optionality contract for Anime.js:
+- Assume Anime.js is NOT installed unless the task brief, package.json, or existing imports indicate otherwise.
+- Do not emit \`import anime from "animejs"\` without first confirming the dependency exists, or
+  without including a visible install instruction (\`npm install animejs\`) in the generated plan/blueprint.
+- If unsure whether the project has Anime.js, fall back to CSS or Framer Motion.
+- Never silently add Anime.js to a scaffold or starter template.
+
+React usage pattern (Anime.js):
+- Use useRef for each animation target; avoid class-based selectors when a ref works.
+- Start the animation inside useEffect after mount; capture the returned instance so you can
+  pause / seek / remove it on cleanup.
+- For lists, apply \`delay: anime.stagger(60)\` (matches the 50–80ms stagger rule).
+- Keep timelines short-lived and idempotent — tear down on unmount.
+- Do not mix Anime.js and Framer Motion within the same component. Pick one per concern.
+
+Accessibility (applies to every library):
+- Branch on \`window.matchMedia("(prefers-reduced-motion: reduce)").matches\` before playing any non-CSS animation.
+- Under reduced motion: skip transforms, cap opacity fades at 200ms, set the final state immediately.
+- Animation must never block user input or hide critical content behind completion.
+- Library choice cannot bypass MOTION_RULES — reduced-motion remains authoritative.
+
+Library per motion category:
+- Micro-interactions (hover, press, toggle) — CSS preferred; Framer acceptable; Anime overkill.
+- Enter/exit transitions — Framer (AnimatePresence) for React; Anime viable if already present.
+- Stagger / list reveal — Framer or Anime (Anime strength); CSS for tiny lists.
+- Scroll-linked — GSAP ScrollTrigger or Framer scroll utilities; Anime + IntersectionObserver as a lighter alternative.
+- SVG path / line / stroke — Anime preferred; GSAP second; rarely feasible in CSS.
+- Timelines / multi-step choreography — GSAP or Anime; Framer is limited here.
+`.trim();
+
 export const LAYOUT_RULES = `
 Vertical Rhythm:
 - Use consistent vertical spacing from the spacing scale

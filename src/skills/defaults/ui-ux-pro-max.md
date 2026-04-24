@@ -27,6 +27,15 @@
 - Dark mode: never invert colors — define a separate token set
 - Limit palette to 1 primary, 1 accent, 3-4 neutrals
 
+## Motion Library Selection
+- Default to CSS transitions for single-property state changes (hover, focus, toggle)
+- Reach for Framer Motion in React projects needing AnimatePresence, layout animations, or gestures
+- Reach for GSAP when you need long multi-target choreography or scroll-linked timelines (ScrollTrigger)
+- Reach for Anime.js (optional) for SVG path/line draw-ons, fine-grained stagger, or short DOM timelines
+- Do not mix two animation libraries in the same component — pick one per concern
+- Anime.js is optional: assume it is not installed unless package.json says otherwise; suggest `npm install animejs` explicitly before using it, never silently
+- Never let the library choice bypass reduced-motion rules — accessibility wins
+
 ## Anti-Patterns
 - No horizontal scroll on mobile viewports
 - No auto-playing media without user opt-in

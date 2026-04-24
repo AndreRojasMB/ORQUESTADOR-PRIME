@@ -5,6 +5,8 @@
 import { retrieveRelevantTrajectories } from "./trajectoryRetriever.js";
 import type { ScoredTrajectory } from "./trajectoryRetriever.js";
 import type { OrchestratorMode } from "../types.js";
+import { CONTEXT_FORMAT } from "../config.js";
+import { toonSerializeTable, type ToonCell } from "../context/toonSerializer.js";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -130,7 +132,60 @@ function buildLearningBlock(signals: LearningSignals): string {
   return parts.join("\n");
 }
 
-function buildContextString(
+const TASK_MAX_CHARS = 80;
+const TRUST_REASON_MAX_CHARS = 40;
+
+function truncate(s: string, max: number): string {
+  return s.length <= max ? s : s.slice(0, max - 1) + "…";
+}
+
+function buildToonRunsBlock(runs: ScoredTrajectory[]): string {
+  const headers = [
+    "status",
+    "mode",
+    "task",
+    "agents",
+    "dur_ms",
+    "judge",
+    "outcome",
+    "trust",
+    "trust_reason",
+  ];
+  const rows: ToonCell[][] = runs.map((scored) => {
+    const t = scored.trajectory;
+    return [
+      t.result.parseSuccess ? "ok" : "fail",
+      t.intent.mode,
+      truncate(t.intent.task, TASK_MAX_CHARS),
+      t.agentsUsed.join("+"),
+      t.durationMs,
+      t.judgeScore ?? null,
+      t.outcome ?? null,
+      scored.tier ?? null,
+      scored.tierReason ? truncate(scored.tierReason, TRUST_REASON_MAX_CHARS) : null,
+    ];
+  });
+  return toonSerializeTable({ name: "trajectories", headers, rows });
+}
+
+function buildRunErrorsProse(runs: ScoredTrajectory[]): string[] {
+  const out: string[] = [];
+  for (const scored of runs) {
+    const t = scored.trajectory;
+    if (t.errors.length > 0) {
+      const joined = t.errors.map((e) => e.message).join("; ").slice(0, 120);
+      out.push(`Errors [${t.intent.mode}]: ${joined}`);
+    }
+    if (scored.tier === "weak") {
+      out.push(
+        `Caution [${t.intent.mode}]: weak-tier — use as cautionary reference, not canonical.`,
+      );
+    }
+  }
+  return out;
+}
+
+function buildTextContextString(
   runs: ScoredTrajectory[],
   signals: LearningSignals,
 ): string {
@@ -154,14 +209,69 @@ function buildContextString(
 
   parts.push("── End Prior Run Context ──");
 
-  let result = parts.join("\n");
+  return parts.join("\n");
+}
 
-  // Enforce context budget
-  if (result.length > MAX_CONTEXT_CHARS) {
-    result = result.slice(0, MAX_CONTEXT_CHARS - 15) + "\n[...truncated]";
+function buildToonContextString(
+  runs: ScoredTrajectory[],
+  signals: LearningSignals,
+): string {
+  const parts: string[] = ["── Prior Run Context (trajectory learning) ──"];
+
+  if (runs.some((r) => r.tier)) {
+    parts.push(
+      "Filtered to trusted/usable runs (+ weak as backfill); unusable excluded.",
+    );
   }
 
+  parts.push(buildToonRunsBlock(runs));
+
+  const prose = buildRunErrorsProse(runs);
+  if (prose.length > 0) {
+    parts.push("");
+    parts.push(...prose);
+  }
+
+  const learningBlock = buildLearningBlock(signals);
+  if (learningBlock) {
+    parts.push("");
+    parts.push(learningBlock);
+  }
+
+  parts.push("── End Prior Run Context ──");
+
+  return parts.join("\n");
+}
+
+function applyBudget(result: string): string {
+  if (result.length > MAX_CONTEXT_CHARS) {
+    return result.slice(0, MAX_CONTEXT_CHARS - 15) + "\n[...truncated]";
+  }
   return result;
+}
+
+function buildContextString(
+  runs: ScoredTrajectory[],
+  signals: LearningSignals,
+): string {
+  const textResult = buildTextContextString(runs, signals);
+
+  // Default behavior unchanged. TOON path is opt-in via CONTEXT_FORMAT=toon,
+  // and only used when it produces a shorter block than the text equivalent.
+  if (CONTEXT_FORMAT !== "toon") {
+    return applyBudget(textResult);
+  }
+
+  try {
+    const toonResult = buildToonContextString(runs, signals);
+    const chosen =
+      toonResult.length > 0 && toonResult.length < textResult.length
+        ? toonResult
+        : textResult;
+    return applyBudget(chosen);
+  } catch {
+    return applyBudget(textResult);
+  }
 }
 
 // ─── Main builder ───────────────────────────────────────────────
