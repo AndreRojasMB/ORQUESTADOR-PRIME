@@ -119,3 +119,35 @@ export interface ExecutionResultStoreData {
   version: string;
   results: ExecutionResult[];
 }
+
+// ─── Second Approval (Phase 32A) ────────────────────────────────
+// Single-use, short-lived, parameter-bound authorization used as a
+// second gate in front of repo-mutating dispatch. Real execution
+// stays OFF in 32A (ACTIONS_REAL_EXECUTION_ENABLED=false); this store
+// lands the infrastructure so future phases can consume it.
+
+export type SecondApprovalStatus =
+  | "granted"
+  | "consumed"
+  | "expired"
+  | "revoked";
+
+export interface SecondApproval {
+  id: string;
+  proposalId: string;
+  grantedBy: string;
+  grantedAt: string;
+  expiresAt: string;
+  status: SecondApprovalStatus;
+  consumedAt: string | null;
+  revokedAt: string | null;
+  // Hash of canonical JSON of the proposal parameters at grant time.
+  // Guards against parameter drift between grant and consume.
+  proposalParameterHash: string;
+  proposalStatusAtGrant: ActionStatus;
+}
+
+export interface SecondApprovalStoreData {
+  version: string;
+  approvals: SecondApproval[];
+}

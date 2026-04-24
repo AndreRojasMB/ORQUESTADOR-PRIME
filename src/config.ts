@@ -44,6 +44,12 @@ const envSchema = z.object({
   // Context format — prompt-only; default text preserves pre-31B behavior
   CONTEXT_FORMAT: z.enum(["text", "toon"]).default("text"),
 
+  // Phase 32A — real repo-mutating dispatch stays OFF by default.
+  // Previews run without this flag; real execution requires a future phase to flip it.
+  ACTIONS_REAL_EXECUTION_ENABLED: z.string().default("false"),
+  // Phase 32A — TTL for single-use second approvals (ms). 15 minutes default.
+  SECOND_APPROVAL_TTL_MS: z.string().default("900000"),
+
   // Coolify — opcional, solo activo si COOLIFY_API_TOKEN existe
   COOLIFY_API_URL:      z.string().default("http://localhost:8000"),
   COOLIFY_API_TOKEN:    z.string().optional(),
@@ -112,6 +118,14 @@ export const OMI_CONFIG = {
 } as const;
 
 export const CONTEXT_FORMAT: "text" | "toon" = env.CONTEXT_FORMAT;
+
+export const ACTIONS_REAL_EXECUTION_ENABLED: boolean =
+  env.ACTIONS_REAL_EXECUTION_ENABLED === "true";
+
+export const SECOND_APPROVAL_TTL_MS: number = (() => {
+  const n = Number(env.SECOND_APPROVAL_TTL_MS);
+  return Number.isFinite(n) && n > 0 ? n : 900_000;
+})();
 
 export const GITHUB_CONFIG = {
   token:   env.GITHUB_TOKEN,

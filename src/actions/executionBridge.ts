@@ -11,13 +11,19 @@
 // No proposal status is mutated by dispatch.
 
 import { logger } from "../observability/logger.js";
-import { isOpenClawAvailable } from "../config.js";
+import { isOpenClawAvailable, ACTIONS_REAL_EXECUTION_ENABLED } from "../config.js";
 import { toolInvoke } from "../openclaw/openclawClient.js";
 import { getProposalById } from "./actionStore.js";
 import {
   appendExecutionResult,
   hasSuccessfulExecution,
 } from "./executionResultStore.js";
+import {
+  previewFileWrite,
+  previewGitBranch,
+  previewPrCreate,
+  type PreviewResult,
+} from "./repoActionExecutor.js";
 import type {
   ActionCategory,
   ActionProposal,
@@ -233,11 +239,18 @@ const FORBIDDEN_CATEGORIES: Set<ActionCategory> = new Set([
 ]);
 
 const DEFERRED_CATEGORIES: Set<ActionCategory> = new Set([
+  "config-change",
+  "other",
+]);
+
+// Phase 32A — preview-only categories. Real execution stays gated on
+// ACTIONS_REAL_EXECUTION_ENABLED, which defaults to false. When the flag
+// is on in a future phase, these categories will consume a second approval
+// and delegate to src/execution/*; for 32A they always return a preview.
+const PREVIEW_CATEGORIES: Set<ActionCategory> = new Set([
   "file-write",
   "git-branch",
   "pr-create",
-  "config-change",
-  "other",
 ]);
 
 function buildBlockedResult(proposal: ActionProposal): DispatchResult {
@@ -258,6 +271,65 @@ function buildDeferredResult(proposal: ActionProposal): DispatchResult {
   };
 }
 
+// ─── Preview handler (Phase 32A) ────────────────────────────────
+
+async function handleRepoPreview(proposal: ActionProposal): Promise<DispatchResult> {
+  if (ACTIONS_REAL_EXECUTION_ENABLED) {
+    // Real execution path lives in a future phase. Refuse here so a
+    // runaway flag flip without accompanying code cannot mutate the repo.
+    logger.warn("action:dispatch real execution flag set but handler not implemented", {
+      id: proposal.id,
+      category: proposal.category,
+    });
+    return {
+      ok: false,
+      category: proposal.category,
+      message:
+        "Real execution for this category is not implemented in Phase 32A; previews only.",
+      output: null,
+    };
+  }
+
+  let preview: PreviewResult;
+  try {
+    if (proposal.category === "file-write") {
+      preview = await previewFileWrite(proposal);
+    } else if (proposal.category === "git-branch") {
+      preview = await previewGitBranch(proposal);
+    } else if (proposal.category === "pr-create") {
+      preview = await previewPrCreate(proposal);
+    } else {
+      return buildDeferredResult(proposal);
+    }
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    logger.warn("action:preview threw", {
+      id: proposal.id,
+      category: proposal.category,
+      error: errorMsg,
+    });
+    return {
+      ok: false,
+      category: proposal.category,
+      message: `Preview failed: ${errorMsg}`,
+      output: null,
+    };
+  }
+
+  return {
+    ok: preview.ok,
+    category: proposal.category,
+    message: `${preview.message} (preview only — no repo mutation)`,
+    output: {
+      dryRun: true,
+      kind: preview.kind,
+      preview: preview.preview,
+      warnings: preview.warnings,
+      rollbackPlan: preview.rollbackPlan,
+    },
+  };
+}
+
 // ─── Outcome classification ─────────────────────────────────────
 
 function outcomeFor(
@@ -267,6 +339,13 @@ function outcomeFor(
   if (FORBIDDEN_CATEGORIES.has(category)) return "blocked";
   if (DEFERRED_CATEGORIES.has(category)) return "deferred";
   if (category === "tool-invoke") return "dry-run";
+  if (PREVIEW_CATEGORIES.has(category)) {
+    // Preview handler refuses when ACTIONS_REAL_EXECUTION_ENABLED is set
+    // without a real implementation; record that as a failure so it is
+    // visible in the execution log. Otherwise every preview is dry-run.
+    if (ACTIONS_REAL_EXECUTION_ENABLED) return "failure";
+    return "dry-run";
+  }
   if (dispatch.ok) return "success";
   return "failure";
 }
@@ -337,6 +416,12 @@ export async function dispatchAction(
         category: proposal.category,
       });
       result = buildDeferredResult(proposal);
+    } else if (PREVIEW_CATEGORIES.has(proposal.category)) {
+      logger.info("action:dispatch preview", {
+        id: proposal.id,
+        category: proposal.category,
+      });
+      result = await handleRepoPreview(proposal);
     } else {
       switch (proposal.category) {
         case "query":
