@@ -38,6 +38,9 @@ const envSchema = z.object({
   LIGHTRAG_BASE_URL: z.string().default("http://localhost:9621"),
   LIGHTRAG_API_KEY:  z.string().optional(),
 
+  // Omi — opcional, secret para validar webhooks entrantes
+  OMI_WEBHOOK_SECRET: z.string().optional(),
+
   // Coolify — opcional, solo activo si COOLIFY_API_TOKEN existe
   COOLIFY_API_URL:      z.string().default("http://localhost:8000"),
   COOLIFY_API_TOKEN:    z.string().optional(),
@@ -99,6 +102,10 @@ export const COOLIFY_CONFIG = {
   token:       env.COOLIFY_API_TOKEN,
   projectUuid: env.COOLIFY_PROJECT_UUID,
   serverUuid:  env.COOLIFY_SERVER_UUID,
+} as const;
+
+export const OMI_CONFIG = {
+  webhookSecret: env.OMI_WEBHOOK_SECRET,
 } as const;
 
 export const GITHUB_CONFIG = {

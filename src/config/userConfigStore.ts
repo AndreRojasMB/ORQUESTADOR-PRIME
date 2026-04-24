@@ -68,6 +68,11 @@ export function mergeWithDefaults(partial: Partial<UserConfig>): UserConfig {
       enabled: partial.skills?.enabled ?? DEFAULT_USER_CONFIG.skills!.enabled,
       agentMap: { ...DEFAULT_USER_CONFIG.skills!.agentMap, ...partial.skills?.agentMap },
     },
+    omi: {
+      enabled: partial.omi?.enabled ?? DEFAULT_USER_CONFIG.omi!.enabled,
+      allowedEventTypes:
+        partial.omi?.allowedEventTypes ?? DEFAULT_USER_CONFIG.omi!.allowedEventTypes,
+    },
   };
 }
 

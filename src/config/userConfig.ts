@@ -3,6 +3,7 @@
 
 import type { ProviderName } from "../providers/types.js";
 import type { WhatsAppConfig } from "../whatsapp/types.js";
+import type { OmiConfig } from "../omi/types.js";
 
 export interface RoutingRule {
   keywords: string[];
@@ -29,6 +30,7 @@ export interface UserConfig {
   allowedDomains: string[];
   whatsapp: WhatsAppConfig;
   skills?: SkillsConfig;
+  omi?: OmiConfig;
 }
 
 export const DEFAULT_USER_CONFIG: UserConfig = {
@@ -50,5 +52,9 @@ export const DEFAULT_USER_CONFIG: UserConfig = {
   skills: {
     enabled: [],
     agentMap: {},
+  },
+  omi: {
+    enabled: false,
+    allowedEventTypes: ["memory_created"],
   },
 };

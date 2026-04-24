@@ -150,8 +150,9 @@ export interface MemoryEntry {
   keywords: string[]; // keywords del router
   summary?: string; // resumen del output si existe
   outputDir?: string; // para scaffold — dónde se generó
-  traceId: string; // link al TraceRecord
+  traceId: string | null; // link al TraceRecord — null for external ingestion
   trace?: import("./observability/tracer.js").TraceRecord | undefined;
+  source?: TrajectorySource; // channel that produced this entry
 }
 
 export interface MemoryStore {
@@ -169,7 +170,14 @@ export type ApprovalStatus =
   | "rejected"
   | "auto"
   | null;
-export type OutcomeStatus = "merged" | "reverted" | "ci_failed" | null;
+export type OutcomeStatus =
+  | "completed"
+  | "partial"
+  | "merged"
+  | "reverted"
+  | "ci_failed"
+  | "rejected"
+  | null;
 
 export interface TrajectoryProviderCall {
   provider: ProviderName;
