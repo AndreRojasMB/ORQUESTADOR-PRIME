@@ -1,6 +1,7 @@
 import { readMemoryStore, getTrajectories } from "@/lib/data";
+import { classifyForDistillation } from "@/lib/distillation";
 import { RunTable } from "@/components/RunTable";
-import type { Trajectory } from "@/lib/types";
+import type { Trajectory, DistillationTier } from "@/lib/types";
 
 export default async function RunsPage() {
   const [store, trajectories] = await Promise.all([
@@ -10,8 +11,10 @@ export default async function RunsPage() {
   const entries = [...store.entries].reverse();
 
   const trajectoryMap = new Map<string, Trajectory>();
+  const tierMap = new Map<string, DistillationTier>();
   for (const t of trajectories) {
     trajectoryMap.set(t.traceId, t);
+    tierMap.set(t.traceId, classifyForDistillation(t).tier);
   }
 
   return (
@@ -22,7 +25,7 @@ export default async function RunsPage() {
           History of orchestrator executions ({entries.length} total).
         </p>
       </div>
-      <RunTable entries={entries} trajectoryMap={trajectoryMap} />
+      <RunTable entries={entries} trajectoryMap={trajectoryMap} tierMap={tierMap} />
     </div>
   );
 }

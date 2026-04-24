@@ -140,7 +140,14 @@ export interface AgentMeta {
 
 export type TrajectorySource = "cli" | "whatsapp" | "omi" | "dashboard" | null;
 export type ApprovalStatus = "pending" | "approved" | "rejected" | "auto" | null;
-export type OutcomeStatus = "merged" | "reverted" | "ci_failed" | null;
+export type OutcomeStatus =
+  | "completed"
+  | "partial"
+  | "merged"
+  | "reverted"
+  | "ci_failed"
+  | "rejected"
+  | null;
 
 export interface TrajectoryProviderCall {
   provider: ProviderName;
@@ -184,6 +191,78 @@ export interface TrajectoryStore {
   trajectories: Trajectory[];
 }
 
+// ─── Distillation (mirrors src/trajectory/distillationClassifier.ts) ──
+
+export type DistillationTier = "trusted" | "usable" | "weak" | "unusable";
+
+export interface DistillationResult {
+  tier: DistillationTier;
+  reasons: string[];
+}
+
+// ─── Actions (mirrors src/actions/types.ts) ─────────────────────
+
+export type ActionSource =
+  | "cli"
+  | "whatsapp"
+  | "omi"
+  | "dashboard"
+  | "openclaw"
+  | "system";
+
+export type ActionRiskLevel = "safe" | "review-required" | "forbidden";
+
+export type ActionCategory =
+  | "file-write"
+  | "file-delete"
+  | "git-branch"
+  | "git-push"
+  | "pr-create"
+  | "pr-merge"
+  | "tool-invoke"
+  | "deploy"
+  | "config-change"
+  | "notification"
+  | "query"
+  | "other";
+
+export type ActionStatus =
+  | "proposed"
+  | "classified"
+  | "pending-approval"
+  | "approved"
+  | "rejected"
+  | "expired"
+  | "executed"
+  | "failed";
+
+export type ApprovalPolicy = "require-human" | "never";
+
+export interface ActionProposal {
+  id: string;
+  createdAt: string;
+  source: ActionSource;
+  sourceEventId: string | null;
+  category: ActionCategory;
+  title: string;
+  description: string;
+  parameters: Record<string, unknown>;
+  riskLevel: ActionRiskLevel;
+  riskReason: string;
+  approvalPolicy: ApprovalPolicy;
+  status: ActionStatus;
+  decidedAt: string | null;
+  decidedBy: string | null;
+  expiresAt: string | null;
+  traceId: string | null;
+  trajectoryId: string | null;
+}
+
+export interface ActionStoreData {
+  version: string;
+  proposals: ActionProposal[];
+}
+
 // ─── Defaults ───────────────────────────────────────────────────
 
 export const EMPTY_MEMORY_STORE: MemoryStore = {
@@ -194,6 +273,11 @@ export const EMPTY_MEMORY_STORE: MemoryStore = {
 export const EMPTY_TRAJECTORY_STORE: TrajectoryStore = {
   version: "1.0",
   trajectories: [],
+};
+
+export const EMPTY_ACTION_STORE: ActionStoreData = {
+  version: "1.0",
+  proposals: [],
 };
 
 export const DEFAULT_USER_CONFIG: UserConfig = {

@@ -1,9 +1,21 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getEntryById, getTrajectoryByTraceId } from "@/lib/data";
+import {
+  getEntryById,
+  getTrajectoryByTraceId,
+  getActionsByTraceId,
+  getActionsByTrajectoryId,
+} from "@/lib/data";
+import { classifyForDistillation } from "@/lib/distillation";
 import { Badge } from "@/components/Badge";
 import { PhaseTimeline } from "@/components/PhaseTimeline";
-import type { Trajectory } from "@/lib/types";
+import type {
+  Trajectory,
+  ActionProposal,
+  DistillationResult,
+  OutcomeStatus,
+  ApprovalStatus,
+} from "@/lib/types";
 
 type Params = Promise<{ id: string }>;
 
@@ -32,6 +44,14 @@ export default async function RunDetailPage({ params }: { params: Params }) {
   }
 
   const trajectory = await getTrajectoryByTraceId(entry.traceId);
+  const distillation = trajectory ? classifyForDistillation(trajectory) : null;
+
+  // Related actions: join on traceId (and trajectory.id if available).
+  const actionsByTrace = await getActionsByTraceId(entry.traceId);
+  const actionsByTrajectory = trajectory
+    ? await getActionsByTrajectoryId(trajectory.id)
+    : [];
+  const relatedActions = dedupeActions([...actionsByTrace, ...actionsByTrajectory]);
 
   return (
     <div className="space-y-8">
@@ -133,9 +153,35 @@ export default async function RunDetailPage({ params }: { params: Params }) {
       </div>
 
       {/* Trajectory enrichment */}
-      {trajectory && <TrajectoryDetail trajectory={trajectory} />}
+      {trajectory && (
+        <TrajectoryDetail trajectory={trajectory} distillation={distillation} />
+      )}
+
+      {/* Related Actions */}
+      <Section title="Related Actions">
+        {relatedActions.length > 0 ? (
+          <div className="space-y-2">
+            {relatedActions.map((a) => (
+              <ActionRow key={a.id} action={a} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-zinc-600">No actions for this run.</p>
+        )}
+      </Section>
     </div>
   );
+}
+
+function dedupeActions(actions: ActionProposal[]): ActionProposal[] {
+  const seen = new Set<string>();
+  const out: ActionProposal[] = [];
+  for (const a of actions) {
+    if (seen.has(a.id)) continue;
+    seen.add(a.id);
+    out.push(a);
+  }
+  return out.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }
 
 function Section({
@@ -177,9 +223,50 @@ function formatMs(ms: number): string {
   return ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${ms}ms`;
 }
 
-function TrajectoryDetail({ trajectory }: { trajectory: Trajectory }) {
+function TrajectoryDetail({
+  trajectory,
+  distillation,
+}: {
+  trajectory: Trajectory;
+  distillation: DistillationResult | null;
+}) {
   return (
     <div className="space-y-6">
+      {/* Quality */}
+      <Section title="Quality">
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+            <div>
+              <span className="text-zinc-500">Judge: </span>
+              {trajectory.judgeScore != null ? (
+                <span className="font-mono text-zinc-300">{trajectory.judgeScore}</span>
+              ) : (
+                <span className="text-zinc-600">—</span>
+              )}
+            </div>
+            <div>
+              <span className="text-zinc-500">Outcome: </span>
+              <OutcomePill outcome={trajectory.outcome} />
+            </div>
+            <div>
+              <span className="text-zinc-500">Approval: </span>
+              <ApprovalPill approval={trajectory.approvalStatus} />
+            </div>
+            {distillation && (
+              <div>
+                <span className="text-zinc-500">Tier: </span>
+                <TierPill tier={distillation.tier} />
+              </div>
+            )}
+          </div>
+          {distillation && distillation.reasons.length > 0 && (
+            <p className="mt-2 text-xs text-zinc-500">
+              {distillation.reasons.join(" · ")}
+            </p>
+          )}
+        </div>
+      </Section>
+
       {/* Trajectory ID + Duration */}
       <Section title="Trajectory">
         <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
@@ -259,32 +346,93 @@ function TrajectoryDetail({ trajectory }: { trajectory: Trajectory }) {
         </Section>
       )}
 
-      {/* Approval / Outcome / Judge */}
-      {(trajectory.approvalStatus != null ||
-        trajectory.outcome != null ||
-        trajectory.judgeScore != null) && (
-        <Section title="Status">
-          <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-            {trajectory.approvalStatus != null && (
-              <div>
-                <span className="text-zinc-500">Approval: </span>
-                <span className="text-zinc-300">{trajectory.approvalStatus}</span>
-              </div>
-            )}
-            {trajectory.outcome != null && (
-              <div>
-                <span className="text-zinc-500">Outcome: </span>
-                <span className="text-zinc-300">{trajectory.outcome}</span>
-              </div>
-            )}
-            {trajectory.judgeScore != null && (
-              <div>
-                <span className="text-zinc-500">Judge Score: </span>
-                <span className="text-zinc-300">{trajectory.judgeScore}</span>
-              </div>
-            )}
-          </div>
-        </Section>
+    </div>
+  );
+}
+
+const TIER_COLORS: Record<string, string> = {
+  trusted: "bg-green-900/50 text-green-300",
+  usable: "bg-blue-900/50 text-blue-300",
+  weak: "bg-amber-900/50 text-amber-300",
+  unusable: "bg-zinc-800 text-zinc-500",
+};
+
+const OUTCOME_COLORS: Record<string, string> = {
+  completed: "bg-green-900/50 text-green-300",
+  merged: "bg-green-900/50 text-green-300",
+  partial: "bg-amber-900/50 text-amber-300",
+  rejected: "bg-red-900/50 text-red-300",
+  reverted: "bg-red-900/50 text-red-300",
+  ci_failed: "bg-red-900/50 text-red-300",
+};
+
+const APPROVAL_COLORS: Record<string, string> = {
+  approved: "bg-green-900/50 text-green-300",
+  pending: "bg-amber-900/50 text-amber-300",
+  auto: "bg-zinc-700/50 text-zinc-300",
+  rejected: "bg-red-900/50 text-red-300",
+};
+
+const RISK_COLORS: Record<string, string> = {
+  safe: "bg-green-900/50 text-green-300",
+  "review-required": "bg-amber-900/50 text-amber-300",
+  forbidden: "bg-red-900/50 text-red-300",
+};
+
+const ACTION_STATUS_COLORS: Record<string, string> = {
+  proposed: "bg-zinc-700/50 text-zinc-300",
+  classified: "bg-zinc-700/50 text-zinc-300",
+  "pending-approval": "bg-amber-900/50 text-amber-300",
+  approved: "bg-green-900/50 text-green-300",
+  executed: "bg-green-900/50 text-green-300",
+  rejected: "bg-red-900/50 text-red-300",
+  failed: "bg-red-900/50 text-red-300",
+  expired: "bg-zinc-800 text-zinc-500",
+};
+
+function Pill({ label, className }: { label: string; className: string }) {
+  return (
+    <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${className}`}>
+      {label}
+    </span>
+  );
+}
+
+function OutcomePill({ outcome }: { outcome: OutcomeStatus }) {
+  if (outcome == null) return <span className="text-zinc-600">—</span>;
+  return <Pill label={outcome} className={OUTCOME_COLORS[outcome] ?? "bg-zinc-800 text-zinc-400"} />;
+}
+
+function ApprovalPill({ approval }: { approval: ApprovalStatus }) {
+  if (approval == null) return <span className="text-zinc-600">—</span>;
+  return <Pill label={approval} className={APPROVAL_COLORS[approval] ?? "bg-zinc-800 text-zinc-400"} />;
+}
+
+function TierPill({ tier }: { tier: string }) {
+  return <Pill label={tier} className={TIER_COLORS[tier] ?? "bg-zinc-800 text-zinc-400"} />;
+}
+
+function ActionRow({ action }: { action: ActionProposal }) {
+  return (
+    <div className="rounded border border-zinc-800 bg-zinc-900 px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <Pill
+          label={action.category}
+          className="bg-zinc-700/50 text-zinc-300"
+        />
+        <Pill
+          label={action.riskLevel}
+          className={RISK_COLORS[action.riskLevel] ?? "bg-zinc-800 text-zinc-400"}
+        />
+        <Pill
+          label={action.status}
+          className={ACTION_STATUS_COLORS[action.status] ?? "bg-zinc-800 text-zinc-400"}
+        />
+        <span className="text-xs text-zinc-500">{formatTimestamp(action.createdAt)}</span>
+      </div>
+      <p className="mt-2 text-sm text-zinc-300">{action.title}</p>
+      {action.description && (
+        <p className="mt-1 text-xs text-zinc-500">{action.description}</p>
       )}
     </div>
   );

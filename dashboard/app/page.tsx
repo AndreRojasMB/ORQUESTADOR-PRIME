@@ -1,6 +1,14 @@
-import { readMemoryStore, getRecentEntries, readConfig, getTrajectories } from "@/lib/data";
+import {
+  readMemoryStore,
+  getRecentEntries,
+  readConfig,
+  getTrajectories,
+  getActions,
+} from "@/lib/data";
+import { classifyForDistillation } from "@/lib/distillation";
 import { Card } from "@/components/Card";
 import { RunTable } from "@/components/RunTable";
+import type { DistillationTier } from "@/lib/types";
 
 function relativeTime(iso: string): string {
   try {
@@ -17,12 +25,20 @@ function relativeTime(iso: string): string {
   }
 }
 
+const TIER_PILL: Record<DistillationTier, string> = {
+  trusted: "bg-green-900/50 text-green-300",
+  usable: "bg-blue-900/50 text-blue-300",
+  weak: "bg-amber-900/50 text-amber-300",
+  unusable: "bg-zinc-800 text-zinc-500",
+};
+
 export default async function OverviewPage() {
-  const [store, recent, config, trajectories] = await Promise.all([
+  const [store, recent, config, trajectories, actions] = await Promise.all([
     readMemoryStore(),
     getRecentEntries(5),
     readConfig(),
     getTrajectories(),
+    getActions(),
   ]);
 
   const totalRuns = store.entries.length;
@@ -30,10 +46,43 @@ export default async function OverviewPage() {
   const activeModes = new Set(store.entries.map((e) => e.type)).size;
 
   const sourceBreakdown: Record<string, number> = {};
+  const tierCounts: Record<DistillationTier, number> = {
+    trusted: 0,
+    usable: 0,
+    weak: 0,
+    unusable: 0,
+  };
+
+  let scoreSum = 0;
+  let scoreCount = 0;
+  let completedCount = 0;
+
   for (const t of trajectories) {
     const key = t.source ?? "unknown";
     sourceBreakdown[key] = (sourceBreakdown[key] ?? 0) + 1;
+
+    const tier = classifyForDistillation(t).tier;
+    tierCounts[tier]++;
+
+    if (t.judgeScore != null) {
+      scoreSum += t.judgeScore;
+      scoreCount++;
+    }
+    if (t.outcome === "completed" || t.outcome === "merged") {
+      completedCount++;
+    }
   }
+
+  const totalTrajectories = trajectories.length;
+  const avgJudge =
+    scoreCount > 0 ? (scoreSum / scoreCount).toFixed(1) : "—";
+  const successRate =
+    totalTrajectories > 0
+      ? `${Math.round((completedCount / totalTrajectories) * 100)}%`
+      : "—";
+  const pendingApprovals = actions.filter(
+    (a) => a.status === "pending-approval",
+  ).length;
 
   return (
     <div className="space-y-8">
@@ -52,7 +101,7 @@ export default async function OverviewPage() {
         <Card label="Active Modes" value={activeModes} sub={`of 5 available`} />
         <Card
           label="Trajectories"
-          value={trajectories.length}
+          value={totalTrajectories}
           sub={
             Object.keys(sourceBreakdown).length > 0
               ? Object.entries(sourceBreakdown)
@@ -60,6 +109,26 @@ export default async function OverviewPage() {
                   .join(", ")
               : "none recorded"
           }
+        />
+        <Card
+          label="Success Rate"
+          value={successRate}
+          sub={`${completedCount} / ${totalTrajectories || 0} completed`}
+        />
+        <Card
+          label="Avg Judge Score"
+          value={avgJudge}
+          sub={scoreCount > 0 ? `across ${scoreCount} scored` : "no scores yet"}
+        />
+        <Card
+          label="Trusted"
+          value={tierCounts.trusted}
+          sub="distillation-ready"
+        />
+        <Card
+          label="Pending Approvals"
+          value={pendingApprovals}
+          sub={actions.length > 0 ? `of ${actions.length} actions` : "no actions"}
         />
       </div>
 
@@ -71,6 +140,27 @@ export default async function OverviewPage() {
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
           <StatusDot label="WhatsApp" active={config.whatsapp.enabled} />
         </div>
+      </div>
+
+      {/* Distillation breakdown */}
+      <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
+        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-zinc-500">
+          Distillation
+        </p>
+        {totalTrajectories > 0 ? (
+          <div className="flex flex-wrap gap-2 text-sm">
+            {(Object.keys(tierCounts) as DistillationTier[]).map((tier) => (
+              <span
+                key={tier}
+                className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${TIER_PILL[tier]}`}
+              >
+                {tier} {tierCounts[tier]}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-zinc-500">No trajectories yet.</p>
+        )}
       </div>
 
       {/* Recent runs */}

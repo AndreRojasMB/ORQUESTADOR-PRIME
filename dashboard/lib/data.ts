@@ -7,8 +7,21 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import type { MemoryStore, MemoryEntry, UserConfig, TrajectoryStore, Trajectory } from "./types";
-import { EMPTY_MEMORY_STORE, EMPTY_TRAJECTORY_STORE, DEFAULT_USER_CONFIG } from "./types";
+import type {
+  MemoryStore,
+  MemoryEntry,
+  UserConfig,
+  TrajectoryStore,
+  Trajectory,
+  ActionStoreData,
+  ActionProposal,
+} from "./types";
+import {
+  EMPTY_MEMORY_STORE,
+  EMPTY_TRAJECTORY_STORE,
+  EMPTY_ACTION_STORE,
+  DEFAULT_USER_CONFIG,
+} from "./types";
 
 // ─── Data directory ─────────────────────────────────────────────
 
@@ -90,6 +103,40 @@ export async function getTrajectoryById(id: string): Promise<Trajectory | null> 
 export async function getTrajectoryByTraceId(traceId: string): Promise<Trajectory | null> {
   const store = await readTrajectoryStore();
   return store.trajectories.find((t) => t.traceId === traceId) ?? null;
+}
+
+// ─── Actions ────────────────────────────────────────────────────
+
+function actionPath(): string {
+  return join(getDataDir(), "actions.json");
+}
+
+export async function readActionStore(): Promise<ActionStoreData> {
+  const store = await readJsonFile<ActionStoreData>(actionPath(), {
+    ...EMPTY_ACTION_STORE,
+    proposals: [],
+  });
+
+  if (!Array.isArray(store.proposals)) {
+    store.proposals = [];
+  }
+
+  return store;
+}
+
+export async function getActions(): Promise<ActionProposal[]> {
+  const store = await readActionStore();
+  return store.proposals;
+}
+
+export async function getActionsByTraceId(traceId: string): Promise<ActionProposal[]> {
+  const store = await readActionStore();
+  return store.proposals.filter((p) => p.traceId === traceId);
+}
+
+export async function getActionsByTrajectoryId(trajectoryId: string): Promise<ActionProposal[]> {
+  const store = await readActionStore();
+  return store.proposals.filter((p) => p.trajectoryId === trajectoryId);
 }
 
 // ─── Config ─────────────────────────────────────────────────────
