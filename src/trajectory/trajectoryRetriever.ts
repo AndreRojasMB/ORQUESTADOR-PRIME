@@ -4,6 +4,7 @@
 
 import { readTrajectoryStore } from "./trajectoryStore.js";
 import type { Trajectory, OrchestratorMode } from "../types.js";
+import { classifyForDistillation, type DistillationTier } from "./distillationClassifier.js";
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -11,12 +12,20 @@ export interface ScoredTrajectory {
   trajectory: Trajectory;
   score: number;
   matchedKeywords: string[];
+  tier?: DistillationTier;
+  tierReason?: string;
 }
 
 export interface RetrievalQuery {
   task: string;
   mode: OrchestratorMode;
   selectedAgents?: string[];
+  /** Include weak-tier trajectories as backfill when trusted/usable are scarce. Default: true. */
+  includeWeak?: boolean;
+  /** Include unusable-tier trajectories (diagnostic mode). Default: false. */
+  includeUnusable?: boolean;
+  /** Cap on results. Default: MAX_RESULTS (3). */
+  maxResults?: number;
 }
 
 // ─── Keyword extraction ─────────────────────────────────────────
@@ -93,7 +102,25 @@ function scoreTrajectory(
   }
   // judgeScore === null → no effect (not a positive signal)
 
-  return { trajectory, score, matchedKeywords };
+  // Distillation tier — additive boost (Phase 30B).
+  // Kept small enough that relevance (keyword×2 + mode=3) still dominates.
+  const distillation = classifyForDistillation(trajectory);
+  const tier = distillation.tier;
+  if (tier === "trusted") {
+    score += 4;
+  } else if (tier === "usable") {
+    score += 2;
+  }
+  // weak → no boost (neutral); unusable → filtered upstream
+
+  const tierReason = distillation.reasons[0];
+  return {
+    trajectory,
+    score,
+    matchedKeywords,
+    tier,
+    ...(tierReason ? { tierReason } : {}),
+  };
 }
 
 // ─── Retrieval ──────────────────────────────────────────────────
@@ -121,13 +148,38 @@ export async function retrieveRelevantTrajectories(
       return [];
     }
 
+    const includeWeak = query.includeWeak !== false;
+    const includeUnusable = query.includeUnusable === true;
+    const cap = query.maxResults ?? MAX_RESULTS;
+
     const scored = store.trajectories
       .map((t) => scoreTrajectory(t, query, taskKeywords))
       .filter((s) => s.score >= MIN_SCORE)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, MAX_RESULTS);
+      .filter((s) => includeUnusable || s.tier !== "unusable")
+      .sort((a, b) => b.score - a.score);
 
-    return scored;
+    // Phase A: trusted + usable.
+    const primary = scored.filter(
+      (s) => s.tier === "trusted" || s.tier === "usable",
+    );
+
+    if (primary.length >= cap) {
+      return primary.slice(0, cap);
+    }
+
+    // Phase B: backfill with weak (and optionally unusable) until cap.
+    const backfill = scored.filter(
+      (s) =>
+        s.tier === "weak" ||
+        (includeUnusable && s.tier === "unusable") ||
+        s.tier === undefined,
+    );
+
+    const combined = includeWeak || includeUnusable
+      ? [...primary, ...backfill]
+      : primary;
+
+    return combined.slice(0, cap);
   } catch {
     return [];
   }

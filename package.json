@@ -18,7 +18,8 @@
     "check": "tsc --noEmit",
     "whatsapp:test": "tsx scripts/whatsapp-test.ts",
     "bridge:whatsapp": "tsx src/whatsapp/httpBridge.ts",
-    "bridge:omi": "tsx src/omi/httpBridge.ts"
+    "bridge:omi": "tsx src/omi/httpBridge.ts",
+    "action:dispatch": "tsx scripts/action-dispatch.ts"
   },
   "keywords": [],
   "author": "",

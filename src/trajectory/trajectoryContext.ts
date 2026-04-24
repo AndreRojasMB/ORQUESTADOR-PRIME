@@ -97,6 +97,15 @@ function formatScoredTrajectory(scored: ScoredTrajectory): string {
     lines.push(`  Quality : ${t.judgeScore}/10`);
   }
 
+  if (scored.tier) {
+    const suffix = scored.tierReason ? ` — ${scored.tierReason}` : "";
+    lines.push(`  Trust   : ${scored.tier}${suffix}`);
+  }
+
+  if (scored.tier === "weak") {
+    lines.push(`  Caution : weak-tier — use as cautionary reference, not canonical.`);
+  }
+
   return lines.join("\n");
 }
 
@@ -126,6 +135,12 @@ function buildContextString(
   signals: LearningSignals,
 ): string {
   const parts: string[] = ["── Prior Run Context (trajectory learning) ──"];
+
+  if (runs.some((r) => r.tier)) {
+    parts.push(
+      "Filtered to trusted/usable runs (+ weak as backfill); unusable excluded.",
+    );
+  }
 
   for (const run of runs) {
     parts.push(formatScoredTrajectory(run));

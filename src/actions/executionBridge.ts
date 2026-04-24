@@ -14,7 +14,15 @@ import { logger } from "../observability/logger.js";
 import { isOpenClawAvailable } from "../config.js";
 import { toolInvoke } from "../openclaw/openclawClient.js";
 import { getProposalById } from "./actionStore.js";
-import type { ActionCategory, ActionProposal } from "./types.js";
+import {
+  appendExecutionResult,
+  hasSuccessfulExecution,
+} from "./executionResultStore.js";
+import type {
+  ActionCategory,
+  ActionProposal,
+  ExecutionOutcome,
+} from "./types.js";
 
 // ─── Typed parameter interfaces ─────────────────────────────────
 
@@ -250,18 +258,35 @@ function buildDeferredResult(proposal: ActionProposal): DispatchResult {
   };
 }
 
+// ─── Outcome classification ─────────────────────────────────────
+
+function outcomeFor(
+  category: ActionCategory,
+  dispatch: DispatchResult,
+): ExecutionOutcome {
+  if (FORBIDDEN_CATEGORIES.has(category)) return "blocked";
+  if (DEFERRED_CATEGORIES.has(category)) return "deferred";
+  if (category === "tool-invoke") return "dry-run";
+  if (dispatch.ok) return "success";
+  return "failure";
+}
+
 // ─── Main dispatch function ─────────────────────────────────────
 
 /**
  * Dispatches an approved ActionProposal.
  *
- * Phase 27C constraints:
- * - Only query, notification, and tool-invoke (dry-run) are executed
+ * Phase 30A constraints:
+ * - Only query, notification, and tool-invoke (dry-run) have side effects
  * - All other categories return deferred or blocked results
- * - No proposal status is mutated
- * - DispatchResult is ephemeral, not persisted
+ * - No ActionStatus mutation — approval metadata is preserved
+ * - Every dispatch is logged to the execution result store (append-only)
+ * - Idempotency: refuses if a prior successful dispatch exists for this proposal
  */
-export async function dispatchAction(proposalId: string): Promise<DispatchResult> {
+export async function dispatchAction(
+  proposalId: string,
+  actor: string = "cli:local",
+): Promise<DispatchResult> {
   const proposal = await getProposalById(proposalId);
 
   if (!proposal) {
@@ -282,33 +307,79 @@ export async function dispatchAction(proposalId: string): Promise<DispatchResult
     };
   }
 
-  // Forbidden — hard block
-  if (FORBIDDEN_CATEGORIES.has(proposal.category)) {
-    logger.warn("action:dispatch blocked — forbidden category", {
+  // Idempotency — refuse if an earlier dispatch succeeded for this proposal.
+  if (await hasSuccessfulExecution(proposal.id)) {
+    logger.info("action:dispatch refused — already succeeded", {
       id: proposal.id,
       category: proposal.category,
     });
-    return buildBlockedResult(proposal);
+    return {
+      ok: false,
+      category: proposal.category,
+      message: "Dispatch refused: this proposal has already been executed successfully",
+      output: null,
+    };
   }
 
-  // Deferred — not yet implemented
-  if (DEFERRED_CATEGORIES.has(proposal.category)) {
-    logger.info("action:dispatch deferred", {
+  const startedAt = new Date();
+  let result: DispatchResult;
+
+  try {
+    if (FORBIDDEN_CATEGORIES.has(proposal.category)) {
+      logger.warn("action:dispatch blocked — forbidden category", {
+        id: proposal.id,
+        category: proposal.category,
+      });
+      result = buildBlockedResult(proposal);
+    } else if (DEFERRED_CATEGORIES.has(proposal.category)) {
+      logger.info("action:dispatch deferred", {
+        id: proposal.id,
+        category: proposal.category,
+      });
+      result = buildDeferredResult(proposal);
+    } else {
+      switch (proposal.category) {
+        case "query":
+          result = await handleQuery(proposal);
+          break;
+        case "notification":
+          result = await handleNotification(proposal);
+          break;
+        case "tool-invoke":
+          result = await handleToolInvoke(proposal);
+          break;
+        default:
+          result = buildDeferredResult(proposal);
+      }
+    }
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    logger.warn("action:dispatch handler threw", {
       id: proposal.id,
       category: proposal.category,
+      error: errorMsg,
     });
-    return buildDeferredResult(proposal);
+    result = {
+      ok: false,
+      category: proposal.category,
+      message: `Handler threw: ${errorMsg}`,
+      output: null,
+    };
   }
 
-  // Supported categories
-  switch (proposal.category) {
-    case "query":
-      return handleQuery(proposal);
-    case "notification":
-      return handleNotification(proposal);
-    case "tool-invoke":
-      return handleToolInvoke(proposal);
-    default:
-      return buildDeferredResult(proposal);
-  }
+  const finishedAt = new Date();
+  await appendExecutionResult({
+    proposalId: proposal.id,
+    category: proposal.category,
+    startedAt: startedAt.toISOString(),
+    finishedAt: finishedAt.toISOString(),
+    durationMs: finishedAt.getTime() - startedAt.getTime(),
+    outcome: outcomeFor(proposal.category, result),
+    ok: result.ok,
+    message: result.message,
+    output: result.output,
+    actor,
+  });
+
+  return result;
 }

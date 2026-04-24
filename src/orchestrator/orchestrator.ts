@@ -201,7 +201,7 @@ export async function runOrchestrator(
       tracer.setProvider({
         provider: "anthropic",
         model: CLAUDE_MODELS.blueprint,
-        durationMs: 0,
+        durationMs: tracer.lastPhaseDurationMs(),
         ...(response.usage && {
           inputTokens: response.usage.inputTokens,
           outputTokens: response.usage.outputTokens,
@@ -213,7 +213,7 @@ export async function runOrchestrator(
         callProvider(MODELS.synthesis, ORCHESTRATOR_SYSTEM, prompt, 8192)
       );
       rawOutput = response.content;
-      tracer.setProvider({ provider: "openai", model: MODELS.synthesis, durationMs: 0 });
+      tracer.setProvider({ provider: "openai", model: MODELS.synthesis, durationMs: tracer.lastPhaseDurationMs() });
     }
 
   } else if (mode === "audit") {
@@ -242,7 +242,7 @@ export async function runOrchestrator(
       tracer.setProvider({
         provider: "anthropic",
         model: CLAUDE_MODELS.architect,
-        durationMs: 0,
+        durationMs: tracer.lastPhaseDurationMs(),
         ...(response.usage && {
           inputTokens: response.usage.inputTokens,
           outputTokens: response.usage.outputTokens,
@@ -254,7 +254,7 @@ export async function runOrchestrator(
         callProvider(MODELS.synthesis, ORCHESTRATOR_SYSTEM, prompt, 8192)
       );
       rawOutput = response.content;
-      tracer.setProvider({ provider: "openai", model: MODELS.synthesis, durationMs: 0 });
+      tracer.setProvider({ provider: "openai", model: MODELS.synthesis, durationMs: tracer.lastPhaseDurationMs() });
     }
 
   } else if (mode === "scaffold") {
@@ -278,7 +278,7 @@ export async function runOrchestrator(
       tracer.setProvider({
         provider: "anthropic",
         model: CLAUDE_MODELS.blueprint,
-        durationMs: 0,
+        durationMs: tracer.lastPhaseDurationMs(),
         ...(response.usage && {
           inputTokens: response.usage.inputTokens,
           outputTokens: response.usage.outputTokens,
@@ -290,7 +290,7 @@ export async function runOrchestrator(
         callProvider(MODELS.synthesis, ORCHESTRATOR_SYSTEM, prompt, 8192)
       );
       rawOutput = response.content;
-      tracer.setProvider({ provider: "openai", model: MODELS.synthesis, durationMs: 0 });
+      tracer.setProvider({ provider: "openai", model: MODELS.synthesis, durationMs: tracer.lastPhaseDurationMs() });
     }
 
     const scaffoldParsed = await tracer.phaseAsync("scaffold:parse", async () =>
@@ -361,7 +361,7 @@ export async function runOrchestrator(
         tracer.setProvider({
           provider: "anthropic",
           model: CLAUDE_MODELS.architect,
-          durationMs: 0,
+          durationMs: tracer.lastPhaseDurationMs(),
           ...(response.usage && {
             inputTokens: response.usage.inputTokens,
             outputTokens: response.usage.outputTokens,
@@ -378,7 +378,7 @@ export async function runOrchestrator(
         tracer.setProvider({
           provider: "openai",
           model: MODELS.synthesis,
-          durationMs: 0,
+          durationMs: tracer.lastPhaseDurationMs(),
           ...(response.usage && {
             inputTokens: response.usage.inputTokens,
             outputTokens: response.usage.outputTokens,
@@ -396,7 +396,7 @@ export async function runOrchestrator(
       tracer.setProvider({
         provider: "openai",
         model: MODELS.synthesis,
-        durationMs: 0,
+        durationMs: tracer.lastPhaseDurationMs(),
         ...(response.usage && {
           inputTokens: response.usage.inputTokens,
           outputTokens: response.usage.outputTokens,
@@ -497,7 +497,7 @@ export async function runOrchestrator(
     );
 
     rawOutput = result.finalOutput ?? "";
-    tracer.setProvider({ provider: "openai", model: MODELS.synthesis, durationMs: 0 });
+    tracer.setProvider({ provider: "openai", model: MODELS.synthesis, durationMs: tracer.lastPhaseDurationMs() });
   }
 
   const parsed = await tracer.phaseAsync("parse", async () =>

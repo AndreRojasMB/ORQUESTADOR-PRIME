@@ -82,6 +82,14 @@ export class Tracer {
     this.provider = trace;
   }
 
+  // Duration of the most recently recorded phase, or 0 if none.
+  // Intended to be called immediately after a provider phaseAsync so that
+  // setProvider can record the real wall-clock duration without re-timing.
+  lastPhaseDurationMs(): number {
+    const last = this.phases[this.phases.length - 1];
+    return last ? last.durationMs : 0;
+  }
+
   setRouter(selectedAgents: string[], matchedKeywords: string[]): void {
     this.selectedAgents  = selectedAgents;
     this.matchedKeywords = matchedKeywords;

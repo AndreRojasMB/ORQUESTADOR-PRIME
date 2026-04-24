@@ -88,3 +88,34 @@ export interface ActionStoreData {
   version: string;
   proposals: ActionProposal[];
 }
+
+// ─── Execution Result (Phase 30A) ───────────────────────────────
+// Append-only log of dispatches. Independent from ActionStatus:
+// proposals stay "approved" after dispatch; this store records what
+// happened on each dispatch attempt.
+
+export type ExecutionOutcome =
+  | "success"
+  | "failure"
+  | "dry-run"
+  | "deferred"
+  | "blocked";
+
+export interface ExecutionResult {
+  id: string;
+  proposalId: string;
+  category: ActionCategory;
+  startedAt: string;
+  finishedAt: string;
+  durationMs: number;
+  outcome: ExecutionOutcome;
+  ok: boolean;
+  message: string;
+  output: unknown;
+  actor: string;
+}
+
+export interface ExecutionResultStoreData {
+  version: string;
+  results: ExecutionResult[];
+}
