@@ -19,6 +19,7 @@ import { z } from "zod";
 import { simpleGit } from "simple-git";
 import { GITHUB_CONFIG } from "../config.js";
 import { logger } from "../observability/logger.js";
+import { GitClient } from "../execution/gitClient.js";
 import type { ActionProposal } from "./types.js";
 
 // ─── Zod schemas ────────────────────────────────────────────────
@@ -337,5 +338,129 @@ export async function previewPrCreate(
     },
     warnings,
     rollbackPlan,
+  };
+}
+
+// ─── real git-branch execution (Phase 32B) ──────────────────────
+// The ONLY real repo-mutating entry point in src/actions/*.
+// executionBridge routes here only after:
+//   - ACTIONS_REAL_EXECUTION_ENABLED=true
+//   - REAL_EXEC_CATEGORIES contains "git-branch"
+//   - proposal.status === "approved"
+//   - no prior successful execution for this proposal
+//   - a second approval has been consumed (single-use, TTL, hash-bound)
+// This function still enforces its own invariants independently.
+
+export interface RealGitBranchResult {
+  ok: boolean;
+  message: string;
+  branchName: string | null;
+  fromBranch: string | null;
+  warnings: string[];
+  rollbackPlan: string;
+}
+
+export async function realGitBranch(
+  proposal: ActionProposal,
+  repoRoot: string = process.cwd(),
+): Promise<RealGitBranchResult> {
+  const baseRollback =
+    "Delete the created branch: `git branch -D <branchName>` (or `git checkout <fromBranch> && git branch -D <branchName>` if currently on it).";
+
+  const parsed = GitBranchParamsSchema.safeParse(proposal.parameters);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: `Invalid parameters: ${parsed.error.message}`,
+      branchName: null,
+      fromBranch: null,
+      warnings: [],
+      rollbackPlan: baseRollback,
+    };
+  }
+
+  // Defense-in-depth: the regex already rejects protected names, but
+  // re-assert here so a future regex relaxation cannot silently bypass it.
+  const paramName = parsed.data.name;
+  const prefix = "agent/";
+  if (!paramName.startsWith(prefix)) {
+    return {
+      ok: false,
+      message: `Branch name must start with "agent/"`,
+      branchName: null,
+      fromBranch: null,
+      warnings: [],
+      rollbackPlan: baseRollback,
+    };
+  }
+  const suffix = paramName.slice(prefix.length);
+  if (PROTECTED_BRANCHES.has(paramName) || PROTECTED_BRANCHES.has(suffix)) {
+    return {
+      ok: false,
+      message: `Refusing to create a protected branch name`,
+      branchName: null,
+      fromBranch: null,
+      warnings: [],
+      rollbackPlan: baseRollback,
+    };
+  }
+
+  const root = resolve(repoRoot);
+  const git = new GitClient(root);
+
+  let fromBranch: string | null = null;
+  try {
+    fromBranch = await git.getCurrentBranch();
+  } catch {
+    // non-fatal for reporting; createAgentBranch will error clearly below
+  }
+
+  try {
+    await git.assertCleanRepo();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      message: `Refusing to create branch: ${msg}`,
+      branchName: null,
+      fromBranch,
+      warnings: [],
+      rollbackPlan: baseRollback,
+    };
+  }
+
+  let branchName: string;
+  try {
+    branchName = await git.createAgentBranch(suffix);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.warn("action:real git-branch create failed", {
+      proposalId: proposal.id,
+      suffix,
+      error: msg,
+    });
+    return {
+      ok: false,
+      message: `createAgentBranch failed: ${msg}`,
+      branchName: null,
+      fromBranch,
+      warnings: [],
+      rollbackPlan: baseRollback,
+    };
+  }
+
+  logger.info("action:real git-branch created", {
+    proposalId: proposal.id,
+    branchName,
+    fromBranch,
+  });
+
+  return {
+    ok: true,
+    message: `Created branch "${branchName}" from "${fromBranch ?? "HEAD"}"`,
+    branchName,
+    fromBranch,
+    warnings: [],
+    rollbackPlan: `git branch -D ${branchName}`,
   };
 }

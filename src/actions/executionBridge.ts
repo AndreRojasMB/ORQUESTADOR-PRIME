@@ -22,8 +22,10 @@ import {
   previewFileWrite,
   previewGitBranch,
   previewPrCreate,
+  realGitBranch,
   type PreviewResult,
 } from "./repoActionExecutor.js";
+import { consumeSecondApproval } from "./secondApprovalStore.js";
 import type {
   ActionCategory,
   ActionProposal,
@@ -253,6 +255,13 @@ const PREVIEW_CATEGORIES: Set<ActionCategory> = new Set([
   "pr-create",
 ]);
 
+// Phase 32B — hard-coded allowlist for real (repo-mutating) execution.
+// Belt-and-suspenders with ACTIONS_REAL_EXECUTION_ENABLED: both must hold.
+// Expanding this set requires a code change (reviewable), not an env flip.
+const REAL_EXEC_CATEGORIES: Set<ActionCategory> = new Set([
+  "git-branch",
+]);
+
 function buildBlockedResult(proposal: ActionProposal): DispatchResult {
   return {
     ok: false,
@@ -274,18 +283,38 @@ function buildDeferredResult(proposal: ActionProposal): DispatchResult {
 // ─── Preview handler (Phase 32A) ────────────────────────────────
 
 async function handleRepoPreview(proposal: ActionProposal): Promise<DispatchResult> {
-  if (ACTIONS_REAL_EXECUTION_ENABLED) {
-    // Real execution path lives in a future phase. Refuse here so a
-    // runaway flag flip without accompanying code cannot mutate the repo.
-    logger.warn("action:dispatch real execution flag set but handler not implemented", {
+  // Real-execution routing (Phase 32B). Both gates required.
+  if (
+    ACTIONS_REAL_EXECUTION_ENABLED &&
+    REAL_EXEC_CATEGORIES.has(proposal.category)
+  ) {
+    if (proposal.category === "git-branch") {
+      return handleGitBranchReal(proposal);
+    }
+    // Category is in the real allowlist but has no handler yet — fail closed.
+    logger.warn("action:dispatch real execution allowlisted but handler not implemented", {
       id: proposal.id,
       category: proposal.category,
     });
     return {
       ok: false,
       category: proposal.category,
-      message:
-        "Real execution for this category is not implemented in Phase 32A; previews only.",
+      message: `Real execution for "${proposal.category}" is not implemented yet.`,
+      output: null,
+    };
+  }
+
+  if (ACTIONS_REAL_EXECUTION_ENABLED) {
+    // Flag is on, but this category is not in the hard-coded allowlist.
+    // Refuse to emit a preview to avoid confusion about whether it ran.
+    logger.warn("action:dispatch real execution flag set but category not allowlisted", {
+      id: proposal.id,
+      category: proposal.category,
+    });
+    return {
+      ok: false,
+      category: proposal.category,
+      message: `Category "${proposal.category}" is not enabled for real execution.`,
       output: null,
     };
   }
@@ -330,6 +359,63 @@ async function handleRepoPreview(proposal: ActionProposal): Promise<DispatchResu
   };
 }
 
+// ─── Real git-branch handler (Phase 32B) ────────────────────────
+
+async function handleGitBranchReal(proposal: ActionProposal): Promise<DispatchResult> {
+  // Consume-before-mutate. Single-use: a granted approval is spent even if
+  // the mutation later fails (fail-closed policy). Existing guards inside
+  // consumeSecondApproval: not found, not approved, no active grant,
+  // expired, revoked, consumed, parameter-hash drift.
+  const consume = await consumeSecondApproval(proposal.id);
+  if (!consume.ok || !consume.approval) {
+    logger.warn("action:real git-branch refused — second approval not consumable", {
+      id: proposal.id,
+      reason: consume.reason,
+    });
+    return {
+      ok: false,
+      category: proposal.category,
+      message: `Refused: ${consume.reason}`,
+      output: null,
+    };
+  }
+
+  const approvalId = consume.approval.id;
+  const result = await realGitBranch(proposal);
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      category: proposal.category,
+      message: result.message,
+      output: {
+        dryRun: false,
+        kind: "git-branch",
+        approvalId,
+        branchName: result.branchName,
+        fromBranch: result.fromBranch,
+        warnings: result.warnings,
+        rollbackPlan: result.rollbackPlan,
+      },
+    };
+  }
+
+  return {
+    ok: true,
+    category: proposal.category,
+    message: result.message,
+    output: {
+      dryRun: false,
+      kind: "git-branch",
+      approvalId,
+      branchName: result.branchName,
+      fromBranch: result.fromBranch,
+      warnings: result.warnings,
+      rollbackPlan: result.rollbackPlan,
+    },
+  };
+}
+
 // ─── Outcome classification ─────────────────────────────────────
 
 function outcomeFor(
@@ -339,13 +425,22 @@ function outcomeFor(
   if (FORBIDDEN_CATEGORIES.has(category)) return "blocked";
   if (DEFERRED_CATEGORIES.has(category)) return "deferred";
   if (category === "tool-invoke") return "dry-run";
+
+  // Real-execution path (Phase 32B): both gates required.
+  if (
+    ACTIONS_REAL_EXECUTION_ENABLED &&
+    REAL_EXEC_CATEGORIES.has(category)
+  ) {
+    return dispatch.ok ? "success" : "failure";
+  }
+
   if (PREVIEW_CATEGORIES.has(category)) {
-    // Preview handler refuses when ACTIONS_REAL_EXECUTION_ENABLED is set
-    // without a real implementation; record that as a failure so it is
-    // visible in the execution log. Otherwise every preview is dry-run.
+    // Flag on without a real-execution handler for this category: the
+    // dispatcher refused, record as failure so it is visible in the log.
     if (ACTIONS_REAL_EXECUTION_ENABLED) return "failure";
     return "dry-run";
   }
+
   if (dispatch.ok) return "success";
   return "failure";
 }
