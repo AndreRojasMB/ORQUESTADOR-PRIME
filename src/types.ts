@@ -19,18 +19,26 @@ export type OrchestratorMode =
 export type FutureMode = OrchestratorMode;
 
 export interface UxAuditArgs {
-  repo:     string;
-  entry:    string;
-  files:    string[];
-  sections: string[];
-  agents:   string[];
-  scope:    string;
+  repo:           string;
+  entry:          string;
+  files:          string[];
+  sections:       string[];
+  agents:         string[];
+  scope:          string;
+  // Phase 32E-AUDITUX-CORE — read-only audit hardening
+  include:        string[];     // glob/prefix patterns expanded against repo tree
+  exclude:        string[];     // glob/prefix patterns removed from seeds + import-followed
+  maxFiles:       number;       // hard cap on files actually read; default 30
+  maxBytes:       number;       // per-file size ceiling; default 100_000
+  followImports:  0 | 1 | 2;    // BFS depth for relative-import follower; default 0
 }
 
 export interface ParsedArgs {
   task: string;
   mode: OrchestratorMode;
   uxAudit?: UxAuditArgs;
+  // Phase 32E-AUDITUX-CORE — explicit help intent, mode-aware in index.ts
+  helpRequested?: boolean;
 }
 
 export interface OrchestratorResult {

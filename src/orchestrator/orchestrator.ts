@@ -66,8 +66,49 @@ Process:
 4. Always respond with valid JSON following the structure provided in the prompt.
 `.trim();
 
+// Phase 32E-AUDITUX-CORE — flag bounds.
+const UX_DEFAULT_MAX_FILES = 30;
+const UX_HARD_MAX_FILES    = 200;
+const UX_DEFAULT_MAX_BYTES = 100_000;
+const UX_MIN_MAX_BYTES     = 1024;
+const UX_HARD_MAX_BYTES    = 500_000;
+
+function clampInt(
+  raw:    string | undefined,
+  fallback: number,
+  min:    number,
+  max:    number,
+  label:  string,
+): number {
+  if (raw === undefined) return fallback;
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n) || Number.isNaN(n)) {
+    logger.warn(`audit-ux: ${label} ignored — not an integer ("${raw}"), using default ${fallback}`);
+    return fallback;
+  }
+  if (n < min) {
+    logger.warn(`audit-ux: ${label} clamped from ${n} to ${min}`);
+    return min;
+  }
+  if (n > max) {
+    logger.warn(`audit-ux: ${label} clamped from ${n} to ${max}`);
+    return max;
+  }
+  return n;
+}
+
+function parseFollowDepth(raw: string | undefined): 0 | 1 | 2 {
+  if (raw === undefined) return 0;
+  if (raw === "0") return 0;
+  if (raw === "1") return 1;
+  if (raw === "2") return 2;
+  logger.warn(`audit-ux: --follow-imports="${raw}" not in {0,1,2}, defaulting to 0`);
+  return 0;
+}
+
 export function parseArgs(argv: string[]): ParsedArgs {
   let mode: OrchestratorMode = "plan";
+  let helpRequested = false;
   const taskParts: string[] = [];
 
   // Phase 32C-UXAUDIT — capture UX-audit-only flags. Read-only metadata
@@ -78,8 +119,18 @@ export function parseArgs(argv: string[]): ParsedArgs {
   let uxSections: string | undefined;
   let uxAgents:   string | undefined;
   let uxScope:    string | undefined;
+  // Phase 32E-AUDITUX-CORE — extended flags
+  let uxInclude:        string | undefined;
+  let uxExclude:        string | undefined;
+  let uxMaxFiles:       string | undefined;
+  let uxMaxBytes:       string | undefined;
+  let uxFollowImports:  string | undefined;
 
   for (const arg of argv) {
+    if (arg === "--help" || arg === "-h") {
+      helpRequested = true;
+      continue;
+    }
     if (arg.startsWith("--mode=")) {
       const value = arg.split("=")[1];
       if (
@@ -124,11 +175,32 @@ export function parseArgs(argv: string[]): ParsedArgs {
       uxScope = arg.slice("--scope=".length);
       continue;
     }
+    if (arg.startsWith("--include=")) {
+      uxInclude = arg.slice("--include=".length);
+      continue;
+    }
+    if (arg.startsWith("--exclude=")) {
+      uxExclude = arg.slice("--exclude=".length);
+      continue;
+    }
+    if (arg.startsWith("--max-files=")) {
+      uxMaxFiles = arg.slice("--max-files=".length);
+      continue;
+    }
+    if (arg.startsWith("--max-bytes=")) {
+      uxMaxBytes = arg.slice("--max-bytes=".length);
+      continue;
+    }
+    if (arg.startsWith("--follow-imports=")) {
+      uxFollowImports = arg.slice("--follow-imports=".length);
+      continue;
+    }
     if (arg.startsWith("--out=")) continue;
     taskParts.push(arg);
   }
 
   const result: ParsedArgs = { mode, task: taskParts.join(" ").trim() };
+  if (helpRequested) result.helpRequested = true;
 
   if (mode === "audit-ux") {
     const splitCsv = (s: string | undefined): string[] =>
@@ -152,6 +224,11 @@ export function parseArgs(argv: string[]): ParsedArgs {
         ? agentsList
         : ["uxui", "motionFx", "frontend", "qa"],
       scope:    (uxScope ?? "").trim().slice(0, 64),
+      include:  splitCsv(uxInclude),
+      exclude:  splitCsv(uxExclude),
+      maxFiles: clampInt(uxMaxFiles, UX_DEFAULT_MAX_FILES, 1, UX_HARD_MAX_FILES, "--max-files"),
+      maxBytes: clampInt(uxMaxBytes, UX_DEFAULT_MAX_BYTES, UX_MIN_MAX_BYTES, UX_HARD_MAX_BYTES, "--max-bytes"),
+      followImports: parseFollowDepth(uxFollowImports),
     };
   }
 
@@ -352,11 +429,27 @@ export async function runOrchestrator(
     logger.info(`Auditing (UX): scope="${ux.scope}" entry="${ux.entry}" repo="${repoPath}"`);
     logger.info(`Sections : ${ux.sections.join(", ")}`);
     logger.info(`Agents   : ${effectiveAgents.join(", ")}`);
+    logger.info(
+      `Caps     : maxFiles=${ux.maxFiles} maxBytes=${ux.maxBytes} followImports=${ux.followImports}`,
+    );
+    if (ux.include.length > 0) logger.info(`Include  : ${ux.include.join(", ")}`);
+    if (ux.exclude.length > 0) logger.info(`Exclude  : ${ux.exclude.join(", ")}`);
 
     const repo = await tracer.phaseAsync("repo:read-focused", async () =>
-      readRepoFocused(repoPath, ux.files),
+      readRepoFocused(repoPath, ux.files, {
+        maxFiles:      ux.maxFiles,
+        maxBytes:      ux.maxBytes,
+        followImports: ux.followImports,
+        include:       ux.include,
+        exclude:       ux.exclude,
+      }),
     );
-    logger.info(`Files read : ${repo.keyFiles.length} (skipped ${repo.skipped.length})`);
+    logger.info(
+      `Files read : ${repo.keyFiles.length} (reachable ${repo.reachableCount}, skipped ${repo.skipped.length})`,
+    );
+    if (repo.capsApplied.length > 0) {
+      logger.warn(`Caps applied: ${repo.capsApplied.join("; ")}`);
+    }
     if (repo.skipped.length > 0) {
       for (const s of repo.skipped) {
         logger.warn(`  skipped ${s.path} (${s.reason})`);
@@ -375,10 +468,16 @@ export async function runOrchestrator(
     tracer.setRouter(forcedRouter.selectedAgents, forcedRouter.matchedKeywords);
 
     const uxCtx = buildUxAuditContext(repo, {
-      scope:    ux.scope,
-      entry:    ux.entry,
-      sections: ux.sections,
-      agents:   effectiveAgents,
+      scope:         ux.scope,
+      entry:         ux.entry,
+      sections:      ux.sections,
+      agents:        effectiveAgents,
+      explicitFiles: ux.files,
+      include:       ux.include,
+      exclude:       ux.exclude,
+      followDepth:   ux.followImports,
+      maxFiles:      ux.maxFiles,
+      maxBytes:      ux.maxBytes,
     });
     const uxSkillPrefix = await buildSkillPrefix(effectiveAgents);
     const prompt = ragPrefix + trajectoryPrefix + uxSkillPrefix + buildUxAuditPrompt(uxCtx);

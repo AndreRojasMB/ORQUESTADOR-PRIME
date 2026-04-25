@@ -61,27 +61,44 @@ export function buildAuditContext(repo: RepoStructure): AuditContext {
   };
 }
 
-// ─── UX audit context (Phase 32C-UXAUDIT) ───────────────────────
+// ─── UX audit context (Phase 32C-UXAUDIT, expanded in 32E-AUDITUX-CORE) ───
 // Same shape as AuditContext but built from a focused file set with
 // scope/section/agent metadata in the summary. Per-file and total
 // caps are larger because UI files often need fuller diff visibility.
+// 32E adds: explicit-file echo, include/exclude patterns, follow depth,
+// caps, reachable count, and capsApplied notes — all surfaced to the
+// LLM via repoSummary.
 
-const UX_MAX_FILE_CHARS  = 6_000;
-const UX_MAX_TOTAL_CHARS = 80_000;
+const UX_MAX_FILE_CHARS    = 6_000;
+const UX_MAX_TOTAL_CHARS   = 80_000;
+const UX_SKIPPED_CAP       = 50;       // truncate skipped[] tail in summary
 
 export interface UxAuditParams {
-  scope:    string;
-  entry:    string;
-  sections: string[];
-  agents:   string[];
+  scope:         string;
+  entry:         string;
+  sections:      string[];
+  agents:        string[];
+  // Phase 32E-AUDITUX-CORE — surfaced flags / caps for prompt visibility
+  explicitFiles: string[];
+  include:       string[];
+  exclude:       string[];
+  followDepth:   0 | 1 | 2;
+  maxFiles:      number;
+  maxBytes:      number;
 }
 
 export interface UxAuditContext extends AuditContext {
-  scope:    string;
-  entry:    string;
-  sections: string[];
-  agents:   string[];
-  skipped:  Array<{ path: string; reason: string }>;
+  scope:          string;
+  entry:          string;
+  sections:       string[];
+  agents:         string[];
+  skipped:        Array<{ path: string; reason: string }>;
+  // Phase 32E-AUDITUX-CORE
+  reachableCount: number;
+  capsApplied:    string[];
+  followDepth:    0 | 1 | 2;
+  caps:           { maxFiles: number; maxBytes: number };
+  patterns:       { include: string[]; exclude: string[] };
 }
 
 export function buildUxAuditContext(
@@ -90,20 +107,39 @@ export function buildUxAuditContext(
 ): UxAuditContext {
   const treeStr = repo.tree.join("\n");
 
-  const skippedLine = repo.skipped.length === 0
-    ? "(none skipped)"
-    : repo.skipped.map((s) => `  - ${s.path}  [${s.reason}]`).join("\n");
+  const skippedHead = repo.skipped.slice(0, UX_SKIPPED_CAP);
+  const skippedOverflow = repo.skipped.length - skippedHead.length;
+  const skippedLines = skippedHead.length === 0
+    ? ["(none skipped)"]
+    : skippedHead.map((s) => `  - ${s.path}  [${s.reason}]`);
+  if (skippedOverflow > 0) {
+    skippedLines.push(`  ... and ${skippedOverflow} more`);
+  }
+
+  const explicitNonEntry = params.explicitFiles.filter((f) => f !== params.entry);
+  const explicitLine  = explicitNonEntry.length === 0 ? "(none)" : explicitNonEntry.join(", ");
+  const includeLine   = params.include.length === 0   ? "(none)" : params.include.join(", ");
+  const excludeLine   = params.exclude.length === 0   ? "(none)" : params.exclude.join(", ");
+  const capsAppliedLn = repo.capsApplied.length === 0 ? "(none)" : repo.capsApplied.join("; ");
 
   const repoSummary = [
-    `SCOPE          : ${params.scope}`,
-    `ENTRY          : ${params.entry}`,
-    `SECTIONS       : ${params.sections.join(", ")}`,
-    `ACTIVE AGENTS  : ${params.agents.join(", ")}`,
-    `REPO ROOT      : ${repo.root}`,
-    `FILES READ     : ${repo.keyFiles.length}`,
+    `SCOPE           : ${params.scope}`,
+    `ENTRY           : ${params.entry}`,
+    `EXPLICIT FILES  : ${explicitLine}`,
+    `INCLUDE         : ${includeLine}`,
+    `EXCLUDE         : ${excludeLine}`,
+    `FOLLOW DEPTH    : ${params.followDepth}`,
+    `MAX FILES       : ${params.maxFiles}`,
+    `MAX BYTES       : ${params.maxBytes}`,
+    `SECTIONS        : ${params.sections.join(", ")}`,
+    `ACTIVE AGENTS   : ${params.agents.join(", ")}`,
+    `REPO ROOT       : ${repo.root}`,
+    `FILES READ      : ${repo.keyFiles.length}`,
+    `REACHABLE COUNT : ${repo.reachableCount}`,
+    `CAPS APPLIED    : ${capsAppliedLn}`,
     ``,
     `Skipped:`,
-    skippedLine,
+    skippedLines.join("\n"),
     ``,
     `Focused file tree:`,
     treeStr || "(empty)",
@@ -132,13 +168,18 @@ export function buildUxAuditContext(
 
   return {
     repoSummary,
-    fileContext: fileParts.join("\n\n"),
-    totalFiles:  repo.totalFiles,
-    filesRead:   repo.keyFiles.length,
-    scope:       params.scope,
-    entry:       params.entry,
-    sections:    params.sections,
-    agents:      params.agents,
-    skipped:     repo.skipped,
+    fileContext:    fileParts.join("\n\n"),
+    totalFiles:     repo.totalFiles,
+    filesRead:      repo.keyFiles.length,
+    scope:          params.scope,
+    entry:          params.entry,
+    sections:       params.sections,
+    agents:         params.agents,
+    skipped:        repo.skipped,
+    reachableCount: repo.reachableCount,
+    capsApplied:    repo.capsApplied,
+    followDepth:    repo.followDepth,
+    caps:           repo.caps,
+    patterns:       repo.patterns,
   };
 }

@@ -4,7 +4,7 @@
 // V2 extension: agregar soporte para .gitignore parsing aquí.
 
 import { readdir, readFile, stat, realpath } from "fs/promises";
-import { join, extname, relative, resolve, sep } from "path";
+import { join, dirname, extname, relative, resolve, sep } from "path";
 import { logger } from "../observability/logger.js";
 
 // Extensiones de texto que vale la pena leer
@@ -17,8 +17,8 @@ const READABLE_EXTENSIONS = new Set([
   ".sh", ".dockerfile",
 ]);
 
-// Carpetas a ignorar siempre
-const IGNORED_DIRS = new Set([
+// Carpetas a ignorar siempre (compartido entre buildTree y readRepoFocused).
+export const IGNORED_DIRS = new Set([
   "node_modules", ".git", "dist", "build",
   ".next", ".nuxt", "coverage", ".turbo",
   ".cache", "tmp", "temp",
@@ -151,21 +151,37 @@ export async function readRepo(repoPath: string): Promise<RepoStructure> {
   };
 }
 
-// ─── Focused reader (Phase 32C-UXAUDIT) ─────────────────────────
-// Reads a caller-supplied allowlist of files instead of walking the
-// whole tree. Read-only — same fs primitives as readRepo, no writes.
-// Path traversal and symlink-escape are rejected before any read.
+// ─── Focused reader (Phase 32C-UXAUDIT, hardened in 32E-AUDITUX-CORE) ───
+// Reads a caller-supplied allowlist of files (plus optional --include
+// patterns and import-followed reachables) instead of walking the whole
+// tree. Read-only — same fs primitives as readRepo, no writes. Path
+// traversal, symlink-escape, ignored dirs, and binary/oversize files
+// are all rejected before any read.
 
 export interface FocusedReadOptions {
-  maxFiles?: number;        // default 30, hard cap 100
+  maxFiles?:      number;       // default 30, hard cap 200
+  maxBytes?:      number;       // default 100_000, hard cap 500_000
+  followImports?: 0 | 1 | 2;    // default 0; BFS depth for relative-import follower
+  include?:       string[];     // patterns added to seeds via repo-tree expansion
+  exclude?:       string[];     // patterns removed from seeds + import-followed
 }
 
 export interface FocusedReadResult extends RepoStructure {
-  skipped: Array<{ path: string; reason: string }>;
+  skipped:         Array<{ path: string; reason: string }>;
+  // Phase 32E-AUDITUX-CORE — surfaced metadata
+  reachableCount:  number;
+  capsApplied:     string[];
+  followDepth:     0 | 1 | 2;
+  caps:            { maxFiles: number; maxBytes: number };
+  seeds:           { entry: string | null; explicit: string[]; includeMatched: string[] };
+  patterns:        { include: string[]; exclude: string[] };
 }
 
-const FOCUSED_DEFAULT_MAX = 30;
-const FOCUSED_HARD_CAP    = 100;
+const FOCUSED_DEFAULT_MAX        = 30;
+const FOCUSED_HARD_CAP           = 200;
+const FOCUSED_DEFAULT_MAX_BYTES  = 100_000;
+const FOCUSED_MIN_MAX_BYTES      = 1024;
+const FOCUSED_HARD_MAX_BYTES     = 500_000;
 
 async function isInsideRoot(absPath: string, repoRootReal: string): Promise<boolean> {
   // realpath resolves symlinks; require the result to be under repoRootReal.
@@ -181,67 +197,306 @@ async function isInsideRoot(absPath: string, repoRootReal: string): Promise<bool
   return real.startsWith(repoRootReal + sep);
 }
 
+// Returns the matching ignored segment if `rel` traverses any IGNORED_DIRS
+// directory (e.g. "node_modules"), else null. POSIX-normalized.
+function pathHitsIgnoredDir(rel: string): string | null {
+  const norm = rel.replace(/\\/g, "/");
+  for (const seg of norm.split("/")) {
+    if (seg && IGNORED_DIRS.has(seg)) return seg;
+  }
+  return null;
+}
+
+// Tiny v1 glob matcher — supports `*`, `**`, exact paths, and prefix
+// directories ending in `/`. No new dependency.
+function compilePattern(raw: string): (target: string) => boolean {
+  const p = raw.replace(/\\/g, "/").replace(/^\.\//, "");
+  if (p.length === 0) return () => false;
+
+  // Bare directory prefix: pattern ends with "/".
+  if (p.endsWith("/")) {
+    const prefix = p;
+    return (target) => target.replace(/\\/g, "/").startsWith(prefix);
+  }
+
+  // No glob chars → exact path match.
+  if (!p.includes("*")) {
+    return (target) => target.replace(/\\/g, "/") === p;
+  }
+
+  // Glob: ** → .* ; * → [^/]* ; escape other regex metachars.
+  const escaped = p.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  const re = "^" +
+    escaped
+      .replace(/\*\*/g, "")
+      .replace(/\*/g, "[^/]*")
+      .replace(//g, ".*") +
+    "$";
+  const rx = new RegExp(re);
+  return (target) => rx.test(target.replace(/\\/g, "/"));
+}
+
+// Expand --include patterns against the repo tree (already deny-list aware
+// because buildTree skips IGNORED_DIRS). Returns repo-relative file paths
+// that match at least one pattern, sorted for stability.
+async function expandInclude(
+  repoRoot: string,
+  patterns: string[],
+): Promise<string[]> {
+  if (patterns.length === 0) return [];
+  const tree = await buildTree(repoRoot, repoRoot);
+  const files = tree.filter((p) => !p.endsWith("/"));
+  const matchers = patterns.map(compilePattern);
+  return files.filter((p) => matchers.some((m) => m(p))).sort();
+}
+
+// Extract module specifiers from source via regex. Catches:
+//   import x from "..."
+//   import "..."
+//   import("...")
+//   require("...")
+//   export ... from "..."
+function extractImports(content: string): string[] {
+  const specs = new Set<string>();
+  const patterns: RegExp[] = [
+    /(?:^|[^.\w])import\s+(?:[^"'\n;]+?\s+from\s+)?["']([^"']+)["']/gm,
+    /import\s*\(\s*["']([^"']+)["']\s*\)/g,
+    /(?:^|[^.\w])require\s*\(\s*["']([^"']+)["']\s*\)/g,
+    /(?:^|[^.\w])export\s+(?:\*|\{[^}]*\})\s+from\s+["']([^"']+)["']/gm,
+  ];
+  for (const rx of patterns) {
+    for (const m of content.matchAll(rx)) {
+      const spec = m[1];
+      if (spec) specs.add(spec);
+    }
+  }
+  return [...specs];
+}
+
+const RESOLVE_EXTS = [".ts", ".tsx", ".js", ".jsx"];
+
+// Resolve a relative import specifier ("./foo", "../bar") against the
+// importing file. Tries common extension and index-file conventions.
+// Returns absolute path on first hit, else null.
+async function resolveRelativeImport(
+  importingFileAbs: string,
+  spec: string,
+): Promise<string | null> {
+  const baseDir = dirname(importingFileAbs);
+  const baseAbs = resolve(baseDir, spec);
+
+  const candidates: string[] = [];
+  // As-is
+  candidates.push(baseAbs);
+  // Append each extension
+  for (const ext of RESOLVE_EXTS) candidates.push(baseAbs + ext);
+  // TS NodeNext convention: ".js" specifier may resolve to ".ts"/".tsx"
+  if (spec.endsWith(".js")) {
+    const stripped = baseAbs.slice(0, -3);
+    for (const ext of RESOLVE_EXTS) candidates.push(stripped + ext);
+  }
+  // index files inside a directory
+  for (const ext of RESOLVE_EXTS) candidates.push(join(baseAbs, "index" + ext));
+
+  for (const c of candidates) {
+    try {
+      const info = await stat(c);
+      if (info.isFile()) return c;
+    } catch { /* try next */ }
+  }
+  return null;
+}
+
 export async function readRepoFocused(
   repoRoot: string,
   files:    string[],
   options:  FocusedReadOptions = {},
 ): Promise<FocusedReadResult> {
-  const cap = Math.min(
+  const maxFiles = Math.min(
     Math.max(1, options.maxFiles ?? FOCUSED_DEFAULT_MAX),
     FOCUSED_HARD_CAP,
   );
+  const maxBytes = Math.min(
+    Math.max(FOCUSED_MIN_MAX_BYTES, options.maxBytes ?? FOCUSED_DEFAULT_MAX_BYTES),
+    FOCUSED_HARD_MAX_BYTES,
+  );
+  const followImports = (options.followImports ?? 0) as 0 | 1 | 2;
+  const includePatterns = (options.include ?? []).filter((s) => s.length > 0);
+  const excludePatterns = (options.exclude ?? []).filter((s) => s.length > 0);
 
   const rootAbs  = resolve(repoRoot);
   const rootReal = await realpath(rootAbs);
 
-  // Dedupe input order-preserving; cap at limit.
-  const seen = new Set<string>();
-  const requested: string[] = [];
-  for (const raw of files) {
-    const r = raw.trim();
-    if (!r) continue;
-    if (seen.has(r)) continue;
-    seen.add(r);
-    requested.push(r);
-  }
-  const overflow = requested.length > cap ? requested.length - cap : 0;
-  const limited  = requested.slice(0, cap);
-
-  const keyFiles: RepoFile[] = [];
   const skipped: Array<{ path: string; reason: string }> = [];
-  const dirSet = new Set<string>();
+  const capsApplied: string[] = [];
 
-  for (const rel of limited) {
-    const candidate = resolve(rootAbs, rel);
-    if (!(await isInsideRoot(candidate, rootReal))) {
+  // Expand --include against the repo tree (deny-list aware via buildTree).
+  const includeMatched = includePatterns.length > 0
+    ? await expandInclude(rootAbs, includePatterns)
+    : [];
+
+  // Compose seeds: explicit input (already deduped, entry-first by parseArgs)
+  // unioned with includeMatched, deduped while preserving order.
+  const explicitSeeds: string[] = [];
+  const seenSeed = new Set<string>();
+  const enqueueRel = (rel: string): void => {
+    const r = rel.trim();
+    if (!r || seenSeed.has(r)) return;
+    seenSeed.add(r);
+    explicitSeeds.push(r);
+  };
+  for (const f of files) enqueueRel(f);
+  for (const m of includeMatched) enqueueRel(m);
+
+  // --exclude removes seeds and follow-imports candidates uniformly.
+  const excludeMatchers = excludePatterns.map(compilePattern);
+  const passesExclude = (rel: string): boolean =>
+    !excludeMatchers.some((m) => m(rel));
+
+  type AcceptedFile = {
+    rel:   string;
+    abs:   string;
+    depth: 0 | 1 | 2;
+    size:  number;
+  };
+
+  const accepted:    AcceptedFile[] = [];
+  const visitedAbs:  Set<string>    = new Set();
+
+  // Validate a candidate path. Records skipped reason on rejection, returns
+  // an AcceptedFile on success. Does NOT push to `accepted` (caller does).
+  const validate = async (
+    rel:   string,
+    depth: 0 | 1 | 2,
+  ): Promise<AcceptedFile | null> => {
+    const absCandidate = resolve(rootAbs, rel);
+
+    // Path-safety / symlink-escape
+    if (!(await isInsideRoot(absCandidate, rootReal))) {
       skipped.push({ path: rel, reason: "outside-repo-or-symlink-escape" });
-      continue;
+      return null;
     }
+    // Deny-list (parity with full readRepo)
+    if (pathHitsIgnoredDir(rel) !== null) {
+      skipped.push({ path: rel, reason: "ignored-dir" });
+      return null;
+    }
+    // --exclude
+    if (!passesExclude(rel)) {
+      skipped.push({ path: rel, reason: "excluded" });
+      return null;
+    }
+    // Stat
     let info;
     try {
-      info = await stat(candidate);
+      info = await stat(absCandidate);
     } catch {
       skipped.push({ path: rel, reason: "not-found" });
-      continue;
+      return null;
     }
     if (!info.isFile()) {
       skipped.push({ path: rel, reason: "not-a-file" });
-      continue;
+      return null;
     }
-    if (info.size > 100_000) {
-      skipped.push({ path: rel, reason: "too-large" });
-      continue;
+    // Per-file size ceiling
+    if (info.size > maxBytes) {
+      skipped.push({ path: rel, reason: "over-max-bytes" });
+      return null;
     }
-    const content = await readTextFile(candidate);
-    if (content === null) {
+    // Extension allowlist (binary safety)
+    const ext = extname(absCandidate).toLowerCase();
+    if (!READABLE_EXTENSIONS.has(ext) && !absCandidate.endsWith(".example")) {
       skipped.push({ path: rel, reason: "non-readable-extension" });
+      return null;
+    }
+    // Dedup by absolute path
+    if (visitedAbs.has(absCandidate)) return null;
+    visitedAbs.add(absCandidate);
+    return { rel, abs: absCandidate, depth, size: info.size };
+  };
+
+  // Seeds first.
+  for (const rel of explicitSeeds) {
+    if (accepted.length >= maxFiles) {
+      skipped.push({ path: rel, reason: "cap-overflow" });
       continue;
     }
-    const relInRepo = relative(rootAbs, candidate);
-    keyFiles.push({ path: relInRepo, content, sizeBytes: info.size });
+    const a = await validate(rel, 0);
+    if (a) accepted.push(a);
+  }
 
-    // Record parent directory chain for the focused tree.
-    let dir = relInRepo;
+  // BFS: read content, extract imports, enqueue resolvable relatives.
+  const contents = new Map<string, string>(); // abs → content
+  let head = 0;
+  while (head < accepted.length) {
+    const cur = accepted[head++]!;
+    let content: string;
+    try {
+      content = await readFile(cur.abs, "utf-8");
+    } catch {
+      // Validated successfully but read failed: drop from accepted, mark skipped.
+      const idx = accepted.findIndex((a) => a.abs === cur.abs);
+      if (idx >= 0) accepted.splice(idx, 1);
+      visitedAbs.delete(cur.abs);
+      skipped.push({ path: cur.rel, reason: "not-found" });
+      continue;
+    }
+    contents.set(cur.abs, content);
+
+    // Stop expanding past followImports depth.
+    if (cur.depth >= followImports) continue;
+    if (accepted.length >= maxFiles) continue;
+
+    const specs = extractImports(content);
+    for (const spec of specs) {
+      if (accepted.length >= maxFiles) break;
+
+      // Bare module or alias → not followable.
+      if (!spec.startsWith(".") && !spec.startsWith("/")) {
+        if (/^[@~#]/.test(spec)) {
+          skipped.push({ path: spec, reason: "import-unresolved-alias" });
+        } else {
+          skipped.push({ path: spec, reason: "bare-module" });
+        }
+        continue;
+      }
+      // "/" absolute specifier — not standard in TS source, treat as unresolved.
+      if (spec.startsWith("/")) {
+        skipped.push({ path: spec, reason: "import-unresolved" });
+        continue;
+      }
+
+      const resolvedAbs = await resolveRelativeImport(cur.abs, spec);
+      if (!resolvedAbs) {
+        skipped.push({ path: spec, reason: "import-unresolved" });
+        continue;
+      }
+      const rel = relative(rootAbs, resolvedAbs);
+      const nextDepth = (cur.depth + 1) as 0 | 1 | 2;
+      const a = await validate(rel, nextDepth);
+      if (a) accepted.push(a);
+    }
+  }
+
+  if (accepted.length >= maxFiles) {
+    capsApplied.push(`max-files cap reached at ${maxFiles}`);
+  }
+  if (excludeMatchers.length > 0) {
+    capsApplied.push(`exclude patterns active (${excludePatterns.length})`);
+  }
+  if (includeMatched.length > 0) {
+    capsApplied.push(`include matched ${includeMatched.length} file(s)`);
+  }
+
+  // Build keyFiles in BFS order with content.
+  const keyFiles: RepoFile[] = [];
+  const dirSet = new Set<string>();
+  for (const a of accepted) {
+    const content = contents.get(a.abs);
+    if (content === undefined) continue;
+    keyFiles.push({ path: a.rel, content, sizeBytes: a.size });
+
+    let dir = a.rel.replace(/\\/g, "/");
     while (true) {
       const idx = dir.lastIndexOf("/");
       if (idx < 0) break;
@@ -250,20 +505,33 @@ export async function readRepoFocused(
     }
   }
 
-  if (overflow > 0) {
-    logger.warn(`audit-ux: focused-read capped at ${cap} files; ${overflow} extra ignored`);
+  if (skipped.length > 0) {
+    logger.debug(`audit-ux: focused-read skipped ${skipped.length} candidate(s)`);
   }
 
   // Build a focused tree: directories (alphabetical) followed by files.
-  const dirs  = [...dirSet].sort();
+  const dirs      = [...dirSet].sort();
   const fileLines = keyFiles.map((f) => f.path).sort();
-  const tree = [...dirs, ...fileLines];
+  const tree      = [...dirs, ...fileLines];
 
   return {
-    root:       rootAbs,
+    root:           rootAbs,
     tree,
     keyFiles,
-    totalFiles: keyFiles.length,
+    totalFiles:     keyFiles.length,
     skipped,
+    reachableCount: accepted.length,
+    capsApplied,
+    followDepth:    followImports,
+    caps:           { maxFiles, maxBytes },
+    seeds: {
+      entry:          files[0] ?? null,
+      explicit:       files.slice(0),
+      includeMatched,
+    },
+    patterns: {
+      include: includePatterns,
+      exclude: excludePatterns,
+    },
   };
 }
