@@ -50,6 +50,14 @@ const envSchema = z.object({
   // Phase 32A — TTL for single-use second approvals (ms). 15 minutes default.
   SECOND_APPROVAL_TTL_MS: z.string().default("900000"),
 
+  // Phase 32C — file-write preview/real safety limits.
+  // All inputs are strings (env vars); coerced and capped below.
+  FILE_WRITE_ALLOWED_ROOTS:      z.string().default("src,tests,docs,scripts"),
+  FILE_WRITE_MAX_FILES:          z.string().default("20"),
+  FILE_WRITE_MAX_BYTES_PER_FILE: z.string().default("262144"),
+  FILE_WRITE_MAX_TOTAL_BYTES:    z.string().default("1048576"),
+  FILE_WRITE_ALLOW_SENSITIVE:    z.string().default("false"),
+
   // Coolify — opcional, solo activo si COOLIFY_API_TOKEN existe
   COOLIFY_API_URL:      z.string().default("http://localhost:8000"),
   COOLIFY_API_TOKEN:    z.string().optional(),
@@ -126,6 +134,25 @@ export const SECOND_APPROVAL_TTL_MS: number = (() => {
   const n = Number(env.SECOND_APPROVAL_TTL_MS);
   return Number.isFinite(n) && n > 0 ? n : 900_000;
 })();
+
+// Phase 32C — file-write safety limits.
+// Each numeric limit is parsed, then clamped to its hard maximum so a hostile
+// or fat-fingered env value cannot widen the safety envelope past the cap.
+function clampPositive(raw: string, fallback: number, max: number): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.min(Math.floor(n), max);
+}
+
+export const FILE_WRITE_ALLOWED_ROOTS: string = env.FILE_WRITE_ALLOWED_ROOTS;
+export const FILE_WRITE_MAX_FILES: number =
+  clampPositive(env.FILE_WRITE_MAX_FILES, 20, 100);
+export const FILE_WRITE_MAX_BYTES_PER_FILE: number =
+  clampPositive(env.FILE_WRITE_MAX_BYTES_PER_FILE, 262_144, 1_048_576);
+export const FILE_WRITE_MAX_TOTAL_BYTES: number =
+  clampPositive(env.FILE_WRITE_MAX_TOTAL_BYTES, 1_048_576, 4_194_304);
+export const FILE_WRITE_ALLOW_SENSITIVE: boolean =
+  env.FILE_WRITE_ALLOW_SENSITIVE === "true";
 
 export const GITHUB_CONFIG = {
   token:   env.GITHUB_TOKEN,

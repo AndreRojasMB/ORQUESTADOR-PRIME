@@ -17,9 +17,23 @@ import { readFile, stat } from "fs/promises";
 import { join, resolve } from "path";
 import { z } from "zod";
 import { simpleGit } from "simple-git";
-import { GITHUB_CONFIG } from "../config.js";
+import {
+  GITHUB_CONFIG,
+  FILE_WRITE_ALLOWED_ROOTS,
+  FILE_WRITE_MAX_FILES,
+  FILE_WRITE_MAX_BYTES_PER_FILE,
+  FILE_WRITE_MAX_TOTAL_BYTES,
+  FILE_WRITE_ALLOW_SENSITIVE,
+} from "../config.js";
 import { logger } from "../observability/logger.js";
 import { GitClient } from "../execution/gitClient.js";
+import {
+  validateFile,
+  checkProposalLimits,
+  parseAllowedRoots,
+  type FileValidation,
+  type ProposalLimits,
+} from "./safety/fileWriteSafety.js";
 import type { ActionProposal } from "./types.js";
 
 // ─── Zod schemas ────────────────────────────────────────────────
@@ -34,6 +48,10 @@ const FileWriteEntrySchema = z.object({
 const FileWriteParamsSchema = z.object({
   files: z.array(FileWriteEntrySchema).min(1),
   commitMessage: z.string().min(1),
+  // Phase 32C — dual-key escape hatch for lockfile/tsconfig writes.
+  // Both this flag AND env FILE_WRITE_ALLOW_SENSITIVE must be set; either
+  // alone is insufficient. Defaults to false on omission.
+  allowSensitivePaths: z.boolean().optional(),
 });
 
 const GitBranchParamsSchema = z.object({
@@ -64,7 +82,7 @@ export interface PreviewResult {
 
 // ─── Helpers ────────────────────────────────────────────────────
 
-const DIFF_LIMIT_PER_FILE = 2048;
+const DIFF_LIMIT_PER_FILE = 8 * 1024;
 
 function validationFailure(
   kind: PreviewKind,
@@ -123,6 +141,9 @@ interface FileWriteFilePreview {
   existsOnDisk: boolean;
   byteCount: number;
   reason: string;
+  validation: "ok" | "blocked";
+  blockReason: FileValidation["blockReason"];
+  blockDetail: string | null;
   diff?: string;
   warning?: string;
 }
@@ -143,30 +164,74 @@ export async function previewFileWrite(
   const warnings: string[] = [];
   const filesPreview: FileWriteFilePreview[] = [];
 
+  // Resolve runtime safety limits. Both the proposal flag and the env flag
+  // must be true to relax the lockfile/tsconfig denial — either alone is no.
+  const allowSensitive =
+    Boolean(parsed.data.allowSensitivePaths) && FILE_WRITE_ALLOW_SENSITIVE;
+  const limits: ProposalLimits = {
+    maxFiles: FILE_WRITE_MAX_FILES,
+    maxBytesPerFile: FILE_WRITE_MAX_BYTES_PER_FILE,
+    maxTotalBytes: FILE_WRITE_MAX_TOTAL_BYTES,
+    allowedRoots: parseAllowedRoots(FILE_WRITE_ALLOWED_ROOTS),
+    allowSensitive,
+  };
+
+  // Proposal-level cap on file count, evaluated before any per-file work.
+  const proposalCheck = checkProposalLimits(
+    parsed.data.files.length,
+    0,
+    limits,
+  );
+  if (!proposalCheck.ok && proposalCheck.blockReason === "file-count") {
+    return {
+      ok: false,
+      kind: "file-write",
+      message: `Rejected: ${proposalCheck.detail}`,
+      preview: null,
+      warnings: [proposalCheck.detail ?? "file-count cap exceeded"],
+      rollbackPlan,
+    };
+  }
+
+  let totalBytes = 0;
+  let blockedCount = 0;
+
   for (const f of parsed.data.files) {
-    // Reject path escape attempts. A safe preview still guards on paths.
-    if (f.path.startsWith("/") || f.path.includes("..")) {
-      warnings.push(`Rejected path (absolute or traversal): ${f.path}`);
-      continue;
-    }
-    const fullPath = join(root, f.path);
-    const exists = await pathExists(fullPath);
+    const validation = validateFile(f.path, f.content, limits);
     const entry: FileWriteFilePreview = {
       path: f.path,
       operation: f.operation,
-      existsOnDisk: exists,
-      byteCount: Buffer.byteLength(f.content, "utf-8"),
+      existsOnDisk: false,
+      byteCount: validation.byteCount,
       reason: f.reason,
+      validation: validation.ok ? "ok" : "blocked",
+      blockReason: validation.blockReason,
+      blockDetail: validation.detail,
     };
-    if (f.operation === "create" && exists) {
+
+    if (!validation.ok) {
+      blockedCount++;
+      warnings.push(
+        `${f.path}: blocked (${validation.blockReason})${validation.detail ? " — " + validation.detail : ""}`,
+      );
+      filesPreview.push(entry);
+      continue;
+    }
+
+    totalBytes += validation.byteCount;
+
+    const fullPath = join(root, f.path);
+    entry.existsOnDisk = await pathExists(fullPath);
+
+    if (f.operation === "create" && entry.existsOnDisk) {
       entry.warning = "create requested but path already exists";
       warnings.push(`${f.path}: ${entry.warning}`);
     }
-    if (f.operation === "modify" && !exists) {
+    if (f.operation === "modify" && !entry.existsOnDisk) {
       entry.warning = "modify requested but path does not exist";
       warnings.push(`${f.path}: ${entry.warning}`);
     }
-    if (f.operation === "modify" && exists) {
+    if (f.operation === "modify" && entry.existsOnDisk) {
       try {
         const current = await readFile(fullPath, "utf-8");
         entry.diff = minimalDiff(current, f.content);
@@ -178,19 +243,73 @@ export async function previewFileWrite(
     filesPreview.push(entry);
   }
 
+  // Total-bytes cap evaluated only over files that passed per-file validation.
+  const totalsCheck = checkProposalLimits(
+    parsed.data.files.length,
+    totalBytes,
+    limits,
+  );
+  if (!totalsCheck.ok && totalsCheck.blockReason === "total-bytes") {
+    return {
+      ok: false,
+      kind: "file-write",
+      message: `Rejected: ${totalsCheck.detail}`,
+      preview: {
+        repoRoot: root,
+        commitMessage: parsed.data.commitMessage,
+        files: filesPreview,
+      },
+      warnings: [...warnings, totalsCheck.detail ?? "total-bytes cap exceeded"],
+      rollbackPlan,
+    };
+  }
+
+  // Branch-context warning (preview never refuses on this; the future real
+  // handler will). Reading current branch is best-effort.
+  let currentBranch: string | null = null;
+  try {
+    const git = simpleGit(root);
+    currentBranch = (await git.revparse(["--abbrev-ref", "HEAD"])).trim();
+    if (!currentBranch.startsWith("agent/")) {
+      warnings.push(
+        `Current branch "${currentBranch}" is not an agent/* branch — real execution would refuse`,
+      );
+    }
+  } catch {
+    // non-fatal; branch detection is informational at preview time
+  }
+
   logger.info("action:preview file-write", {
     proposalId: proposal.id,
     fileCount: filesPreview.length,
+    blocked: blockedCount,
+    totalBytes,
     warnings: warnings.length,
   });
 
+  const ok = blockedCount === 0;
   return {
-    ok: true,
+    ok,
     kind: "file-write",
-    message: `Would write ${filesPreview.length} file(s) on a fresh agent/* branch`,
+    message: ok
+      ? `Would write ${filesPreview.length} file(s) on a fresh agent/* branch`
+      : `${blockedCount} file(s) blocked by safety validation; preview did not mutate anything`,
     preview: {
       repoRoot: root,
       commitMessage: parsed.data.commitMessage,
+      currentBranch,
+      allowSensitive,
+      limits: {
+        maxFiles: limits.maxFiles,
+        maxBytesPerFile: limits.maxBytesPerFile,
+        maxTotalBytes: limits.maxTotalBytes,
+        allowedRoots: limits.allowedRoots,
+      },
+      totals: {
+        fileCount: filesPreview.length,
+        blockedCount,
+        totalBytes,
+      },
       files: filesPreview,
     },
     warnings,
