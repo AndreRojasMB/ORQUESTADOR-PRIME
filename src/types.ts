@@ -9,6 +9,7 @@ export type OrchestratorMode =
   | "route"
   | "blueprint"
   | "audit"
+  | "audit-ux"
   | "scaffold"
   | "memory"
   | "init"
@@ -17,9 +18,19 @@ export type OrchestratorMode =
 
 export type FutureMode = OrchestratorMode;
 
+export interface UxAuditArgs {
+  repo:     string;
+  entry:    string;
+  files:    string[];
+  sections: string[];
+  agents:   string[];
+  scope:    string;
+}
+
 export interface ParsedArgs {
   task: string;
   mode: OrchestratorMode;
+  uxAudit?: UxAuditArgs;
 }
 
 export interface OrchestratorResult {

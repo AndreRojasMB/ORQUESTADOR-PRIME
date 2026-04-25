@@ -1,9 +1,10 @@
 // src/orchestrator/orchestrator.ts
 import { resolve } from "path";
 import { Agent, run } from "@openai/agents";
-import { readRepo } from "../audit/repoReader.js";
-import { buildAuditContext } from "../audit/auditContext.js";
+import { readRepo, readRepoFocused } from "../audit/repoReader.js";
+import { buildAuditContext, buildUxAuditContext } from "../audit/auditContext.js";
 import { buildAuditPrompt } from "../prompts/audit.js";
+import { buildUxAuditPrompt } from "../prompts/auditUx.js";
 import { routeTask, buildBlueprintContext } from "../router/agentRouter.js";
 import { buildPlanningPrompt } from "../prompts/planning.js";
 import { buildRoutingPrompt } from "../prompts/routing.js";
@@ -69,6 +70,15 @@ export function parseArgs(argv: string[]): ParsedArgs {
   let mode: OrchestratorMode = "plan";
   const taskParts: string[] = [];
 
+  // Phase 32C-UXAUDIT — capture UX-audit-only flags. Read-only metadata
+  // for prompt construction; nothing here triggers writes.
+  let uxRepo:     string | undefined;
+  let uxEntry:    string | undefined;
+  let uxFiles:    string | undefined;
+  let uxSections: string | undefined;
+  let uxAgents:   string | undefined;
+  let uxScope:    string | undefined;
+
   for (const arg of argv) {
     if (arg.startsWith("--mode=")) {
       const value = arg.split("=")[1];
@@ -77,6 +87,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
         value === "route" ||
         value === "blueprint" ||
         value === "audit" ||
+        value === "audit-ux" ||
         value === "scaffold" ||
         value === "memory" ||
         value === "init" ||
@@ -89,12 +100,62 @@ export function parseArgs(argv: string[]): ParsedArgs {
       logger.warn(`Unknown mode "${value}", defaulting to "plan"`);
       continue;
     }
-    if (arg.startsWith("--repo=")) continue;
+    if (arg.startsWith("--repo=")) {
+      uxRepo = arg.slice("--repo=".length);
+      continue;
+    }
+    if (arg.startsWith("--entry=")) {
+      uxEntry = arg.slice("--entry=".length);
+      continue;
+    }
+    if (arg.startsWith("--files=")) {
+      uxFiles = arg.slice("--files=".length);
+      continue;
+    }
+    if (arg.startsWith("--sections=")) {
+      uxSections = arg.slice("--sections=".length);
+      continue;
+    }
+    if (arg.startsWith("--agents=")) {
+      uxAgents = arg.slice("--agents=".length);
+      continue;
+    }
+    if (arg.startsWith("--scope=")) {
+      uxScope = arg.slice("--scope=".length);
+      continue;
+    }
     if (arg.startsWith("--out=")) continue;
     taskParts.push(arg);
   }
 
-  return { mode, task: taskParts.join(" ").trim() };
+  const result: ParsedArgs = { mode, task: taskParts.join(" ").trim() };
+
+  if (mode === "audit-ux") {
+    const splitCsv = (s: string | undefined): string[] =>
+      (s ?? "")
+        .split(",")
+        .map((x) => x.trim())
+        .filter((x) => x.length > 0);
+    const filesList = splitCsv(uxFiles);
+    const entry = (uxEntry ?? "").trim();
+    // Always include --entry in the read set, deduped, entry-first.
+    const allFiles = entry
+      ? [entry, ...filesList.filter((f) => f !== entry)]
+      : filesList;
+    const agentsList = splitCsv(uxAgents);
+    result.uxAudit = {
+      repo:     (uxRepo ?? ".").trim() || ".",
+      entry,
+      files:    allFiles,
+      sections: splitCsv(uxSections).map((s) => s.toLowerCase()),
+      agents:   agentsList.length > 0
+        ? agentsList
+        : ["uxui", "motionFx", "frontend", "qa"],
+      scope:    (uxScope ?? "").trim().slice(0, 64),
+    };
+  }
+
+  return result;
 }
 
 const openaiOrchestrator = new Agent({
@@ -232,6 +293,95 @@ export async function runOrchestrator(
     const auditCtx = buildAuditContext(repo);
     const auditSkillPrefix = await buildSkillPrefix(router.selectedAgents);
     const prompt = ragPrefix + trajectoryPrefix + auditSkillPrefix + buildAuditPrompt(auditCtx, router);
+
+    if (isClaudeAvailable()) {
+      logger.info(`Provider: Claude (${CLAUDE_MODELS.architect})`);
+      const response = await tracer.phaseAsync("provider:claude", async () =>
+        callProvider(CLAUDE_MODELS.architect, ORCHESTRATOR_SYSTEM, prompt, 8192)
+      );
+      rawOutput = response.content;
+      tracer.setProvider({
+        provider: "anthropic",
+        model: CLAUDE_MODELS.architect,
+        durationMs: tracer.lastPhaseDurationMs(),
+        ...(response.usage && {
+          inputTokens: response.usage.inputTokens,
+          outputTokens: response.usage.outputTokens,
+        }),
+      });
+    } else {
+      logger.warn("Claude not configured — falling back to OpenAI direct call");
+      const response = await tracer.phaseAsync("provider:openai", async () =>
+        callProvider(MODELS.synthesis, ORCHESTRATOR_SYSTEM, prompt, 8192)
+      );
+      rawOutput = response.content;
+      tracer.setProvider({ provider: "openai", model: MODELS.synthesis, durationMs: tracer.lastPhaseDurationMs() });
+    }
+
+  } else if (mode === "audit-ux") {
+    // Phase 32C-UXAUDIT — read-only targeted UX/UI audit.
+    // No keyword router, no dispatchAction, no actions/* or execution/* writes.
+    // Agent set is forced from --agents (or default uxui+motionFx+frontend+qa).
+    const parsed = parseArgs(process.argv.slice(2));
+    const ux = parsed.uxAudit;
+    if (!ux) {
+      throw new Error('audit-ux requires --repo, --entry, --sections, --scope (and optional --files, --agents)');
+    }
+    if (!ux.entry) {
+      throw new Error('audit-ux: --entry=<relative-path> is required');
+    }
+    if (ux.sections.length === 0) {
+      throw new Error('audit-ux: --sections=<csv> is required (non-empty)');
+    }
+    if (!ux.scope) {
+      throw new Error('audit-ux: --scope=<short-label> is required');
+    }
+
+    // Validate agents against registry; drop unknowns with a warning.
+    const knownAgents = new Set(Object.keys((await import("../agents/registry.js")).agentRegistry));
+    const validAgents = ux.agents.filter((a) => knownAgents.has(a));
+    const droppedAgents = ux.agents.filter((a) => !knownAgents.has(a));
+    if (droppedAgents.length > 0) {
+      logger.warn(`audit-ux: dropped unknown agent(s): ${droppedAgents.join(", ")}`);
+    }
+    const effectiveAgents = validAgents.length > 0
+      ? validAgents
+      : ["uxui", "motionFx", "frontend", "qa"];
+
+    const repoPath = resolve(ux.repo);
+    logger.info(`Auditing (UX): scope="${ux.scope}" entry="${ux.entry}" repo="${repoPath}"`);
+    logger.info(`Sections : ${ux.sections.join(", ")}`);
+    logger.info(`Agents   : ${effectiveAgents.join(", ")}`);
+
+    const repo = await tracer.phaseAsync("repo:read-focused", async () =>
+      readRepoFocused(repoPath, ux.files),
+    );
+    logger.info(`Files read : ${repo.keyFiles.length} (skipped ${repo.skipped.length})`);
+    if (repo.skipped.length > 0) {
+      for (const s of repo.skipped) {
+        logger.warn(`  skipped ${s.path} (${s.reason})`);
+      }
+    }
+
+    // Build a synthetic RouterResult for trace visibility (forced agent set).
+    const forcedRouter = {
+      selectedAgents:  effectiveAgents,
+      matchedKeywords: [],
+      summary: [
+        `Forced agent set (no keyword router for audit-ux):`,
+        ...effectiveAgents.map((a) => `- ${a}`),
+      ].join("\n"),
+    };
+    tracer.setRouter(forcedRouter.selectedAgents, forcedRouter.matchedKeywords);
+
+    const uxCtx = buildUxAuditContext(repo, {
+      scope:    ux.scope,
+      entry:    ux.entry,
+      sections: ux.sections,
+      agents:   effectiveAgents,
+    });
+    const uxSkillPrefix = await buildSkillPrefix(effectiveAgents);
+    const prompt = ragPrefix + trajectoryPrefix + uxSkillPrefix + buildUxAuditPrompt(uxCtx);
 
     if (isClaudeAvailable()) {
       logger.info(`Provider: Claude (${CLAUDE_MODELS.architect})`);

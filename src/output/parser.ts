@@ -10,6 +10,7 @@ import {
   RouteOutputSchema,
   BlueprintOutputSchema,
   AuditOutputSchema,
+  AuditUxOutputSchema,
   ScaffoldOutputSchema,
   MemoryOutputSchema,
   ExecutionOutputSchema,
@@ -57,6 +58,7 @@ function selectSchema(
   | typeof RouteOutputSchema
   | typeof BlueprintOutputSchema
   | typeof AuditOutputSchema
+  | typeof AuditUxOutputSchema
   | typeof ScaffoldOutputSchema
   | typeof MemoryOutputSchema
   | typeof ExecutionOutputSchema {
@@ -69,6 +71,8 @@ function selectSchema(
       return BlueprintOutputSchema;
     case "audit":
       return AuditOutputSchema;
+    case "audit-ux":
+      return AuditUxOutputSchema;
     case "execute":
       return ExecutionOutputSchema;
     case "init":

@@ -35,6 +35,7 @@ async function main() {
         '       npm run route     -- "your task"',
         '       npm run blueprint -- "your project"',
         '       npm run audit     -- --repo=./path',
+        '       npm run audit:ux  -- --repo=./path --entry=src/pages/Home.tsx --files=a.tsx,b.tsx --sections=hero,navbar --scope=home [--agents=uxui,motionFx,frontend,qa]',
         '       npm run scaffold  -- "your project" --out=./dir',
         '       npm run memory',
         '       npm run chat',

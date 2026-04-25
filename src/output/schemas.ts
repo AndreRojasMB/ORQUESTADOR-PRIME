@@ -262,6 +262,94 @@ export const MemoryOutputSchema = z.object({
 
 export type MemoryOutput = z.infer<typeof MemoryOutputSchema>;
 
+// ─── UX Audit Mode (Phase 32C-UXAUDIT) ──────────────────────────
+
+const UxVisualProblemSchema = z.object({
+  severity: z.enum(["critical", "high", "medium", "low"]),
+  title: z.string(),
+  where: z.string(),
+  evidence: z.string(),
+  recommendation: z.string(),
+});
+
+const UxSectionDiagnosisSchema = z.object({
+  section: z.string(),
+  found: z.boolean(),
+  files: z.array(z.string()),
+  uxFindings: z.array(z.string()),
+  uiFindings: z.array(z.string()),
+  severityHigh: z.array(z.string()),
+});
+
+const UxMotionEffectSchema = z.object({
+  where: z.string(),
+  effect: z.string(),
+  easing: z.string(),
+  duration: z.string(),
+  reducedMotion: z.string(),
+});
+
+const UxResponsiveRiskSchema = z.object({
+  breakpoint: z.enum(["sm", "md", "lg", "xl"]),
+  risk: z.string(),
+  where: z.string(),
+});
+
+const UxA11yRiskSchema = z.object({
+  wcag: z.string(),
+  risk: z.string(),
+  where: z.string(),
+  fix: z.string(),
+});
+
+const UxPerfRiskSchema = z.object({
+  category: z.enum(["lcp", "cls", "inp", "bundle", "image", "hydration"]),
+  risk: z.string(),
+  where: z.string(),
+});
+
+const UxNoTouchSchema = z.object({
+  path: z.string(),
+  reason: z.string(),
+});
+
+export const AuditUxOutputSchema = z.object({
+  mode: z.literal("audit-ux"),
+  scope: z.string(),
+  entry: z.string(),
+  sectionsRequested: z.array(z.string()),
+  activeAgents: z.array(z.string()),
+  currentComposition: z.object({
+    summary: z.string(),
+    primaryComponents: z.array(z.string()),
+    renderTree: z.array(z.string()),
+    stylingApproach: z.string(),
+    stateModel: z.string(),
+  }),
+  visualProblems: z.array(UxVisualProblemSchema),
+  sectionDiagnosis: z.array(UxSectionDiagnosisSchema),
+  motionRecommendation: z.object({
+    currentLibraries: z.array(z.string()),
+    recommended: z.string(),
+    rationale: z.string(),
+    specificEffects: z.array(UxMotionEffectSchema),
+  }),
+  responsiveRisks: z.array(UxResponsiveRiskSchema),
+  accessibilityRisks: z.array(UxA11yRiskSchema),
+  performanceRisks: z.array(UxPerfRiskSchema),
+  noTouchList: z.array(UxNoTouchSchema),
+  recommendedNextPhase: z.object({
+    phaseName: z.string(),
+    scope: z.string(),
+    files: z.array(z.string()),
+    agents: z.array(z.string()),
+    estimatedEffort: z.enum(["low", "medium", "high"]),
+    blockers: z.array(z.string()),
+  }),
+});
+
+export type AuditUxOutput = z.infer<typeof AuditUxOutputSchema>;
+
 // ─── Execution Mode ───────────────────────────────────────────────
 
 const ExecutionFileSchema = z.object({
@@ -290,6 +378,7 @@ export type StructuredOutput =
   | RouteOutput
   | BlueprintOutput
   | AuditOutput
+  | AuditUxOutput
   | ScaffoldOutput
   | MemoryOutput
   | ExecutionOutput;

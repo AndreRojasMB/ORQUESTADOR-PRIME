@@ -10,6 +10,7 @@
     "route": "tsx src/index.ts --mode=route",
     "blueprint": "tsx src/index.ts --mode=blueprint",
     "audit": "tsx src/index.ts --mode=audit",
+    "audit:ux": "tsx src/index.ts --mode=audit-ux",
     "scaffold": "tsx src/index.ts --mode=scaffold",
     "memory": "tsx src/index.ts --mode=memory",
     "chat": "tsx src/index.ts --mode=chat",
