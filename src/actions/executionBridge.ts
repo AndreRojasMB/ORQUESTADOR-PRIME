@@ -23,6 +23,7 @@ import {
   previewGitBranch,
   previewPrCreate,
   realGitBranch,
+  realFileWrite,
   type PreviewResult,
 } from "./repoActionExecutor.js";
 import { consumeSecondApproval } from "./secondApprovalStore.js";
@@ -255,11 +256,12 @@ const PREVIEW_CATEGORIES: Set<ActionCategory> = new Set([
   "pr-create",
 ]);
 
-// Phase 32B — hard-coded allowlist for real (repo-mutating) execution.
+// Phase 32B/D — hard-coded allowlist for real (repo-mutating) execution.
 // Belt-and-suspenders with ACTIONS_REAL_EXECUTION_ENABLED: both must hold.
 // Expanding this set requires a code change (reviewable), not an env flip.
 const REAL_EXEC_CATEGORIES: Set<ActionCategory> = new Set([
   "git-branch",
+  "file-write",
 ]);
 
 function buildBlockedResult(proposal: ActionProposal): DispatchResult {
@@ -283,13 +285,16 @@ function buildDeferredResult(proposal: ActionProposal): DispatchResult {
 // ─── Preview handler (Phase 32A) ────────────────────────────────
 
 async function handleRepoPreview(proposal: ActionProposal): Promise<DispatchResult> {
-  // Real-execution routing (Phase 32B). Both gates required.
+  // Real-execution routing (Phase 32B/D). Both gates required.
   if (
     ACTIONS_REAL_EXECUTION_ENABLED &&
     REAL_EXEC_CATEGORIES.has(proposal.category)
   ) {
     if (proposal.category === "git-branch") {
       return handleGitBranchReal(proposal);
+    }
+    if (proposal.category === "file-write") {
+      return handleFileWriteReal(proposal);
     }
     // Category is in the real allowlist but has no handler yet — fail closed.
     logger.warn("action:dispatch real execution allowlisted but handler not implemented", {
@@ -410,6 +415,49 @@ async function handleGitBranchReal(proposal: ActionProposal): Promise<DispatchRe
       approvalId,
       branchName: result.branchName,
       fromBranch: result.fromBranch,
+      warnings: result.warnings,
+      rollbackPlan: result.rollbackPlan,
+    },
+  };
+}
+
+// ─── Real file-write handler (Phase 32D) ────────────────────────
+
+async function handleFileWriteReal(proposal: ActionProposal): Promise<DispatchResult> {
+  // Consume-before-mutate. Single-use: a granted approval is spent even if
+  // the validation or write later fails (fail-closed policy, matches
+  // handleGitBranchReal). Existing guards inside consumeSecondApproval:
+  // not found, not approved, no active grant, expired, revoked, consumed,
+  // parameter-hash drift.
+  const consume = await consumeSecondApproval(proposal.id);
+  if (!consume.ok || !consume.approval) {
+    logger.warn("action:real file-write refused — second approval not consumable", {
+      id: proposal.id,
+      reason: consume.reason,
+    });
+    return {
+      ok: false,
+      category: proposal.category,
+      message: `Refused: ${consume.reason}`,
+      output: null,
+    };
+  }
+
+  const approvalId = consume.approval.id;
+  const result = await realFileWrite(proposal);
+
+  return {
+    ok: result.ok,
+    category: proposal.category,
+    message: result.message,
+    output: {
+      dryRun: false,
+      kind: "file-write",
+      approvalId,
+      branchName: result.branchName,
+      filesWritten: result.filesWritten,
+      filesSkipped: result.filesSkipped,
+      backup: result.backup,
       warnings: result.warnings,
       rollbackPlan: result.rollbackPlan,
     },

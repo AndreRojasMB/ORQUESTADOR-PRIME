@@ -13,8 +13,8 @@
 // gitClient.commitFiles/pushBranch/createAgentBranch and
 // githubClient.createPullRequest are NOT imported here.
 
-import { readFile, stat } from "fs/promises";
-import { join, resolve } from "path";
+import { readFile, stat, writeFile, mkdir, rename, unlink } from "fs/promises";
+import { join, resolve, dirname } from "path";
 import { z } from "zod";
 import { simpleGit } from "simple-git";
 import {
@@ -581,5 +581,297 @@ export async function realGitBranch(
     fromBranch,
     warnings: [],
     rollbackPlan: `git branch -D ${branchName}`,
+  };
+}
+
+// ─── real file-write execution (Phase 32D) ──────────────────────
+// Second real repo-mutating entry point in src/actions/*.
+// executionBridge routes here only after:
+//   - ACTIONS_REAL_EXECUTION_ENABLED=true
+//   - REAL_EXEC_CATEGORIES contains "file-write"
+//   - proposal.status === "approved"
+//   - no prior successful execution for this proposal
+//   - a second approval has been consumed (single-use, TTL, hash-bound)
+// This function still enforces every invariant independently:
+//   - clean repo at start (assertCleanRepo)
+//   - current branch matches /^agent\//
+//   - 32C safety gates (validateFile + checkProposalLimits) over every entry
+//   - validate-all-before-write; restore-on-write-failure from a backup map
+// No commit, no push, no branch creation, no PR.
+// Imports stay limited to fs/promises + GitClient (read-only methods only).
+
+export interface RealFileWriteFileEntry {
+  path: string;
+  operation: "create" | "modify";
+  byteCount: number;
+  existed: boolean;
+}
+
+export interface RealFileWriteResult {
+  ok: boolean;
+  message: string;
+  branchName: string | null;
+  filesWritten: RealFileWriteFileEntry[];
+  filesSkipped: Array<{ path: string; reason: string }>;
+  // Backup map: keys are repo-relative paths. existed:false → unlink to revert.
+  // existed:true → writeFile(prior) to revert. Recorded BEFORE first write.
+  backup: Record<string, { existed: boolean; prior: string | null }>;
+  warnings: string[];
+  rollbackPlan: string;
+}
+
+const REAL_FILE_WRITE_TMP_SUFFIX = ".32d.tmp";
+
+function buildRealRollbackPlan(
+  branchName: string | null,
+  written: RealFileWriteFileEntry[],
+): string {
+  if (written.length === 0) {
+    return "No files were written; nothing to roll back.";
+  }
+  const created = written.filter((f) => !f.existed).map((f) => f.path);
+  const modified = written.filter((f) => f.existed).map((f) => f.path);
+  const lines: string[] = [];
+  if (modified.length > 0) {
+    lines.push(`Restore modified files: \`git restore -- ${modified.join(" ")}\``);
+  }
+  if (created.length > 0) {
+    lines.push(`Delete created files: \`rm -- ${created.join(" ")}\``);
+  }
+  if (branchName) {
+    lines.push(
+      `If the branch is disposable: \`git checkout dev && git branch -D ${branchName}\`.`,
+    );
+  }
+  return lines.join("\n");
+}
+
+export async function realFileWrite(
+  proposal: ActionProposal,
+  repoRoot: string = process.cwd(),
+): Promise<RealFileWriteResult> {
+  const baseRollback =
+    "If any write succeeded: `git restore -- <files>` for modified entries; `rm <path>` for created entries. The dispatch result includes a backup blob for full recovery.";
+
+  // 1. Re-validate proposal shape (defense-in-depth; bridge already validated).
+  const parsed = FileWriteParamsSchema.safeParse(proposal.parameters);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: `Invalid parameters: ${parsed.error.message}`,
+      branchName: null,
+      filesWritten: [],
+      filesSkipped: [],
+      backup: {},
+      warnings: [],
+      rollbackPlan: baseRollback,
+    };
+  }
+
+  // 2. Resolve runtime safety limits — same dual-key escape hatch as preview.
+  const allowSensitive =
+    Boolean(parsed.data.allowSensitivePaths) && FILE_WRITE_ALLOW_SENSITIVE;
+  const limits: ProposalLimits = {
+    maxFiles: FILE_WRITE_MAX_FILES,
+    maxBytesPerFile: FILE_WRITE_MAX_BYTES_PER_FILE,
+    maxTotalBytes: FILE_WRITE_MAX_TOTAL_BYTES,
+    allowedRoots: parseAllowedRoots(FILE_WRITE_ALLOWED_ROOTS),
+    allowSensitive,
+  };
+
+  // 3. Proposal-level file-count cap (cheap; pre-validation).
+  const fileCountCheck = checkProposalLimits(parsed.data.files.length, 0, limits);
+  if (!fileCountCheck.ok && fileCountCheck.blockReason === "file-count") {
+    return {
+      ok: false,
+      message: `Refusing to write: ${fileCountCheck.detail}`,
+      branchName: null,
+      filesWritten: [],
+      filesSkipped: [],
+      backup: {},
+      warnings: [],
+      rollbackPlan: baseRollback,
+    };
+  }
+
+  const root = resolve(repoRoot);
+  const git = new GitClient(root);
+
+  // 4. Clean repo + agent/* branch invariants.
+  let branchName: string | null = null;
+  try {
+    branchName = await git.getCurrentBranch();
+  } catch {
+    // fall through; the prefix check below will fail
+  }
+  if (!branchName || !branchName.startsWith("agent/")) {
+    return {
+      ok: false,
+      message: `Refusing to write: current branch "${branchName ?? "<unknown>"}" is not an agent/* branch`,
+      branchName,
+      filesWritten: [],
+      filesSkipped: [],
+      backup: {},
+      warnings: [],
+      rollbackPlan: baseRollback,
+    };
+  }
+  try {
+    await git.assertCleanRepo();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return {
+      ok: false,
+      message: `Refusing to write: ${msg}`,
+      branchName,
+      filesWritten: [],
+      filesSkipped: [],
+      backup: {},
+      warnings: [],
+      rollbackPlan: baseRollback,
+    };
+  }
+
+  // 5. Validate every file via the 32C safety gate. Defense-in-depth: even
+  // if preview passed, on-disk drift or proposal mutation is caught here.
+  const validations: Array<{ raw: typeof parsed.data.files[number]; v: FileValidation }> = [];
+  let totalBytes = 0;
+  for (const f of parsed.data.files) {
+    const v = validateFile(f.path, f.content, limits);
+    validations.push({ raw: f, v });
+    if (v.ok) totalBytes += v.byteCount;
+  }
+  const blocked = validations.filter((e) => !e.v.ok);
+  if (blocked.length > 0) {
+    const skipped = blocked.map((e) => ({
+      path: e.raw.path,
+      reason: `${e.v.blockReason ?? "blocked"}${e.v.detail ? ": " + e.v.detail : ""}`,
+    }));
+    return {
+      ok: false,
+      message: `Refusing to write: ${blocked.length} file(s) blocked by safety validation`,
+      branchName,
+      filesWritten: [],
+      filesSkipped: skipped,
+      backup: {},
+      warnings: skipped.map((s) => `${s.path}: ${s.reason}`),
+      rollbackPlan: baseRollback,
+    };
+  }
+
+  // 6. Total-bytes cap over the validated set.
+  const totalsCheck = checkProposalLimits(parsed.data.files.length, totalBytes, limits);
+  if (!totalsCheck.ok && totalsCheck.blockReason === "total-bytes") {
+    return {
+      ok: false,
+      message: `Refusing to write: ${totalsCheck.detail}`,
+      branchName,
+      filesWritten: [],
+      filesSkipped: [],
+      backup: {},
+      warnings: [],
+      rollbackPlan: baseRollback,
+    };
+  }
+
+  // 7. Build the backup map BEFORE any write. For modify ops capture prior
+  // bytes (bounded by per-file cap); for create ops record existed:false.
+  const backup: Record<string, { existed: boolean; prior: string | null }> = {};
+  for (const f of parsed.data.files) {
+    const fullPath = join(root, f.path);
+    let existed = false;
+    let prior: string | null = null;
+    try {
+      const info = await stat(fullPath);
+      if (info.isFile()) {
+        existed = true;
+        prior = await readFile(fullPath, "utf-8");
+      }
+    } catch {
+      // missing or unreadable — treat as did-not-exist
+    }
+    backup[f.path] = { existed, prior };
+  }
+
+  // 8. Atomic write loop. Per-file: ensure parent dir, write to .tmp, rename.
+  // On any failure, restore already-written files from the backup map.
+  const written: RealFileWriteFileEntry[] = [];
+  const warnings: string[] = [];
+
+  async function rollback(reason: string): Promise<void> {
+    for (const entry of written.slice().reverse()) {
+      const fullPath = join(root, entry.path);
+      try {
+        const b = backup[entry.path];
+        if (b && b.existed && b.prior !== null) {
+          await writeFile(fullPath, b.prior, "utf-8");
+        } else {
+          await unlink(fullPath);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        warnings.push(`rollback ${entry.path}: ${msg}`);
+        logger.warn("action:real file-write rollback step failed", {
+          proposalId: proposal.id,
+          path: entry.path,
+          error: msg,
+        });
+      }
+    }
+    logger.warn("action:real file-write rolled back", {
+      proposalId: proposal.id,
+      reason,
+      restored: written.length,
+    });
+  }
+
+  for (const f of parsed.data.files) {
+    const fullPath = join(root, f.path);
+    const tmpPath  = fullPath + REAL_FILE_WRITE_TMP_SUFFIX;
+    try {
+      await mkdir(dirname(fullPath), { recursive: true });
+      await writeFile(tmpPath, f.content, "utf-8");
+      await rename(tmpPath, fullPath);
+      const b = backup[f.path] ?? { existed: false, prior: null };
+      written.push({
+        path: f.path,
+        operation: f.operation,
+        byteCount: Buffer.byteLength(f.content, "utf-8"),
+        existed: b.existed,
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // Best-effort cleanup of the temp file.
+      try { await unlink(tmpPath); } catch { /* ignore */ }
+      await rollback(`writeFile failed at ${f.path}: ${msg}`);
+      return {
+        ok: false,
+        message: `Write failed at "${f.path}": ${msg}; previously-written files restored from backup`,
+        branchName,
+        filesWritten: written,
+        filesSkipped: [],
+        backup,
+        warnings,
+        rollbackPlan: buildRealRollbackPlan(branchName, written),
+      };
+    }
+  }
+
+  logger.info("action:real file-write succeeded", {
+    proposalId: proposal.id,
+    branchName,
+    fileCount: written.length,
+    totalBytes,
+  });
+
+  return {
+    ok: true,
+    message: `Wrote ${written.length} file(s) on "${branchName}"`,
+    branchName,
+    filesWritten: written,
+    filesSkipped: [],
+    backup,
+    warnings,
+    rollbackPlan: buildRealRollbackPlan(branchName, written),
   };
 }
