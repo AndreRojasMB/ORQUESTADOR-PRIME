@@ -246,6 +246,7 @@ export async function runOrchestrator(
   task: string,
   mode: OrchestratorMode,
   source?: TrajectorySource,
+  preparsedArgs?: ParsedArgs,
 ): Promise<OrchestratorResult> {
   const tracer = new Tracer(mode, task);
   logger.section(`ORQUESTADOR-PRIME · ${mode.toUpperCase()}`);
@@ -399,7 +400,7 @@ export async function runOrchestrator(
     // Phase 32C-UXAUDIT — read-only targeted UX/UI audit.
     // No keyword router, no dispatchAction, no actions/* or execution/* writes.
     // Agent set is forced from --agents (or default uxui+motionFx+frontend+qa).
-    const parsed = parseArgs(process.argv.slice(2));
+    const parsed = preparsedArgs ?? parseArgs(process.argv.slice(2));
     const ux = parsed.uxAudit;
     if (!ux) {
       throw new Error('audit-ux requires --repo, --entry, --sections, --scope (and optional --files, --agents)');
@@ -452,7 +453,8 @@ export async function runOrchestrator(
     }
     if (repo.skipped.length > 0) {
       for (const s of repo.skipped) {
-        logger.warn(`  skipped ${s.path} (${s.reason})`);
+        const countSuffix = s.count && s.count > 1 ? ` x${s.count}` : "";
+        logger.warn(`  skipped ${s.path} (${s.reason})${countSuffix}`);
       }
     }
 

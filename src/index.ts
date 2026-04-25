@@ -114,7 +114,7 @@ async function main() {
     process.exit(1);
   }
 
-  const result = await runOrchestrator(task, mode);
+  const result = await runOrchestrator(task, mode, undefined, parsed);
 
   logger.section(`RESULT · ${result.mode.toUpperCase()}`);
 

@@ -92,7 +92,7 @@ export interface UxAuditContext extends AuditContext {
   entry:          string;
   sections:       string[];
   agents:         string[];
-  skipped:        Array<{ path: string; reason: string }>;
+  skipped:        Array<{ path: string; reason: string; count?: number }>;
   // Phase 32E-AUDITUX-CORE
   reachableCount: number;
   capsApplied:    string[];
@@ -111,7 +111,10 @@ export function buildUxAuditContext(
   const skippedOverflow = repo.skipped.length - skippedHead.length;
   const skippedLines = skippedHead.length === 0
     ? ["(none skipped)"]
-    : skippedHead.map((s) => `  - ${s.path}  [${s.reason}]`);
+    : skippedHead.map((s) => {
+      const countSuffix = s.count && s.count > 1 ? ` x${s.count}` : "";
+      return `  - ${s.path}  [${s.reason}]${countSuffix}`;
+    });
   if (skippedOverflow > 0) {
     skippedLines.push(`  ... and ${skippedOverflow} more`);
   }

@@ -166,8 +166,14 @@ export interface FocusedReadOptions {
   exclude?:       string[];     // patterns removed from seeds + import-followed
 }
 
+export interface FocusedSkippedEntry {
+  path:    string;
+  reason:  string;
+  count?:  number;
+}
+
 export interface FocusedReadResult extends RepoStructure {
-  skipped:         Array<{ path: string; reason: string }>;
+  skipped:         FocusedSkippedEntry[];
   // Phase 32E-AUDITUX-CORE — surfaced metadata
   reachableCount:  number;
   capsApplied:     string[];
@@ -327,8 +333,20 @@ export async function readRepoFocused(
   const rootAbs  = resolve(repoRoot);
   const rootReal = await realpath(rootAbs);
 
-  const skipped: Array<{ path: string; reason: string }> = [];
+  const skipped: FocusedSkippedEntry[] = [];
+  const skippedByKey = new Map<string, FocusedSkippedEntry>();
   const capsApplied: string[] = [];
+  const recordSkipped = (path: string, reason: string): void => {
+    const key = `${reason}\0${path}`;
+    const existing = skippedByKey.get(key);
+    if (existing) {
+      existing.count = (existing.count ?? 1) + 1;
+      return;
+    }
+    const entry = { path, reason };
+    skippedByKey.set(key, entry);
+    skipped.push(entry);
+  };
 
   // Expand --include against the repo tree (deny-list aware via buildTree).
   const includeMatched = includePatterns.length > 0
@@ -373,17 +391,17 @@ export async function readRepoFocused(
 
     // Path-safety / symlink-escape
     if (!(await isInsideRoot(absCandidate, rootReal))) {
-      skipped.push({ path: rel, reason: "outside-repo-or-symlink-escape" });
+      recordSkipped(rel, "outside-repo-or-symlink-escape");
       return null;
     }
     // Deny-list (parity with full readRepo)
     if (pathHitsIgnoredDir(rel) !== null) {
-      skipped.push({ path: rel, reason: "ignored-dir" });
+      recordSkipped(rel, "ignored-dir");
       return null;
     }
     // --exclude
     if (!passesExclude(rel)) {
-      skipped.push({ path: rel, reason: "excluded" });
+      recordSkipped(rel, "excluded");
       return null;
     }
     // Stat
@@ -391,22 +409,22 @@ export async function readRepoFocused(
     try {
       info = await stat(absCandidate);
     } catch {
-      skipped.push({ path: rel, reason: "not-found" });
+      recordSkipped(rel, "not-found");
       return null;
     }
     if (!info.isFile()) {
-      skipped.push({ path: rel, reason: "not-a-file" });
+      recordSkipped(rel, "not-a-file");
       return null;
     }
     // Per-file size ceiling
     if (info.size > maxBytes) {
-      skipped.push({ path: rel, reason: "over-max-bytes" });
+      recordSkipped(rel, "over-max-bytes");
       return null;
     }
     // Extension allowlist (binary safety)
     const ext = extname(absCandidate).toLowerCase();
     if (!READABLE_EXTENSIONS.has(ext) && !absCandidate.endsWith(".example")) {
-      skipped.push({ path: rel, reason: "non-readable-extension" });
+      recordSkipped(rel, "non-readable-extension");
       return null;
     }
     // Dedup by absolute path
@@ -418,7 +436,7 @@ export async function readRepoFocused(
   // Seeds first.
   for (const rel of explicitSeeds) {
     if (accepted.length >= maxFiles) {
-      skipped.push({ path: rel, reason: "cap-overflow" });
+      recordSkipped(rel, "cap-overflow");
       continue;
     }
     const a = await validate(rel, 0);
@@ -438,7 +456,7 @@ export async function readRepoFocused(
       const idx = accepted.findIndex((a) => a.abs === cur.abs);
       if (idx >= 0) accepted.splice(idx, 1);
       visitedAbs.delete(cur.abs);
-      skipped.push({ path: cur.rel, reason: "not-found" });
+      recordSkipped(cur.rel, "not-found");
       continue;
     }
     contents.set(cur.abs, content);
@@ -454,21 +472,21 @@ export async function readRepoFocused(
       // Bare module or alias → not followable.
       if (!spec.startsWith(".") && !spec.startsWith("/")) {
         if (/^[@~#]/.test(spec)) {
-          skipped.push({ path: spec, reason: "import-unresolved-alias" });
+          recordSkipped(spec, "import-unresolved-alias");
         } else {
-          skipped.push({ path: spec, reason: "bare-module" });
+          recordSkipped(spec, "bare-module");
         }
         continue;
       }
       // "/" absolute specifier — not standard in TS source, treat as unresolved.
       if (spec.startsWith("/")) {
-        skipped.push({ path: spec, reason: "import-unresolved" });
+        recordSkipped(spec, "import-unresolved");
         continue;
       }
 
       const resolvedAbs = await resolveRelativeImport(cur.abs, spec);
       if (!resolvedAbs) {
-        skipped.push({ path: spec, reason: "import-unresolved" });
+        recordSkipped(spec, "import-unresolved");
         continue;
       }
       const rel = relative(rootAbs, resolvedAbs);
