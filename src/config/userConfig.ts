@@ -4,6 +4,12 @@
 import type { ProviderName } from "../providers/types.js";
 import type { WhatsAppConfig } from "../whatsapp/types.js";
 import type { OmiConfig } from "../omi/types.js";
+import { GLOBAL_FORBIDDEN_ACTION_CATEGORIES } from "../actions/types.js";
+import type {
+  ActionCategory,
+  ChannelKind,
+  ChannelPermission,
+} from "../actions/types.js";
 
 export interface RoutingRule {
   keywords: string[];
@@ -14,6 +20,38 @@ export interface SkillsConfig {
   enabled: string[];
   agentMap: Record<string, string[]>;
 }
+
+export type ExternalChannelKind = Exclude<ChannelKind, "cli" | "system">;
+
+export type ChannelPermissionConfig = ChannelPermission;
+
+export type ExternalChannelsConfig = Record<
+  ExternalChannelKind,
+  ChannelPermissionConfig
+>;
+
+function defaultChannelPermission(): ChannelPermissionConfig {
+  return {
+    canCreateProposal: false,
+    canRequestReview: false,
+    canListPending: false,
+    canGrantSecondApproval: false,
+    canDispatchApproved: false,
+    allowedProposalCategories: [],
+    allowedDispatchCategories: [],
+    forbiddenCategories: [...GLOBAL_FORBIDDEN_ACTION_CATEGORIES] as ActionCategory[],
+    maxProposalsPerHour: 0,
+    maxDispatchesPerHour: 0,
+  };
+}
+
+export const DEFAULT_EXTERNAL_CHANNELS_CONFIG: ExternalChannelsConfig = {
+  whatsapp:  defaultChannelPermission(),
+  omi:       defaultChannelPermission(),
+  dashboard: defaultChannelPermission(),
+  openclaw:  defaultChannelPermission(),
+  api:       defaultChannelPermission(),
+};
 
 export interface UserConfig {
   version: string;
@@ -31,6 +69,7 @@ export interface UserConfig {
   whatsapp: WhatsAppConfig;
   skills?: SkillsConfig;
   omi?: OmiConfig;
+  externalChannels: ExternalChannelsConfig;
 }
 
 export const DEFAULT_USER_CONFIG: UserConfig = {
@@ -57,4 +96,5 @@ export const DEFAULT_USER_CONFIG: UserConfig = {
     enabled: false,
     allowedEventTypes: ["memory_created"],
   },
+  externalChannels: DEFAULT_EXTERNAL_CHANNELS_CONFIG,
 };

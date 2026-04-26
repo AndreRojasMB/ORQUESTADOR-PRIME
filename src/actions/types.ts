@@ -14,6 +14,40 @@ export type ActionSource =
   | "openclaw"
   | "system";
 
+// ─── External Channel Identity (Phase 33B) ─────────────────────
+// Foundational types only. These do not create proposal, approval, or
+// dispatch paths; future bridges consume them behind explicit safety gates.
+
+export type ChannelKind = ActionSource | "api";
+
+export type ChannelAuthMethod =
+  | "none"
+  | "local-cli"
+  | "hook-token"
+  | "hmac"
+  | "api-token"
+  | "local-session"
+  | "provider-token"
+  | "system";
+
+export type ChannelOperation =
+  | "create-proposal"
+  | "request-review"
+  | "list-pending"
+  | "grant-second-approval"
+  | "dispatch-approved";
+
+export interface ChannelIdentity {
+  channel: ChannelKind;
+  principalHash: string | null;
+  displayName?: string;
+  sourceEventId: string | null;
+  authMethod: ChannelAuthMethod;
+  trusted: boolean;
+  trustReason: string;
+  receivedAt: string;
+}
+
 // ─── Action Risk Classification ─────────────────────────────────
 
 export type ActionRiskLevel = "safe" | "review-required" | "forbidden";
@@ -33,6 +67,26 @@ export type ActionCategory =
   | "notification"
   | "query"
   | "other";
+
+export const GLOBAL_FORBIDDEN_ACTION_CATEGORIES = [
+  "file-delete",
+  "git-push",
+  "pr-merge",
+  "deploy",
+] as const satisfies readonly ActionCategory[];
+
+export interface ChannelPermission {
+  canCreateProposal: boolean;
+  canRequestReview: boolean;
+  canListPending: boolean;
+  canGrantSecondApproval: boolean;
+  canDispatchApproved: boolean;
+  allowedProposalCategories: ActionCategory[];
+  allowedDispatchCategories: ActionCategory[];
+  forbiddenCategories: ActionCategory[];
+  maxProposalsPerHour: number;
+  maxDispatchesPerHour: number;
+}
 
 // ─── Action Status ──────────────────────────────────────────────
 

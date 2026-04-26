@@ -6,7 +6,14 @@ import { readFile, writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { homedir } from "os";
 import { logger } from "../observability/logger.js";
-import type { UserConfig } from "./userConfig.js";
+import { GLOBAL_FORBIDDEN_ACTION_CATEGORIES } from "../actions/types.js";
+import type { ActionCategory } from "../actions/types.js";
+import type {
+  UserConfig,
+  ExternalChannelKind,
+  ExternalChannelsConfig,
+  ChannelPermissionConfig,
+} from "./userConfig.js";
 import { DEFAULT_USER_CONFIG } from "./userConfig.js";
 
 const CONFIG_DIR = join(homedir(), ".orquestador-prime");
@@ -33,7 +40,73 @@ export async function writeUserConfig(config: UserConfig): Promise<void> {
   }
 }
 
+const EXTERNAL_CHANNEL_KEYS: ExternalChannelKind[] = [
+  "whatsapp",
+  "omi",
+  "dashboard",
+  "openclaw",
+  "api",
+];
+
+function uniqueCategories(categories: readonly ActionCategory[]): ActionCategory[] {
+  return [...new Set(categories)];
+}
+
+function mergeChannelPermission(
+  partial: Partial<ChannelPermissionConfig> | undefined,
+  fallback: ChannelPermissionConfig,
+): ChannelPermissionConfig {
+  const forbiddenCategories = uniqueCategories([
+    ...GLOBAL_FORBIDDEN_ACTION_CATEGORIES,
+    ...fallback.forbiddenCategories,
+    ...(partial?.forbiddenCategories ?? []),
+  ]);
+
+  return {
+    canCreateProposal:
+      partial?.canCreateProposal ?? fallback.canCreateProposal,
+    canRequestReview:
+      partial?.canRequestReview ?? fallback.canRequestReview,
+    canListPending:
+      partial?.canListPending ?? fallback.canListPending,
+    canGrantSecondApproval:
+      partial?.canGrantSecondApproval ?? fallback.canGrantSecondApproval,
+    canDispatchApproved:
+      partial?.canDispatchApproved ?? fallback.canDispatchApproved,
+    allowedProposalCategories:
+      partial?.allowedProposalCategories?.slice() ??
+      fallback.allowedProposalCategories.slice(),
+    allowedDispatchCategories:
+      partial?.allowedDispatchCategories?.slice() ??
+      fallback.allowedDispatchCategories.slice(),
+    forbiddenCategories,
+    maxProposalsPerHour:
+      partial?.maxProposalsPerHour ?? fallback.maxProposalsPerHour,
+    maxDispatchesPerHour:
+      partial?.maxDispatchesPerHour ?? fallback.maxDispatchesPerHour,
+  };
+}
+
+function mergeExternalChannels(
+  partial: Partial<ExternalChannelsConfig> | undefined,
+): ExternalChannelsConfig {
+  const merged = {} as ExternalChannelsConfig;
+
+  for (const key of EXTERNAL_CHANNEL_KEYS) {
+    merged[key] = mergeChannelPermission(
+      partial?.[key] as Partial<ChannelPermissionConfig> | undefined,
+      DEFAULT_USER_CONFIG.externalChannels[key],
+    );
+  }
+
+  return merged;
+}
+
 export function mergeWithDefaults(partial: Partial<UserConfig>): UserConfig {
+  const partialExternalChannels = partial.externalChannels as
+    | Partial<ExternalChannelsConfig>
+    | undefined;
+
   return {
     version: partial.version ?? DEFAULT_USER_CONFIG.version,
     agents: {
@@ -73,6 +146,7 @@ export function mergeWithDefaults(partial: Partial<UserConfig>): UserConfig {
       allowedEventTypes:
         partial.omi?.allowedEventTypes ?? DEFAULT_USER_CONFIG.omi!.allowedEventTypes,
     },
+    externalChannels: mergeExternalChannels(partialExternalChannels),
   };
 }
 
