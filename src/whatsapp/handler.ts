@@ -9,10 +9,14 @@ import { logger } from "../observability/logger.js";
 import { getRateLimiter } from "./rateLimiter.js";
 import { resolveIntent } from "./intentResolver.js";
 import { formatReply } from "./replyFormatter.js";
+import {
+  handleWhatsAppActionCommand,
+  isWhatsAppActionCommand,
+} from "./actionCommands.js";
+import type { UserConfig } from "../config/userConfig.js";
 import type {
   ChannelMessage,
   ChannelReply,
-  WhatsAppConfig,
   WhatsAppAuditEntry,
   WhatsAppDecision,
 } from "./types.js";
@@ -87,16 +91,17 @@ function buildAuditEntry(
  */
 export async function handleWhatsAppMessage(
   message: ChannelMessage,
-  config: WhatsAppConfig,
+  config: UserConfig,
 ): Promise<ChannelReply | null> {
   const replyTo = message.senderRaw ?? "";
+  const whatsappConfig = config.whatsapp;
 
   try {
     // 1. Feature gate
-    if (!config.enabled) return null;
+    if (!whatsappConfig.enabled) return null;
 
     // 2. Phone allowlist
-    if (!isPhoneAllowed(message.senderHash, config.allowedPhones)) {
+    if (!isPhoneAllowed(message.senderHash, whatsappConfig.allowedPhones)) {
       logAudit(
         buildAuditEntry(message, "none", "none", "blocked_phone"),
       );
@@ -104,7 +109,7 @@ export async function handleWhatsAppMessage(
     }
 
     // 3. Rate limiting
-    const limiter = getRateLimiter(config.maxMessagesPerHour);
+    const limiter = getRateLimiter(whatsappConfig.maxMessagesPerHour);
     if (!limiter.isAllowed(message.senderHash)) {
       logAudit(
         buildAuditEntry(message, "none", "none", "blocked_rate"),
@@ -120,10 +125,16 @@ export async function handleWhatsAppMessage(
       return null; // silently drop duplicate
     }
 
-    // 5. Intent resolution
+    // 5. Deterministic action commands (no orchestrator/provider call)
+    if (isWhatsAppActionCommand(message.text)) {
+      logAudit(buildAuditEntry(message, "actions", "actions", "allowed"));
+      return handleWhatsAppActionCommand(message, config);
+    }
+
+    // 6. Intent resolution
     const { mode, task, blocked } = resolveIntent(
       message.text,
-      config.safeModes,
+      whatsappConfig.safeModes,
     );
 
     if (blocked) {
@@ -132,17 +143,17 @@ export async function handleWhatsAppMessage(
       );
       return {
         to: replyTo,
-        text: `Mode "${mode}" is not allowed via WhatsApp. Allowed: ${config.safeModes.join(", ")}.`,
+        text: `Mode "${mode}" is not allowed via WhatsApp. Allowed: ${whatsappConfig.safeModes.join(", ")}.`,
       };
     }
 
-    // 6. Audit log — allowed (log resolved mode only, never raw message text)
+    // 7. Audit log — allowed (log resolved mode only, never raw message text)
     logAudit(buildAuditEntry(message, mode, mode, "allowed"));
 
-    // 7. Run orchestrator
+    // 8. Run orchestrator
     const result = await runOrchestrator(task, mode, "whatsapp");
 
-    // 8. Format reply
+    // 9. Format reply
     const text = formatReply(result);
 
     return { to: replyTo, text };

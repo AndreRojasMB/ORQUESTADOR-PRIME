@@ -44,5 +44,5 @@ export async function processInboundWebhook(
   }
 
   // 4. Delegate to handler (auth already verified)
-  return handleWhatsAppMessage(message, config.whatsapp);
+  return handleWhatsAppMessage(message, config);
 }

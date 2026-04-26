@@ -1,8 +1,13 @@
 // src/actions/channelActionBridge.ts
-// Guarded proposal creation bridge for external channels.
-// Phase 33D: proposal creation only; no dispatch, approvals, or runtime wiring.
+// Guarded action bridge for external channels.
+// Proposal creation, proposal listing, and review requests only. No dispatch.
 
-import { createProposal, readActionStore } from "./actionStore.js";
+import {
+  createProposal,
+  getProposalById,
+  readActionStore,
+} from "./actionStore.js";
+import { submitForReview } from "./approvalBridge.js";
 import {
   appendChannelAudit,
   getRecentChannelAudit,
@@ -15,6 +20,7 @@ import type {
   ActionProposal,
   ActionSource,
   ChannelAuditEntry,
+  ChannelOperation,
   ChannelAuditReasonCode,
   ChannelIdentity,
   ChannelKind,
@@ -83,9 +89,28 @@ export interface CreateProposalFromChannelInput {
   runId?: string | null;
 }
 
+interface ChannelBridgeAuditInput {
+  identity?: ChannelIdentity | null;
+  channel?: ChannelKind;
+  sourceEventId?: string | null;
+  correlationId?: string | null;
+  runId?: string | null;
+}
+
 export interface CreateProposalFromChannelOptions {
   config?: UserConfig;
   now?: () => Date;
+}
+
+export type ChannelProposalListMode = "pending" | "recent";
+
+export interface ListProposalsFromChannelInput extends ChannelBridgeAuditInput {
+  listMode?: ChannelProposalListMode;
+  limit?: number;
+}
+
+export interface RequestReviewFromChannelInput extends ChannelBridgeAuditInput {
+  proposalId: string;
 }
 
 export interface ChannelPolicyDecision {
@@ -98,7 +123,33 @@ export interface ChannelPolicyDecision {
   reason: string;
 }
 
+interface ChannelOperationPolicyDecision {
+  ok: boolean;
+  source: ActionSource | null;
+  permission: ChannelPermission | null;
+  reasonCode: ChannelAuditReasonCode;
+  reason: string;
+}
+
 export interface CreateProposalFromChannelResult {
+  ok: boolean;
+  proposal: ActionProposal | null;
+  auditEntry: ChannelAuditEntry | null;
+  auditPersisted: boolean;
+  reasonCode: ChannelAuditReasonCode;
+  reason: string;
+}
+
+export interface ListProposalsFromChannelResult {
+  ok: boolean;
+  proposals: ActionProposal[];
+  auditEntry: ChannelAuditEntry | null;
+  auditPersisted: boolean;
+  reasonCode: ChannelAuditReasonCode;
+  reason: string;
+}
+
+export interface RequestReviewFromChannelResult {
   ok: boolean;
   proposal: ActionProposal | null;
   auditEntry: ChannelAuditEntry | null;
@@ -157,7 +208,7 @@ function hasRawIdentityParameterKey(
   return false;
 }
 
-function channelForAudit(input: CreateProposalFromChannelInput): ChannelKind {
+function channelForAudit(input: ChannelBridgeAuditInput): ChannelKind {
   if (input.identity && isChannelKind(input.identity.channel)) {
     return input.identity.channel;
   }
@@ -167,12 +218,12 @@ function channelForAudit(input: CreateProposalFromChannelInput): ChannelKind {
   return "system";
 }
 
-function sourceEventIdForAudit(input: CreateProposalFromChannelInput): string | null {
+function sourceEventIdForAudit(input: ChannelBridgeAuditInput): string | null {
   return input.identity?.sourceEventId ?? input.sourceEventId ?? null;
 }
 
 function auditIdentityForInput(
-  input: CreateProposalFromChannelInput,
+  input: ChannelBridgeAuditInput,
 ): Pick<
   ChannelIdentity,
   | "channel"
@@ -251,6 +302,20 @@ function buildDecision(
   };
 }
 
+function buildOperationDecision(
+  reasonCode: ChannelAuditReasonCode,
+  reason: string,
+  permission: ChannelPermission | null,
+): ChannelOperationPolicyDecision {
+  return {
+    ok: false,
+    source: null,
+    permission,
+    reasonCode,
+    reason,
+  };
+}
+
 async function hasDuplicateSourceEvent(
   source: ActionSource,
   sourceEventId: string | null,
@@ -291,20 +356,23 @@ async function countRecentAllowedProposalRequests(
 // ─── Audit helper ───────────────────────────────────────────────
 
 async function auditDecision(
-  input: CreateProposalFromChannelInput,
+  input: ChannelBridgeAuditInput,
+  operation: ChannelOperation,
   decision: "allowed" | "blocked",
   reasonCode: ChannelAuditReasonCode,
   reason: string,
   category: ActionCategory | null,
   permission: ChannelPermission | null,
+  proposalId: string | null = null,
 ): Promise<{ entry: ChannelAuditEntry; persisted: boolean }> {
   const auditInput: AppendChannelAuditInput = {
     identity: auditIdentityForInput(input),
-    operation: "create-proposal",
+    operation,
     decision,
     reasonCode,
     reason,
     category,
+    proposalId,
     correlationId: input.correlationId ?? null,
     runId: input.runId ?? null,
   };
@@ -325,6 +393,7 @@ async function blockedResult(
 ): Promise<CreateProposalFromChannelResult> {
   const audit = await auditDecision(
     input,
+    "create-proposal",
     "blocked",
     reasonCode,
     reason,
@@ -342,7 +411,157 @@ async function blockedResult(
   };
 }
 
+async function blockedListResult(
+  input: ListProposalsFromChannelInput,
+  reasonCode: ChannelAuditReasonCode,
+  reason: string,
+  permission: ChannelPermission | null,
+): Promise<ListProposalsFromChannelResult> {
+  const audit = await auditDecision(
+    input,
+    "list-pending",
+    "blocked",
+    reasonCode,
+    reason,
+    null,
+    permission,
+  );
+
+  return {
+    ok: false,
+    proposals: [],
+    auditEntry: audit.entry,
+    auditPersisted: audit.persisted,
+    reasonCode,
+    reason,
+  };
+}
+
+async function blockedReviewResult(
+  input: RequestReviewFromChannelInput,
+  reasonCode: ChannelAuditReasonCode,
+  reason: string,
+  category: ActionCategory | null,
+  permission: ChannelPermission | null,
+): Promise<RequestReviewFromChannelResult> {
+  const proposalId =
+    typeof input.proposalId === "string" && input.proposalId.trim().length > 0
+      ? input.proposalId.trim()
+      : null;
+  const audit = await auditDecision(
+    input,
+    "request-review",
+    "blocked",
+    reasonCode,
+    reason,
+    category,
+    permission,
+    proposalId,
+  );
+
+  return {
+    ok: false,
+    proposal: null,
+    auditEntry: audit.entry,
+    auditPersisted: audit.persisted,
+    reasonCode,
+    reason,
+  };
+}
+
 // ─── Policy evaluation ──────────────────────────────────────────
+
+function evaluateChannelOperationPolicy(
+  input: ChannelBridgeAuditInput,
+  config: UserConfig,
+  permissionFlag: "canListPending" | "canRequestReview",
+  operationLabel: string,
+): ChannelOperationPolicyDecision {
+  if (!input.identity) {
+    return buildOperationDecision(
+      "missing-identity",
+      "Channel identity is required",
+      null,
+    );
+  }
+
+  if (!isChannelKind(input.identity.channel)) {
+    return buildOperationDecision(
+      "unknown-channel",
+      "Channel is not recognized",
+      null,
+    );
+  }
+
+  if (input.identity.channel === "cli" || input.identity.channel === "system") {
+    return buildOperationDecision(
+      "operation-not-allowed",
+      `CLI and system identities cannot ${operationLabel}`,
+      null,
+    );
+  }
+
+  if (input.identity.channel === "api") {
+    return buildOperationDecision(
+      "operation-not-allowed",
+      `API channel ${operationLabel} is not supported in Phase 33F`,
+      null,
+    );
+  }
+
+  if (!input.identity.trusted) {
+    return buildOperationDecision(
+      "untrusted-identity",
+      "Channel identity is not trusted",
+      null,
+    );
+  }
+
+  if (
+    typeof input.identity.principalHash !== "string" ||
+    input.identity.principalHash.trim().length === 0
+  ) {
+    return buildOperationDecision(
+      "missing-identity",
+      "Trusted channel identity must include a principalHash",
+      null,
+    );
+  }
+
+  const source = sourceForChannel(input.identity.channel);
+  if (!source) {
+    return buildOperationDecision(
+      "operation-not-allowed",
+      `Channel cannot ${operationLabel} in Phase 33F`,
+      null,
+    );
+  }
+
+  const permission = config.externalChannels[input.identity.channel];
+  if (!permission) {
+    return buildOperationDecision(
+      "permission-denied",
+      "No external channel permission config exists for this channel",
+      null,
+    );
+  }
+
+  if (permission[permissionFlag] !== true) {
+    return buildOperationDecision(
+      "operation-not-allowed",
+      `Channel is not allowed to ${operationLabel}`,
+      permission,
+    );
+  }
+
+  return {
+    ok: true,
+    source,
+    permission,
+    reasonCode: "allowed",
+    reason: `Channel ${operationLabel} allowed`,
+  };
+}
 
 async function evaluateCreateProposalPolicy(
   input: CreateProposalFromChannelInput,
@@ -592,6 +811,7 @@ export async function createProposalFromChannel(
 
   const allowedAudit = await auditDecision(
     input,
+    "create-proposal",
     "allowed",
     "allowed",
     policy.reason,
@@ -646,4 +866,216 @@ export async function createProposalFromChannel(
       reason: "Proposal creation failed after channel policy allowed it",
     };
   }
+}
+
+function normalizedLimit(limit: number | undefined): number {
+  if (typeof limit !== "number" || !Number.isFinite(limit)) {
+    return 10;
+  }
+  return Math.max(1, Math.min(20, Math.floor(limit)));
+}
+
+function createdAtMs(proposal: ActionProposal): number {
+  const timestamp = Date.parse(proposal.createdAt);
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function newestFirst(a: ActionProposal, b: ActionProposal): number {
+  return createdAtMs(b) - createdAtMs(a);
+}
+
+export async function listProposalsFromChannel(
+  input: ListProposalsFromChannelInput,
+  options: CreateProposalFromChannelOptions = {},
+): Promise<ListProposalsFromChannelResult> {
+  const config = options.config ?? await readUserConfig();
+  const policy = evaluateChannelOperationPolicy(
+    input,
+    config,
+    "canListPending",
+    "list proposals",
+  );
+
+  if (!policy.ok || !policy.source) {
+    return blockedListResult(
+      input,
+      policy.reasonCode,
+      policy.reason,
+      policy.permission,
+    );
+  }
+
+  const allowedAudit = await auditDecision(
+    input,
+    "list-pending",
+    "allowed",
+    "allowed",
+    policy.reason,
+    null,
+    policy.permission,
+  );
+
+  if (!allowedAudit.persisted) {
+    return {
+      ok: false,
+      proposals: [],
+      auditEntry: allowedAudit.entry,
+      auditPersisted: false,
+      reasonCode: "audit-store-write-failed",
+      reason: "Channel proposal list was blocked because audit persistence failed",
+    };
+  }
+
+  const limit = normalizedLimit(input.limit);
+  const store = await readActionStore();
+  const sourceProposals = store.proposals
+    .filter((proposal) => proposal.source === policy.source)
+    .sort(newestFirst);
+
+  const proposals =
+    input.listMode === "recent"
+      ? sourceProposals.slice(0, limit)
+      : sourceProposals
+          .filter(
+            (proposal) =>
+              proposal.status === "classified" ||
+              proposal.status === "pending-approval",
+          )
+          .slice(0, limit);
+
+  return {
+    ok: true,
+    proposals,
+    auditEntry: allowedAudit.entry,
+    auditPersisted: true,
+    reasonCode: "allowed",
+    reason: "Channel proposals listed",
+  };
+}
+
+export async function requestReviewFromChannel(
+  input: RequestReviewFromChannelInput,
+  options: CreateProposalFromChannelOptions = {},
+): Promise<RequestReviewFromChannelResult> {
+  const config = options.config ?? await readUserConfig();
+  const policy = evaluateChannelOperationPolicy(
+    input,
+    config,
+    "canRequestReview",
+    "request proposal review",
+  );
+
+  if (!policy.ok || !policy.source) {
+    return blockedReviewResult(
+      input,
+      policy.reasonCode,
+      policy.reason,
+      null,
+      policy.permission,
+    );
+  }
+
+  if (typeof input.proposalId !== "string" || input.proposalId.trim().length === 0) {
+    return blockedReviewResult(
+      input,
+      "malformed-request",
+      "Proposal id is required",
+      null,
+      policy.permission,
+    );
+  }
+
+  const proposalId = input.proposalId.trim();
+  const proposal = await getProposalById(proposalId);
+  if (!proposal) {
+    return blockedReviewResult(
+      input,
+      "proposal-not-found",
+      `Proposal "${proposalId}" not found`,
+      null,
+      policy.permission,
+    );
+  }
+
+  if (proposal.source !== policy.source) {
+    return blockedReviewResult(
+      input,
+      "permission-denied",
+      "Proposal source does not match the requesting channel",
+      proposal.category,
+      policy.permission,
+    );
+  }
+
+  if (GLOBAL_FORBIDDEN_CATEGORY_SET.has(proposal.category)) {
+    return blockedReviewResult(
+      input,
+      "forbidden-category",
+      `Action category "${proposal.category}" is globally forbidden`,
+      proposal.category,
+      policy.permission,
+    );
+  }
+
+  if (policy.permission?.forbiddenCategories.includes(proposal.category)) {
+    return blockedReviewResult(
+      input,
+      "forbidden-category",
+      `Action category "${proposal.category}" is forbidden for this channel`,
+      proposal.category,
+      policy.permission,
+    );
+  }
+
+  if (!policy.permission?.allowedProposalCategories.includes(proposal.category)) {
+    return blockedReviewResult(
+      input,
+      "category-not-allowed",
+      `Action category "${proposal.category}" is not allowlisted for this channel`,
+      proposal.category,
+      policy.permission,
+    );
+  }
+
+  if (proposal.status !== "classified") {
+    return blockedReviewResult(
+      input,
+      "operation-not-allowed",
+      `Cannot request review: proposal is "${proposal.status}", expected "classified"`,
+      proposal.category,
+      policy.permission,
+    );
+  }
+
+  const allowedAudit = await auditDecision(
+    input,
+    "request-review",
+    "allowed",
+    "allowed",
+    policy.reason,
+    proposal.category,
+    policy.permission,
+    proposal.id,
+  );
+
+  if (!allowedAudit.persisted) {
+    return {
+      ok: false,
+      proposal: null,
+      auditEntry: allowedAudit.entry,
+      auditPersisted: false,
+      reasonCode: "audit-store-write-failed",
+      reason: "Channel review request was blocked because audit persistence failed",
+    };
+  }
+
+  const transition = await submitForReview(proposal.id);
+  return {
+    ok: transition.ok,
+    proposal: transition.proposal,
+    auditEntry: allowedAudit.entry,
+    auditPersisted: true,
+    reasonCode: transition.ok ? "allowed" : "unknown-error",
+    reason: transition.reason,
+  };
 }
