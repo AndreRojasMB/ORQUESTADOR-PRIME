@@ -42,7 +42,7 @@ type ChannelAuditIdentity = Pick<
 
 // ─── Store I/O ──────────────────────────────────────────────────
 
-async function readChannelAuditStore(): Promise<ChannelAuditStoreData> {
+export async function readChannelAuditStore(): Promise<ChannelAuditStoreData> {
   try {
     const raw = await readFile(CHANNEL_AUDIT_FILE, "utf-8");
     const parsed = JSON.parse(raw) as ChannelAuditStoreData;
