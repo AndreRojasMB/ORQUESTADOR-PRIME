@@ -12,7 +12,10 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
 import { processInboundWebhook } from "./bridge.js";
+import { WHATSAPP_WEBHOOK_CONFIG } from "../config.js";
+import { readUserConfig } from "../config/userConfigStore.js";
 import { logger } from "../observability/logger.js";
+import { validateInboundWhatsAppTransport } from "./webhookSecurity.js";
 
 // ─── Config ─────────────────────────────────────────────────────
 
@@ -54,7 +57,17 @@ interface N8nResponse {
  * n8n sends:  { from: "whatsapp:+591...", userMessage: "...", metadata: { messageId } }
  * Internal expects: { sender: "+591...", text: "...", messageId: "..." }
  */
-function mapN8nToInternal(payload: N8nPayload): Record<string, unknown> | null {
+function stableMessageIdFromPayload(payload: N8nPayload): string | null {
+  const messageId = payload.metadata?.messageId;
+  return typeof messageId === "string" && messageId.trim().length > 0
+    ? messageId.trim()
+    : null;
+}
+
+function mapN8nToInternal(
+  payload: N8nPayload,
+  fallbackMessageId: string,
+): Record<string, unknown> | null {
   const userMessage = payload.userMessage;
   if (!userMessage || typeof userMessage !== "string" || userMessage.trim() === "") {
     return null;
@@ -66,7 +79,7 @@ function mapN8nToInternal(payload: N8nPayload): Record<string, unknown> | null {
     sender = sender.slice("whatsapp:".length);
   }
 
-  const messageId = payload.metadata?.messageId ?? randomUUID();
+  const messageId = stableMessageIdFromPayload(payload) ?? fallbackMessageId;
 
   let timestamp: number | undefined;
   if (payload.metadata?.timestamp) {
@@ -96,6 +109,72 @@ function buildResponse(
     proposedActions: opts?.proposedActions ?? [],
     error: opts?.error ?? null,
   };
+}
+
+function headerValue(value: string | string[] | undefined): string | null {
+  if (Array.isArray(value)) {
+    return value.find((item) => item.trim().length > 0) ?? null;
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    return value;
+  }
+  return null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function scalarToString(value: unknown): string | null {
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return String(value);
+  }
+  return null;
+}
+
+function recordToStringParams(
+  record: Record<string, unknown>,
+): Record<string, string> | null {
+  const params: Record<string, string> = {};
+
+  for (const [key, value] of Object.entries(record)) {
+    const asString = scalarToString(value);
+    if (asString !== null) {
+      params[key] = asString;
+    }
+  }
+
+  return Object.keys(params).length > 0 ? params : null;
+}
+
+function extractTwilioParams(raw: unknown): Record<string, string> | null {
+  if (!isRecord(raw)) {
+    return null;
+  }
+
+  // n8n can forward original Twilio form fields directly under `raw`, or
+  // under `raw.twilio` / `raw.params`. We only convert scalar fields and never
+  // persist or log the raw object.
+  const candidates: Record<string, unknown>[] = [raw];
+  if (isRecord(raw["twilio"])) {
+    candidates.unshift(raw["twilio"]);
+  }
+  if (isRecord(raw["params"])) {
+    candidates.unshift(raw["params"]);
+  }
+
+  for (const candidate of candidates) {
+    const params = recordToStringParams(candidate);
+    if (params) {
+      return params;
+    }
+  }
+
+  return null;
 }
 
 // ─── Body reader ────────────────────────────────────────────────
@@ -189,20 +268,53 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
     return;
   }
 
+  const config = await readUserConfig();
+  const hookToken =
+    headerValue(req.headers["x-hook-token"]) ??
+    headerValue(req.headers["x-orquestador-hook-token"]) ??
+    "";
+  const expectedHookToken =
+    config.whatsapp.hookToken || WHATSAPP_WEBHOOK_CONFIG.hookToken;
+  const n8nSharedSecret =
+    headerValue(req.headers["x-orquestador-whatsapp-secret"]) ??
+    headerValue(req.headers["x-n8n-shared-secret"]);
+  const transportDecision = validateInboundWhatsAppTransport({
+    hookToken,
+    expectedHookToken,
+    n8nSharedSecret,
+    expectedN8nSharedSecret: WHATSAPP_WEBHOOK_CONFIG.n8nSharedSecret,
+    messageId: stableMessageIdFromPayload(payload),
+    requireStableMessageId: WHATSAPP_WEBHOOK_CONFIG.requireStableMessageId,
+    validateTwilioSignature: WHATSAPP_WEBHOOK_CONFIG.validateTwilioSignature,
+    twilioAuthToken: WHATSAPP_WEBHOOK_CONFIG.twilioAuthToken,
+    twilioWebhookPublicUrl: WHATSAPP_WEBHOOK_CONFIG.twilioWebhookPublicUrl,
+    twilioSignature: headerValue(req.headers["x-twilio-signature"]),
+    twilioParams: extractTwilioParams(payload.raw),
+  });
+
+  if (!transportDecision.ok) {
+    logger.warn(`whatsapp:http [${requestId}] transport rejected`, {
+      reasonCode: transportDecision.reasonCode,
+    });
+    sendJson(
+      res,
+      transportDecision.statusCode,
+      buildResponse("error", transportDecision.safeMessage, {
+        error: transportDecision.reasonCode,
+        runId: requestId,
+      }),
+    );
+    return;
+  }
+
   // Map to internal format
-  const internalPayload = mapN8nToInternal(payload);
+  const internalPayload = mapN8nToInternal(payload, randomUUID());
   if (!internalPayload) {
     sendJson(res, 400, buildResponse("error", "No se pudo mapear el payload al formato interno.", {
       error: "Payload mapping failed",
     }));
     return;
   }
-
-  // Resolve hook token: header > env > empty (bridge.ts will validate against config)
-  const hookToken =
-    (req.headers["x-hook-token"] as string | undefined) ??
-    process.env["WHATSAPP_HOOK_TOKEN"] ??
-    "";
 
   // Call the existing WhatsApp pipeline
   try {
@@ -259,8 +371,10 @@ server.listen(PORT, HOST, () => {
 });
 
 function hookTokenSource(): string {
-  if (process.env["WHATSAPP_HOOK_TOKEN"]) return "from env WHATSAPP_HOOK_TOKEN";
-  return "from X-Hook-Token header (per request)";
+  if (WHATSAPP_WEBHOOK_CONFIG.hookToken) {
+    return "expected token from env WHATSAPP_HOOK_TOKEN";
+  }
+  return "expected token from config; presented via X-Hook-Token per request";
 }
 
 // Graceful shutdown

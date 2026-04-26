@@ -3,11 +3,12 @@
 // Verifies hook token, normalizes payload, delegates to handler.
 // Future channels (Telegram, Slack, dashboard) follow this same pattern.
 
-import { timingSafeEqual } from "node:crypto";
+import { WHATSAPP_WEBHOOK_CONFIG } from "../config.js";
 import { readUserConfig } from "../config/userConfigStore.js";
 import { logger } from "../observability/logger.js";
 import { parseWhatsAppPayload } from "./messageParser.js";
 import { handleWhatsAppMessage } from "./handler.js";
+import { validateHookToken } from "./webhookSecurity.js";
 import type { ChannelReply } from "./types.js";
 
 /**
@@ -26,13 +27,15 @@ export async function processInboundWebhook(
   const config = await readUserConfig();
 
   // 2. Verify hook token at the transport boundary (timing-safe)
-  const expected = config.whatsapp.hookToken;
-  if (
-    !expected ||
-    expected.length !== hookToken.length ||
-    !timingSafeEqual(Buffer.from(hookToken), Buffer.from(expected))
-  ) {
-    logger.warn("whatsapp:bridge — invalid hook token");
+  const expected = config.whatsapp.hookToken || WHATSAPP_WEBHOOK_CONFIG.hookToken;
+  const hookDecision = validateHookToken({
+    presentedToken: hookToken,
+    expectedToken: expected,
+  });
+  if (!hookDecision.ok) {
+    logger.warn("whatsapp:bridge — webhook auth rejected", {
+      reasonCode: hookDecision.reasonCode,
+    });
     return null;
   }
 

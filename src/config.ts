@@ -29,6 +29,14 @@ const envSchema = z.object({
   N8N_API_KEY:          z.string().optional(),
   N8N_WEBHOOK_BASE_URL: z.string().optional(),
 
+  // WhatsApp inbound webhook hardening — secrets stay in env/config only.
+  WHATSAPP_HOOK_TOKEN: z.string().optional(),
+  WHATSAPP_N8N_SHARED_SECRET: z.string().optional(),
+  WHATSAPP_REQUIRE_STABLE_MESSAGE_ID: z.string().default("true"),
+  WHATSAPP_VALIDATE_TWILIO_SIGNATURE: z.string().default("false"),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_WEBHOOK_PUBLIC_URL: z.string().optional(),
+
   // Kimi — opcional, solo activo si KIMI_API_KEY existe
   KIMI_API_KEY:  z.string().optional(),
   KIMI_MODEL:    z.string().default("kimi-k2.6"),
@@ -107,6 +115,15 @@ export const N8N_CONFIG = {
   baseUrl:        env.N8N_BASE_URL,
   apiKey:         env.N8N_API_KEY,
   webhookBaseUrl: env.N8N_WEBHOOK_BASE_URL ?? env.N8N_BASE_URL,
+} as const;
+
+export const WHATSAPP_WEBHOOK_CONFIG = {
+  hookToken: env.WHATSAPP_HOOK_TOKEN,
+  n8nSharedSecret: env.WHATSAPP_N8N_SHARED_SECRET,
+  requireStableMessageId: env.WHATSAPP_REQUIRE_STABLE_MESSAGE_ID !== "false",
+  validateTwilioSignature: env.WHATSAPP_VALIDATE_TWILIO_SIGNATURE === "true",
+  twilioAuthToken: env.TWILIO_AUTH_TOKEN,
+  twilioWebhookPublicUrl: env.TWILIO_WEBHOOK_PUBLIC_URL,
 } as const;
 
 export const LIGHTRAG_CONFIG = {
