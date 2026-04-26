@@ -264,6 +264,12 @@ const REAL_EXEC_CATEGORIES: Set<ActionCategory> = new Set([
   "file-write",
 ]);
 
+export function isRealExecutionCategoryAllowlisted(
+  category: ActionCategory,
+): boolean {
+  return REAL_EXEC_CATEGORIES.has(category);
+}
+
 function buildBlockedResult(proposal: ActionProposal): DispatchResult {
   return {
     ok: false,
