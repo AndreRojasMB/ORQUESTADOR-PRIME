@@ -7,6 +7,7 @@ import {
   getExecutionResults,
   getSecondApprovals,
   getRealExecutionEnabled,
+  getDashboardChannelAuditStats,
 } from "@/lib/data";
 import { classifyForDistillation } from "@/lib/distillation";
 import { Card } from "@/components/Card";
@@ -42,7 +43,7 @@ const TIER_PILL: Record<DistillationTier, string> = {
 };
 
 export default async function OverviewPage() {
-  const [store, recent, config, trajectories, actions, executions, approvals] =
+  const [store, recent, config, trajectories, actions, executions, approvals, channelAuditStats] =
     await Promise.all([
       readMemoryStore(),
       getRecentEntries(5),
@@ -51,6 +52,7 @@ export default async function OverviewPage() {
       getActions(),
       getExecutionResults(),
       getSecondApprovals(),
+      getDashboardChannelAuditStats(),
     ]);
 
   const realExecutionEnabled = getRealExecutionEnabled();
@@ -83,6 +85,7 @@ export default async function OverviewPage() {
   const previewDispatches = executions.filter(
     (r) => PREVIEW_CATEGORIES.has(r.category) && r.outcome === "dry-run",
   ).length;
+  const activeChannelCount = Object.keys(channelAuditStats.byChannel).length;
 
   function formatRemaining(ms: number): string {
     const totalSec = Math.floor(ms / 1000);
@@ -254,6 +257,16 @@ export default async function OverviewPage() {
           label="Failed/Blocked"
           value={dispatchFailOrBlocked}
           sub={`deferred: ${dispatchDeferred}`}
+        />
+        <Card
+          label="Channel Decisions"
+          value={channelAuditStats.total}
+          sub={`${channelAuditStats.allowed} allowed · ${channelAuditStats.blocked} blocked`}
+        />
+        <Card
+          label="Channel Blocks"
+          value={channelAuditStats.blocked}
+          sub={`${activeChannelCount} channel${activeChannelCount === 1 ? "" : "s"} observed`}
         />
       </div>
 

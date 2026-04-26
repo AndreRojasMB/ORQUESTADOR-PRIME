@@ -13,6 +13,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Overview", href: "/", icon: "~" },
   { label: "Runs", href: "/runs", icon: ">" },
   { label: "Actions", href: "/actions", icon: "!" },
+  { label: "Channel Audit", href: "/channel-audit", icon: "@" },
   { label: "Agents", href: "/agents", icon: "#" },
   { label: "Config", href: "/config", icon: "*" },
   { label: "Integrations", href: "/integrations", icon: "+" },

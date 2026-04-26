@@ -263,6 +263,92 @@ export interface ActionStoreData {
   proposals: ActionProposal[];
 }
 
+// ─── Channel audit (mirrors src/actions/types.ts) ──────────────
+
+export type ChannelKind = ActionSource | "api";
+
+export type ChannelOperation =
+  | "create-proposal"
+  | "request-review"
+  | "list-pending"
+  | "grant-second-approval"
+  | "dispatch-approved";
+
+export type ChannelAuditDecision = "allowed" | "blocked";
+
+export type ChannelAuditReasonCode =
+  | "allowed"
+  | "unknown-channel"
+  | "missing-identity"
+  | "untrusted-identity"
+  | "permission-denied"
+  | "operation-not-allowed"
+  | "category-not-allowed"
+  | "forbidden-category"
+  | "rate-limit-exceeded"
+  | "malformed-request"
+  | "duplicate-source-event"
+  | "proposal-not-found"
+  | "proposal-not-approved"
+  | "second-approval-missing"
+  | "second-approval-expired"
+  | "second-approval-parameter-drift"
+  | "real-execution-disabled"
+  | "real-execution-category-not-allowlisted"
+  | "prior-successful-execution"
+  | "audit-store-write-failed"
+  | "unknown-error";
+
+export interface ChannelPermissionSnapshot {
+  canCreateProposal: boolean;
+  canRequestReview: boolean;
+  canListPending: boolean;
+  canGrantSecondApproval: boolean;
+  canDispatchApproved: boolean;
+  allowedProposalCategories: ActionCategory[];
+  allowedDispatchCategories: ActionCategory[];
+  forbiddenCategories: ActionCategory[];
+  maxProposalsPerHour: number;
+  maxDispatchesPerHour: number;
+}
+
+export interface ChannelAuditEntry {
+  id: string;
+  timestamp: string;
+  decision: ChannelAuditDecision;
+  reasonCode: ChannelAuditReasonCode;
+  reason: string;
+  channel: ChannelKind;
+  principalHash: string | null;
+  trusted: boolean;
+  trustReason: string;
+  authMethod: string;
+  operation: ChannelOperation;
+  category: ActionCategory | null;
+  proposalId: string | null;
+  sourceEventId: string | null;
+  correlationId: string | null;
+  runId: string | null;
+  realExecutionEnabled: boolean | null;
+  secondApprovalId: string | null;
+  executionResultId: string | null;
+  permissionSnapshot?: ChannelPermissionSnapshot;
+}
+
+export interface ChannelAuditStoreData {
+  version: string;
+  entries: ChannelAuditEntry[];
+}
+
+export interface ChannelAuditStats {
+  total: number;
+  allowed: number;
+  blocked: number;
+  byChannel: Partial<Record<ChannelKind, number>>;
+  byOperation: Partial<Record<ChannelOperation, number>>;
+  byReasonCode: Partial<Record<ChannelAuditReasonCode, number>>;
+}
+
 // ─── Execution results (mirrors src/actions/types.ts) ───────────
 
 export type ExecutionOutcome =
@@ -332,6 +418,11 @@ export const EMPTY_TRAJECTORY_STORE: TrajectoryStore = {
 export const EMPTY_ACTION_STORE: ActionStoreData = {
   version: "1.0",
   proposals: [],
+};
+
+export const EMPTY_CHANNEL_AUDIT_STORE: ChannelAuditStoreData = {
+  version: "1.0",
+  entries: [],
 };
 
 export const EMPTY_EXECUTION_RESULT_STORE: ExecutionResultStoreData = {

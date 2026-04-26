@@ -20,6 +20,7 @@ type SearchParams = Promise<{
   status?: string | string[];
   risk?: string | string[];
   exec?: string | string[];
+  source?: string | string[];
 }>;
 
 const EXEC_VALUES: Array<ExecutionOutcome | "none"> = [
@@ -29,6 +30,15 @@ const EXEC_VALUES: Array<ExecutionOutcome | "none"> = [
   "deferred",
   "blocked",
   "none",
+];
+
+const SOURCE_VALUES: Array<ActionProposal["source"]> = [
+  "cli",
+  "whatsapp",
+  "omi",
+  "dashboard",
+  "openclaw",
+  "system",
 ];
 
 const EXEC_COLORS: Record<string, string> = {
@@ -199,6 +209,7 @@ export default async function ActionsPage({
   const statusFilter = firstParam(sp.status);
   const riskFilter = firstParam(sp.risk);
   const execFilter = firstParam(sp.exec);
+  const sourceFilter = firstParam(sp.source);
 
   const [allActions, allExecutions, allApprovals] = await Promise.all([
     getActions(),
@@ -214,6 +225,7 @@ export default async function ActionsPage({
   const filtered = allActions.filter((a) => {
     if (statusFilter && statusFilter !== "all" && a.status !== statusFilter) return false;
     if (riskFilter && riskFilter !== "all" && a.riskLevel !== riskFilter) return false;
+    if (sourceFilter && sourceFilter !== "all" && a.source !== sourceFilter) return false;
     if (execFilter && execFilter !== "all") {
       const runs = execMap.get(a.id) ?? [];
       if (execFilter === "none") {
@@ -319,13 +331,30 @@ export default async function ActionsPage({
             ))}
           </select>
         </div>
+        <div>
+          <label className="mb-1 block text-xs uppercase tracking-wider text-zinc-500">
+            Source
+          </label>
+          <select
+            name="source"
+            defaultValue={sourceFilter ?? "all"}
+            className="rounded border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-sm text-zinc-200"
+          >
+            <option value="all">all</option>
+            {SOURCE_VALUES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
         <button
           type="submit"
           className="rounded bg-zinc-800 px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-700"
         >
           Apply
         </button>
-        {(statusFilter || riskFilter || execFilter) && (
+        {(statusFilter || riskFilter || execFilter || sourceFilter) && (
           <Link
             href="/actions"
             className="text-xs text-zinc-500 hover:text-zinc-300"
@@ -354,6 +383,7 @@ export default async function ActionsPage({
                 <th className="px-4 py-3">Risk</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Source</th>
+                <th className="px-4 py-3">Source Event</th>
                 <th className="px-4 py-3">Dispatches</th>
                 <th className="px-4 py-3">Last Outcome</th>
                 <th className="px-4 py-3">Last Run</th>
@@ -501,6 +531,13 @@ function ActionRow({
       </td>
       <td className="px-4 py-3">
         <Pill label={action.source} className={sourceColor} />
+      </td>
+      <td className="px-4 py-3 font-mono text-xs text-zinc-500">
+        {action.sourceEventId
+          ? action.sourceEventId.length > 16
+            ? action.sourceEventId.slice(0, 16) + "…"
+            : action.sourceEventId
+          : "—"}
       </td>
       <td className="px-4 py-3 text-xs text-zinc-300">{executions.length}</td>
       <td className="px-4 py-3">

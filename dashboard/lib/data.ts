@@ -15,6 +15,9 @@ import type {
   Trajectory,
   ActionStoreData,
   ActionProposal,
+  ChannelAuditEntry,
+  ChannelAuditStoreData,
+  ChannelAuditStats,
   ExecutionResult,
   ExecutionResultStoreData,
   SecondApproval,
@@ -24,6 +27,7 @@ import {
   EMPTY_MEMORY_STORE,
   EMPTY_TRAJECTORY_STORE,
   EMPTY_ACTION_STORE,
+  EMPTY_CHANNEL_AUDIT_STORE,
   EMPTY_EXECUTION_RESULT_STORE,
   EMPTY_SECOND_APPROVAL_STORE,
   DEFAULT_USER_CONFIG,
@@ -117,6 +121,10 @@ function actionPath(): string {
   return join(getDataDir(), "actions.json");
 }
 
+function channelAuditPath(): string {
+  return join(getDataDir(), "channel-audit.json");
+}
+
 export async function readActionStore(): Promise<ActionStoreData> {
   const store = await readJsonFile<ActionStoreData>(actionPath(), {
     ...EMPTY_ACTION_STORE,
@@ -143,6 +151,56 @@ export async function getActionsByTraceId(traceId: string): Promise<ActionPropos
 export async function getActionsByTrajectoryId(trajectoryId: string): Promise<ActionProposal[]> {
   const store = await readActionStore();
   return store.proposals.filter((p) => p.trajectoryId === trajectoryId);
+}
+
+// ─── Channel audit ──────────────────────────────────────────────
+
+export async function readChannelAuditStore(): Promise<ChannelAuditStoreData> {
+  const store = await readJsonFile<ChannelAuditStoreData>(channelAuditPath(), {
+    ...EMPTY_CHANNEL_AUDIT_STORE,
+    entries: [],
+  });
+
+  if (!Array.isArray(store.entries)) {
+    store.entries = [];
+  }
+
+  return store;
+}
+
+export async function getChannelAuditEntries(): Promise<ChannelAuditEntry[]> {
+  const store = await readChannelAuditStore();
+  return store.entries;
+}
+
+export async function getRecentChannelAudit(n = 50): Promise<ChannelAuditEntry[]> {
+  const store = await readChannelAuditStore();
+  return store.entries.slice(-n).reverse();
+}
+
+export async function getDashboardChannelAuditStats(): Promise<ChannelAuditStats> {
+  const store = await readChannelAuditStore();
+  const stats: ChannelAuditStats = {
+    total: store.entries.length,
+    allowed: 0,
+    blocked: 0,
+    byChannel: {},
+    byOperation: {},
+    byReasonCode: {},
+  };
+
+  for (const entry of store.entries) {
+    if (entry.decision === "allowed") stats.allowed++;
+    else stats.blocked++;
+
+    stats.byChannel[entry.channel] = (stats.byChannel[entry.channel] ?? 0) + 1;
+    stats.byOperation[entry.operation] =
+      (stats.byOperation[entry.operation] ?? 0) + 1;
+    stats.byReasonCode[entry.reasonCode] =
+      (stats.byReasonCode[entry.reasonCode] ?? 0) + 1;
+  }
+
+  return stats;
 }
 
 // ─── Execution results ──────────────────────────────────────────
