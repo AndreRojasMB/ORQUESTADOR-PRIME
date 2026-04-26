@@ -6,6 +6,40 @@
 
 export type ProviderName = "openai" | "anthropic" | "openclaw" | "kimi";
 
+export type ProviderRouteReason =
+  | "model-prefix"
+  | "default-openai";
+
+export interface ProviderDetection {
+  model: string;
+  provider: ProviderName;
+  reason: ProviderRouteReason;
+  matchedPrefix?: string;
+  defaultedToOpenAI: boolean;
+}
+
+export interface ProviderConfigurationDiagnostic {
+  provider: ProviderName;
+  configured: boolean;
+  requiredEnv: string[];
+  missingEnv: string[];
+  notes: string[];
+}
+
+export interface ProviderModelDiagnostic {
+  role: "planner" | "specialist" | "synthesis" | "claudeArchitect" | "claudeBlueprint" | "kimi" | "openclaw";
+  model: string;
+  detection: ProviderDetection;
+}
+
+export interface ProviderSetupDiagnostics {
+  generatedAt: string;
+  providers: ProviderConfigurationDiagnostic[];
+  models: ProviderModelDiagnostic[];
+  warnings: string[];
+  networkValidation: "not-performed";
+}
+
 export interface ProviderMessage {
   role:    "user" | "assistant" | "system";
   content: string;
