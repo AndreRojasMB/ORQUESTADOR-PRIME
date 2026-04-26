@@ -22,6 +22,7 @@
     "bridge:omi": "tsx src/omi/httpBridge.ts",
     "learning:export": "tsx scripts/learning-export.ts",
     "supervisor:status": "tsx scripts/supervisor-status.ts",
+    "memory:v2:retrieve": "tsx scripts/memory-v2-retrieve.ts",
     "action:dispatch": "tsx scripts/action-dispatch.ts",
     "action:approve": "tsx scripts/action-approve.ts"
   },
