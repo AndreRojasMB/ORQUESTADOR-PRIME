@@ -12,6 +12,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { randomUUID } from "node:crypto";
 import { ingestOmiMemory } from "./adapter.js";
+import type { OmiActionProposalSummary } from "./actionItems.js";
 import { readUserConfig } from "../config/userConfigStore.js";
 import { OMI_CONFIG } from "../config.js";
 import { logger } from "../observability/logger.js";
@@ -30,6 +31,7 @@ interface OmiResponse {
   message: string;
   entryId?: string;
   error?: string;
+  actionProposals?: OmiActionProposalSummary;
 }
 
 function sendJson(res: ServerResponse, statusCode: number, data: OmiResponse): void {
@@ -65,22 +67,54 @@ function readBody(req: IncomingMessage): Promise<string> {
 
 // ─── Webhook secret validation ──────────────────────────────────
 
-function validateSecret(req: IncomingMessage, body: string): boolean {
+interface OmiSecretValidation {
+  memoryAllowed: boolean;
+  actionProposalTrusted: boolean;
+  actionProposalTrustReason: string;
+}
+
+function validateSecret(
+  req: IncomingMessage,
+  body: string,
+): OmiSecretValidation {
   const secret = OMI_CONFIG.webhookSecret;
-  if (!secret) return true; // no secret configured — skip validation
+  if (!secret) {
+    return {
+      memoryAllowed: true,
+      actionProposalTrusted: false,
+      actionProposalTrustReason: "omi webhook secret not configured",
+    };
+  }
 
   const signature = req.headers["x-omi-signature"] as string | undefined;
-  if (!signature) return false;
+  if (!signature) {
+    return {
+      memoryAllowed: false,
+      actionProposalTrusted: false,
+      actionProposalTrustReason: "omi webhook signature missing",
+    };
+  }
 
   const expected = createHmac("sha256", secret).update(body).digest("hex");
 
   try {
-    return timingSafeEqual(
+    const valid = timingSafeEqual(
       Buffer.from(signature, "utf-8"),
       Buffer.from(expected, "utf-8"),
     );
+    return {
+      memoryAllowed: valid,
+      actionProposalTrusted: valid,
+      actionProposalTrustReason: valid
+        ? "omi webhook signature verified"
+        : "omi webhook signature invalid",
+    };
   } catch {
-    return false;
+    return {
+      memoryAllowed: false,
+      actionProposalTrusted: false,
+      actionProposalTrustReason: "omi webhook signature invalid",
+    };
   }
 }
 
@@ -139,8 +173,10 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
     return;
   }
 
-  // Validate webhook secret
-  if (!validateSecret(req, rawBody)) {
+  // Validate webhook secret. Memory ingestion preserves existing behavior:
+  // missing secret is allowed, invalid configured signature is rejected.
+  const secretValidation = validateSecret(req, rawBody);
+  if (!secretValidation.memoryAllowed) {
     logger.warn(`omi:http [${requestId}] rejected — invalid signature`);
     sendJson(res, 401, {
       status: "error",
@@ -179,7 +215,13 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
 
   // Ingest
   try {
-    const result = await ingestOmiMemory(payload);
+    const result = await ingestOmiMemory(payload, {
+      userConfig,
+      actionProposalContext: {
+        trusted: secretValidation.actionProposalTrusted,
+        trustReason: secretValidation.actionProposalTrustReason,
+      },
+    });
 
     if (result.status === "invalid") {
       sendJson(res, 400, {
@@ -205,6 +247,9 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse): Promise
       status: "ok",
       message: "Memory ingested",
       ...(result.entryId ? { entryId: result.entryId } : {}),
+      ...(result.actionProposals
+        ? { actionProposals: result.actionProposals }
+        : {}),
     });
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : String(err);

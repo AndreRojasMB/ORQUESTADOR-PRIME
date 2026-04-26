@@ -6,6 +6,12 @@
 import { readMemoryStore, appendMemoryEntry } from "../memory/memoryStore.js";
 import { logger } from "../observability/logger.js";
 import type { MemoryEntry } from "../types.js";
+import { processOmiActionItems } from "./actionItems.js";
+import type {
+  OmiActionProposalContext,
+  OmiActionProposalSummary,
+} from "./actionItems.js";
+import type { UserConfig } from "../config/userConfig.js";
 import type { OmiWebhookPayload, OmiMemoryEvent } from "./types.js";
 
 // ─── In-memory dedup fast path ──────────────────────────────────
@@ -148,9 +154,18 @@ export interface IngestResult {
   status: "ingested" | "duplicate" | "invalid";
   entryId?: string;
   reason?: string;
+  actionProposals?: OmiActionProposalSummary;
 }
 
-export async function ingestOmiMemory(raw: unknown): Promise<IngestResult> {
+export interface IngestOmiMemoryOptions {
+  userConfig?: UserConfig;
+  actionProposalContext?: OmiActionProposalContext;
+}
+
+export async function ingestOmiMemory(
+  raw: unknown,
+  options: IngestOmiMemoryOptions = {},
+): Promise<IngestResult> {
   // Validate
   const validation = validateOmiPayload(raw);
   if (!validation.ok) {
@@ -187,7 +202,44 @@ export async function ingestOmiMemory(raw: unknown): Promise<IngestResult> {
     await appendMemoryEntry(entry);
     markSeen(entryId);
     logger.info("omi:adapter memory ingested", { entryId, title: event.title });
-    return { status: "ingested", entryId };
+
+    const actionProposalContext = options.actionProposalContext ?? {
+      trusted: false,
+      trustReason: "omi action proposal trust context missing",
+    };
+    let actionProposals: OmiActionProposalSummary | undefined;
+    try {
+      actionProposals = await processOmiActionItems(
+        event,
+        actionProposalContext,
+        options.userConfig ? { config: options.userConfig } : {},
+      );
+      if (actionProposals.explicitCount > 0) {
+        logger.info("omi:adapter action items processed", {
+          entryId,
+          explicitCount: actionProposals.explicitCount,
+          created: actionProposals.created,
+          blocked: actionProposals.blocked,
+        });
+      }
+    } catch (err) {
+      logger.warn("omi:adapter action item processing failed", {
+        entryId,
+        error: String(err),
+      });
+      actionProposals = {
+        explicitCount: 0,
+        attempted: 0,
+        created: 0,
+        blocked: 0,
+        proposalIds: [],
+        blockedReasonCodes: ["unknown-error"],
+      };
+    }
+
+    return actionProposals.explicitCount > 0
+      ? { status: "ingested", entryId, actionProposals }
+      : { status: "ingested", entryId };
   } catch (err) {
     logger.warn("omi:adapter write failed", { entryId, error: String(err) });
     return { status: "invalid", entryId, reason: "Memory write failed" };
