@@ -88,6 +88,85 @@ export interface ChannelPermission {
   maxDispatchesPerHour: number;
 }
 
+// ─── Channel Audit (Phase 33C) ─────────────────────────────────
+// Append-only decision records for future external channel bridges.
+// Stores hashed principals only; raw phone/email/token/request bodies stay out.
+
+export type ChannelAuditDecision = "allowed" | "blocked";
+
+export type ChannelAuditReasonCode =
+  | "allowed"
+  | "unknown-channel"
+  | "missing-identity"
+  | "untrusted-identity"
+  | "permission-denied"
+  | "operation-not-allowed"
+  | "category-not-allowed"
+  | "forbidden-category"
+  | "rate-limit-exceeded"
+  | "malformed-request"
+  | "duplicate-source-event"
+  | "proposal-not-found"
+  | "proposal-not-approved"
+  | "second-approval-missing"
+  | "second-approval-expired"
+  | "second-approval-parameter-drift"
+  | "real-execution-disabled"
+  | "real-execution-category-not-allowlisted"
+  | "prior-successful-execution"
+  | "audit-store-write-failed"
+  | "unknown-error";
+
+export interface ChannelPermissionSnapshot {
+  canCreateProposal: boolean;
+  canRequestReview: boolean;
+  canListPending: boolean;
+  canGrantSecondApproval: boolean;
+  canDispatchApproved: boolean;
+  allowedProposalCategories: ActionCategory[];
+  allowedDispatchCategories: ActionCategory[];
+  forbiddenCategories: ActionCategory[];
+  maxProposalsPerHour: number;
+  maxDispatchesPerHour: number;
+}
+
+export interface ChannelAuditEntry {
+  id: string;
+  timestamp: string;
+  decision: ChannelAuditDecision;
+  reasonCode: ChannelAuditReasonCode;
+  reason: string;
+  channel: ChannelKind;
+  principalHash: string | null;
+  trusted: boolean;
+  trustReason: string;
+  authMethod: ChannelAuthMethod;
+  operation: ChannelOperation;
+  category: ActionCategory | null;
+  proposalId: string | null;
+  sourceEventId: string | null;
+  correlationId: string | null;
+  runId: string | null;
+  realExecutionEnabled: boolean | null;
+  secondApprovalId: string | null;
+  executionResultId: string | null;
+  permissionSnapshot?: ChannelPermissionSnapshot;
+}
+
+export interface ChannelAuditStoreData {
+  version: string;
+  entries: ChannelAuditEntry[];
+}
+
+export interface ChannelAuditStats {
+  total: number;
+  allowed: number;
+  blocked: number;
+  byChannel: Partial<Record<ChannelKind, number>>;
+  byOperation: Partial<Record<ChannelOperation, number>>;
+  byReasonCode: Partial<Record<ChannelAuditReasonCode, number>>;
+}
+
 // ─── Action Status ──────────────────────────────────────────────
 
 export type ActionStatus =
