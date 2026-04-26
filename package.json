@@ -21,6 +21,7 @@
     "bridge:whatsapp": "tsx src/whatsapp/httpBridge.ts",
     "bridge:omi": "tsx src/omi/httpBridge.ts",
     "learning:export": "tsx scripts/learning-export.ts",
+    "supervisor:status": "tsx scripts/supervisor-status.ts",
     "action:dispatch": "tsx scripts/action-dispatch.ts",
     "action:approve": "tsx scripts/action-approve.ts"
   },
