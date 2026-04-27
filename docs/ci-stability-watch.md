@@ -100,6 +100,8 @@ Possible escalations:
   - Consider after baseline snapshots are stable and explicitly approved.
 - Artifact upload
   - Consider only after redaction, retention, and access policy are approved.
+  - Keep deferred until the CI artifacts redaction policy is accepted and a
+    later phase implements upload safely.
 - Committed baseline snapshots
   - Consider only after several stable runs and a baseline update policy.
 - PR annotations
@@ -110,6 +112,9 @@ Possible escalations:
   - Consider only after CI reliability and team policy are settled.
 
 All of these remain deferred during the stability watch.
+
+Artifact upload should wait until these stability criteria are satisfied and the
+[CI artifacts redaction](ci-artifacts-redaction.md) policy has been accepted.
 
 ## Optional Inspection
 

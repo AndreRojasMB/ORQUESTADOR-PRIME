@@ -60,6 +60,7 @@ See also:
 - [CI local dry run](ci-local-dry-run.md)
 - [CI first-run observability](ci-first-run-observability.md)
 - [CI stability watch](ci-stability-watch.md)
+- [CI artifacts redaction](ci-artifacts-redaction.md)
 - [Quality snapshot baseline](quality-snapshot-baseline.md)
 
 ## Active CI Scope
@@ -139,7 +140,9 @@ because:
 Future stricter modes and artifacts remain later work.
 
 The workflow should remain minimal until the
-[CI stability watch](ci-stability-watch.md) criteria are met.
+[CI stability watch](ci-stability-watch.md) criteria are met. Artifact upload
+also remains deferred until the [CI artifacts redaction](ci-artifacts-redaction.md)
+policy is accepted and implemented in a later targeted phase.
 
 ## Active Workflow Shape
 
@@ -210,6 +213,9 @@ Future artifacts, if enabled, must be redacted JSON only. They must not include:
 
 Local smoke artifacts should continue to use `/tmp/orq-*`.
 
+See [CI artifacts redaction](ci-artifacts-redaction.md) for the future artifact
+eligibility, scan, retention, and forbidden-content policy.
+
 ## Baseline Policy
 
 Do not commit baselines yet.
@@ -247,6 +253,7 @@ policy. Use [CI local dry run](ci-local-dry-run.md) to simulate the future CI
 sequence locally. Use [CI first-run observability](ci-first-run-observability.md)
 to inspect the first active workflow run. Use
 [CI stability watch](ci-stability-watch.md) before adding stricter CI behavior.
-Use
+[CI artifacts redaction](ci-artifacts-redaction.md) defines the policy that must
+be accepted before any CI artifact upload is added. Use
 [Quality snapshot baseline](quality-snapshot-baseline.md) for snapshot and
 baseline comparison behavior.
