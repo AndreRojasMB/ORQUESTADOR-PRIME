@@ -681,6 +681,11 @@ Native automation and enterprise factory work need a clearer durable runtime
 foundation first. Production runtime foundations should be planned before adding
 n8n-like execution, dashboard control surfaces, or enterprise generators.
 
+The canonical production runtime foundation specification lives in
+[Production runtime foundation](production-runtime-foundation.md). It is the
+next dependency before native automation, dashboard, and enterprise factory
+runtime work.
+
 ## Standard Verification/Smoke Rules For Future Work
 
 Future phases should start with:

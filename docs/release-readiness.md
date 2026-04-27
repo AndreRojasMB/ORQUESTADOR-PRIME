@@ -18,6 +18,11 @@ The full JARVIS / Software Factory gap map lives in
 readiness document remains an advisory quality/CI closeout, not a full JARVIS
 completion claim.
 
+The future production runtime foundation is specified in
+[Production runtime foundation](production-runtime-foundation.md). That work is
+a prerequisite for runtime production readiness; this release-readiness closeout
+remains advisory quality/CI only.
+
 ## Current Shipped Stack
 
 The shipped quality stack includes:
