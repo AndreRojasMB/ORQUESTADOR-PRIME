@@ -150,3 +150,6 @@ Baselines do not:
 - call providers,
 - mutate stores,
 - change runtime gates.
+
+For the consolidated pre-55B-F readiness checklist, see
+[Final hardening readiness](final-hardening-readiness.md).

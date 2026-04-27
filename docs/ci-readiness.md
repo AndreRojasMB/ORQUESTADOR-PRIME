@@ -68,6 +68,7 @@ See also:
 - [CI stability watch](ci-stability-watch.md)
 - [CI strict readiness](ci-strict-readiness.md)
 - [CI artifacts redaction](ci-artifacts-redaction.md)
+- [Final hardening readiness](final-hardening-readiness.md)
 - [Quality snapshot baseline](quality-snapshot-baseline.md)
 - [Quality baseline policy](baseline-policy.md)
 
@@ -297,4 +298,6 @@ to inspect the first active workflow run. Use
 strict flags. [CI artifacts redaction](ci-artifacts-redaction.md) defines the
 active minimal redacted artifact upload policy. Use
 [Quality snapshot baseline](quality-snapshot-baseline.md) for snapshot and
-baseline comparison behavior.
+baseline comparison behavior. Use
+[Final hardening readiness](final-hardening-readiness.md) as the consolidated
+current-state checklist before 55B-F.

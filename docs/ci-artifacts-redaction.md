@@ -187,3 +187,6 @@ Artifacts do not:
 
 A clean artifact should never be treated as permission to execute risky
 behavior.
+
+For the consolidated pre-55B-F readiness checklist, see
+[Final hardening readiness](final-hardening-readiness.md).

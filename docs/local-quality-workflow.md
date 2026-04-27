@@ -140,3 +140,6 @@ npm run quality:gate -- --baseline=/tmp/orq-quality-snapshot.json
 
 Do not commit the baseline snapshot yet. Keep it local until the quality signal
 is stable enough for a future CI or release workflow.
+
+For the consolidated pre-55B-F checklist, see
+[Final hardening readiness](final-hardening-readiness.md).
