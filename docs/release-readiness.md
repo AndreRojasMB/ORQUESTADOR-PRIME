@@ -13,6 +13,11 @@ readiness, and it does not claim full JARVIS completion. This closeout confirms
 that the advanced quality/CI stack is ready for the next release-readiness
 stage.
 
+The full JARVIS / Software Factory gap map lives in
+[JARVIS complete gap analysis](jarvis-complete-gap-analysis.md). This release
+readiness document remains an advisory quality/CI closeout, not a full JARVIS
+completion claim.
+
 ## Current Shipped Stack
 
 The shipped quality stack includes:
