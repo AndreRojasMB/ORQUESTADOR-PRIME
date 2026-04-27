@@ -11,7 +11,7 @@ See [Quality baseline policy](baseline-policy.md) for the future rules around
 creating, storing, reviewing, and updating baselines. Current comparisons remain
 advisory, and committed baselines remain deferred. Local baseline candidates
 must stay under `/tmp/orq-*` unless a future phase explicitly approves a curated
-fixture.
+fixture. Baseline candidate dry-run guidance also lives in that policy.
 
 ## Purpose
 
@@ -175,7 +175,10 @@ npm run quality:snapshot -- \
 For now, keep baseline snapshots in explicit temporary paths such as `/tmp`.
 Do not commit baselines until the report has stabilized across several phases.
 Use `/tmp/orq-*` for local candidates, and treat every comparison as advisory
-unless a later phase explicitly changes that policy.
+unless a later phase explicitly changes that policy. A self-comparison against a
+fresh local candidate is expected to show no regression: `baselineLoaded` true,
+`fingerprintChanged` false, `advisoryRegression` false, and no added or removed
+failing or warning ids.
 
 ## Advisory Boundaries
 

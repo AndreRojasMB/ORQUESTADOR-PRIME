@@ -59,6 +59,48 @@ Future options:
 - External release baselines may be considered for release checkpoints after
   snapshot behavior is stable.
 
+## Baseline Candidate Dry-Run
+
+Baseline candidate dry-runs are local-only. Candidate files must stay under
+`/tmp/orq-*`, must not be moved into the repository, and must not be committed.
+CI baseline comparison remains inactive, `fail-on-regression` remains inactive,
+and the process uses only the existing quality report and snapshot commands.
+
+Example local flow:
+
+```bash
+npm run quality:report -- --out=/tmp/orq-53i-quality-dashboard.json
+
+npm run quality:snapshot -- --quality-report=/tmp/orq-53i-quality-dashboard.json --out=/tmp/orq-53i-baseline-candidate.json
+
+npm run quality:snapshot -- --quality-report=/tmp/orq-53i-quality-dashboard.json --baseline=/tmp/orq-53i-baseline-candidate.json
+```
+
+If the local npm or `tsx` shim fails before project code runs, use the compiled
+`/tmp` fallback process documented in the local quality workflow guides. Do not
+change the storage rule: candidate output stays outside the repository.
+
+Candidate validation checklist:
+
+- JSON parses successfully.
+- A top-level snapshot exists.
+- `snapshot.advisoryOnly` is `true`.
+- `snapshot.fingerprint` is present.
+- `snapshot.privacyStatus` is not `unsafe`.
+- `snapshot.boundaries` indicates no provider calls and no store mutation.
+- `comparison.advisoryOnly` is `true`.
+- Self-comparison has `baselineLoaded` set to `true`.
+- Self-comparison has `fingerprintChanged` set to `false`.
+- Self-comparison has `advisoryRegression` set to `false`.
+- Self-comparison has no added or removed failing ids.
+- Self-comparison has no added or removed warning ids.
+- Candidate output contains no raw secrets, raw task bodies, raw paths,
+  provider output, execution output, request body payloads, or raw body payloads.
+
+A local baseline candidate is not an approved committed baseline. Promotion
+requires a future explicit phase, human approval, privacy evidence, and a
+comparison summary.
+
 ## Update Policy
 
 Future baseline updates must be:
