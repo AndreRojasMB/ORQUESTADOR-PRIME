@@ -88,6 +88,10 @@ The workflow has read-only repository permissions, a 15-minute timeout,
 concurrency cancellation per ref, no secrets, no provider environment variables,
 no artifact upload, and no committed baselines.
 
+The workflow uses Node24-capable GitHub action versions:
+`actions/checkout@v6` and `actions/setup-node@v6`. The project runtime remains
+Node `22` through `setup-node`, and the quality commands are unchanged.
+
 Local artifact dry-run support exists for validating future CI artifact shape,
 but the active workflow does not upload artifacts yet.
 
@@ -193,10 +197,10 @@ jobs:
       HOME: /tmp/orq-home
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
