@@ -90,6 +90,9 @@ no artifact upload, and no committed baselines.
 Local artifact dry-run support exists for validating future CI artifact shape,
 but the active workflow does not upload artifacts yet.
 
+Artifact upload is intentionally deferred until the stability-watch criteria are
+confirmed or explicitly waived. The active CI workflow remains unchanged.
+
 Dependency installation may use network access as CI infrastructure. Project
 code should remain offline during the quality checks.
 

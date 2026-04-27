@@ -111,6 +111,23 @@ status, and the privacy scan result. It does not record absolute output paths.
 The dry-run does not upload artifacts to CI. `upload-artifact` remains deferred
 until a later workflow phase.
 
+## Upload Status
+
+Artifact upload is not active yet.
+
+The local artifact dry-run is available and has been verified locally, but CI
+upload remains deferred until the CI stability criteria are met or explicitly
+waived.
+
+Future upload should include only scanned compact JSON:
+
+- `quality-report.json`
+- `quality-snapshot.json`
+- `manifest.json`
+
+Future upload should use short retention, such as 3 days. Baselines and strict
+review or regression flags remain deferred.
+
 ## Future Workflow Shape
 
 The following sketch is non-active. It documents the intended shape only and is

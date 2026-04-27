@@ -115,6 +115,8 @@ All of these remain deferred during the stability watch.
 
 Artifact upload should wait until these stability criteria are satisfied and the
 [CI artifacts redaction](ci-artifacts-redaction.md) policy has been accepted.
+Do not enable artifacts based on only one passing run unless the stability-watch
+criteria are explicitly waived in a targeted follow-up phase.
 
 ## Optional Inspection
 
