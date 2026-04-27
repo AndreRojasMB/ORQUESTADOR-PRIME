@@ -27,6 +27,9 @@
     "jobs:enqueue": "tsx scripts/jobs-enqueue.ts",
     "jobs:run-due": "tsx scripts/jobs-run-due.ts",
     "notifications:list": "tsx scripts/notifications-list.ts",
+    "openclaw:capabilities": "tsx scripts/openclaw-capabilities.ts",
+    "computer:dry-run": "tsx scripts/computer-dry-run.ts",
+    "computer:screenshot-traces": "tsx scripts/screenshot-traces-list.ts",
     "action:dispatch": "tsx scripts/action-dispatch.ts",
     "action:approve": "tsx scripts/action-approve.ts"
   },
