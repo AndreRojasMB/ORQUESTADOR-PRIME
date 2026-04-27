@@ -66,6 +66,51 @@ To make warnings fail locally for a stricter release-style pass:
 npm run evals:gate -- --fail-on-warn=true
 ```
 
+## WSL/Windows shim fallback
+
+Some mixed WSL/Windows setups can launch `npm` through Windows while the repo
+and `node_modules` live under WSL. In that case npm may start from a UNC path,
+fall back to a Windows system directory, and fail before project code runs.
+
+Common symptoms:
+
+- `npm run check` cannot find `tsc`.
+- `npm run evals:run` cannot find `tsx`.
+- `npm run evals:gate` cannot find `tsx`.
+
+This is an environment execution issue, not an eval logic failure.
+
+The most stable typecheck fallback is:
+
+```bash
+node node_modules/typescript/bin/tsc --noEmit
+```
+
+The repo also provides a package alias for healthy npm environments:
+
+```bash
+npm run check:node
+```
+
+If npm itself is being launched through Windows from WSL, even package aliases
+may fail before they reach the command. In that case, prefer the direct `node`
+command above.
+
+`evals:run` and `evals:gate` remain the normal commands in healthy Node
+environments. In the affected mixed environment, eval CLI verification may need
+the already proven fallback of compiling the eval CLI entrypoints to a temporary
+directory under `/tmp` and running the generated JavaScript from there.
+
+This fallback guidance does not add:
+
+- CI,
+- hooks,
+- wrappers,
+- provider calls,
+- network access,
+- runtime behavior,
+- store mutation.
+
 ## Baseline Workflow
 
 Baselines are explicit files. They are not created automatically.
