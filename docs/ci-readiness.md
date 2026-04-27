@@ -82,6 +82,13 @@ no artifact upload, and no committed baselines.
 Dependency installation may use network access as CI infrastructure. Project
 code should remain offline during the quality checks.
 
+The first visible `quality` run on `dev` was observed passing after the isolated
+HOME path fix in:
+
+```text
+c5ac7a6 fix(ci): use valid isolated home path in quality workflow
+```
+
 ## CI Goals
 
 CI should:
@@ -160,7 +167,7 @@ jobs:
     env:
       CI: true
       ORQUESTADOR_CI: true
-      HOME: ${{ runner.temp }}/orq-home
+      HOME: /tmp/orq-home
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -170,6 +177,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+
+      - name: Prepare isolated HOME
+        run: mkdir -p "$HOME"
 
       - name: Install dependencies
         run: npm ci

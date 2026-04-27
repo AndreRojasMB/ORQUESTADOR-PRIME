@@ -53,6 +53,25 @@ Use this checklist for the first active run:
 
 Record the outcome as a short observation, not a raw log dump.
 
+## First-Run Closeout
+
+The first minimal `quality` workflow run on `dev` was observed passing after the
+isolated HOME path fix in:
+
+```text
+c5ac7a6 fix(ci): use valid isolated home path in quality workflow
+```
+
+The passing workflow remains minimal:
+
+- `npm ci`
+- `npm run check:node`
+- `npm run quality:gate`
+
+The workflow still has no artifacts, no committed baselines, no provider
+secrets, no runtime approval enforcement, and no dispatch or proposal behavior.
+Future strict review/regression flags remain deferred.
+
 ## Failure Triage
 
 ### Dependency Install Failure
