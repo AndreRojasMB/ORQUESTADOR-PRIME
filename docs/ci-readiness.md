@@ -300,4 +300,5 @@ active minimal redacted artifact upload policy. Use
 [Quality snapshot baseline](quality-snapshot-baseline.md) for snapshot and
 baseline comparison behavior. Use
 [Final hardening readiness](final-hardening-readiness.md) as the consolidated
-current-state checklist before 55B-F.
+current-state checklist before 55B-F. The current release-readiness closeout is
+documented in [Release readiness](release-readiness.md).

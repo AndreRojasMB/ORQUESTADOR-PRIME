@@ -133,3 +133,6 @@ Suggested entry criteria before 55B-F:
 - No generated artifacts are tracked.
 - No baseline files are tracked.
 - Docs reflect the current CI, artifact, baseline, and strictness status.
+
+The final release-readiness closeout lives in
+[Release readiness](release-readiness.md).
