@@ -42,6 +42,7 @@
     "risk:assess": "tsx scripts/risk-assess.ts",
     "risk:from-evals": "tsx scripts/risk-from-evals.ts",
     "quality:report": "tsx scripts/quality-report.ts",
+    "quality:snapshot": "tsx scripts/quality-snapshot.ts",
     "action:dispatch": "tsx scripts/action-dispatch.ts",
     "action:approve": "tsx scripts/action-approve.ts"
   },
