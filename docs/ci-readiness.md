@@ -59,6 +59,7 @@ See also:
 - [Local quality gate](local-quality-gate.md)
 - [CI local dry run](ci-local-dry-run.md)
 - [CI first-run observability](ci-first-run-observability.md)
+- [CI stability watch](ci-stability-watch.md)
 - [Quality snapshot baseline](quality-snapshot-baseline.md)
 
 ## Active CI Scope
@@ -136,6 +137,9 @@ because:
 - avoiding accidental CI overreach is intentional.
 
 Future stricter modes and artifacts remain later work.
+
+The workflow should remain minimal until the
+[CI stability watch](ci-stability-watch.md) criteria are met.
 
 ## Active Workflow Shape
 
@@ -242,5 +246,7 @@ Use [Local quality gate](local-quality-gate.md) for gate result shape and exit
 policy. Use [CI local dry run](ci-local-dry-run.md) to simulate the future CI
 sequence locally. Use [CI first-run observability](ci-first-run-observability.md)
 to inspect the first active workflow run. Use
+[CI stability watch](ci-stability-watch.md) before adding stricter CI behavior.
+Use
 [Quality snapshot baseline](quality-snapshot-baseline.md) for snapshot and
 baseline comparison behavior.

@@ -206,6 +206,7 @@ Local quality workflow: see [docs/local-quality-workflow.md](docs/local-quality-
 CI readiness guidance: see [docs/ci-readiness.md](docs/ci-readiness.md).
 Local CI dry-run guidance: see [docs/ci-local-dry-run.md](docs/ci-local-dry-run.md).
 CI first-run observability: see [docs/ci-first-run-observability.md](docs/ci-first-run-observability.md).
+CI stability watch: see [docs/ci-stability-watch.md](docs/ci-stability-watch.md).
 Minimal quality CI is active on `dev` pushes and pull requests.
 
 ---
