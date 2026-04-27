@@ -202,6 +202,8 @@ npm run check
 npm run plan -- "your task here"
 ```
 
+Local quality workflow: see [docs/local-quality-workflow.md](docs/local-quality-workflow.md).
+
 ---
 
 ## Environment variables
