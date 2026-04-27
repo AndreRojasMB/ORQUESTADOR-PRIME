@@ -117,11 +117,35 @@ Include an explicit eval report:
 npm run risk:assess -- --input=/tmp/orq-risk-input.json --eval-report=/tmp/orq-evals-report.json
 ```
 
+Assess an eval report directly:
+
+```bash
+npm run risk:from-evals -- --eval-report=/tmp/orq-evals-report.json
+```
+
+Generate the eval report in memory and immediately assess it:
+
+```bash
+npm run risk:from-evals
+```
+
 Write only to an explicit output path:
 
 ```bash
 npm run risk:assess -- --input=/tmp/orq-risk-input.json --out=/tmp/orq-risk-signal.json
 ```
+
+Write an eval-derived risk signal only to an explicit output path:
+
+```bash
+npm run risk:from-evals -- --eval-report=/tmp/orq-evals-report.json --out=/tmp/orq-risk-signal.json
+```
+
+`risk:assess` is the general-purpose CLI for task metadata, proposed action
+metadata, permission summaries, and optional eval reports. `risk:from-evals` is
+the convenience CLI for eval reports only. It maps the eval report into a
+cleaner risk input and marks permission/workspace checks as `not_checked`
+instead of treating them as missing.
 
 ## Examples
 
@@ -207,6 +231,25 @@ Forbidden category:
 
 Expected recommendation: `block_until_fixed`.
 
+Existing eval report:
+
+```bash
+npm run evals:run -- --out=/tmp/orq-evals-report.json
+npm run risk:from-evals -- --eval-report=/tmp/orq-evals-report.json
+```
+
+Generated in-memory eval report:
+
+```bash
+npm run risk:from-evals -- --pretty
+```
+
+Explicit eval-to-risk output:
+
+```bash
+npm run risk:from-evals -- --out=/tmp/orq-risk-from-evals.json
+```
+
 ## Redaction
 
 The risk CLI redacts common sensitive patterns before producing previews:
@@ -231,6 +274,9 @@ Recommended interpretation:
 - eval warning should not block by default,
 - unsafe privacy output should block until fixed,
 - passing evals do not authorize dispatch, approval, or real execution.
+
+`risk:from-evals` preserves this boundary. It does not make eval failures into
+runtime blocks, and it does not make eval passes into approvals.
 
 ## Relationship With Future Approval Gates
 

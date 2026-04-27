@@ -137,6 +137,38 @@ Do not commit baselines yet. The eval suite is still early and intentionally
 contains advisory warnings. A committed baseline should wait until the report
 shape and warning policy have settled.
 
+## Eval-To-Risk Advisory Flow
+
+The risk signal can consume an eval report as one local advisory input. This is
+useful when deciding whether a risky phase should continue, pause for review, or
+collect more evidence.
+
+Generate an explicit eval report:
+
+```bash
+npm run evals:run -- --out=/tmp/orq-evals-report.json
+```
+
+Assess risk from that report:
+
+```bash
+npm run risk:from-evals -- --eval-report=/tmp/orq-evals-report.json
+```
+
+Both commands are local, offline, and advisory. They do not approve proposals,
+dispatch actions, mutate stores, call providers, or use the network.
+
+Default interpretation:
+
+- eval warnings map to `proceed_with_warnings`,
+- eval failures map to a review pause,
+- unsafe privacy output maps to a fix-before-continuing signal,
+- a clean eval report is still not permission to execute risky behavior.
+
+The WSL/Windows shim fallback guidance above still applies. In affected mixed
+environments, the eval and risk CLIs may need the compiled `/tmp` fallback used
+for verification.
+
 ## CI-Ready Future Command
 
 No GitHub Actions workflow is added in this phase.
