@@ -58,6 +58,7 @@ See also:
 - [Local quality workflow](local-quality-workflow.md)
 - [Local quality gate](local-quality-gate.md)
 - [CI local dry run](ci-local-dry-run.md)
+- [CI first-run observability](ci-first-run-observability.md)
 - [Quality snapshot baseline](quality-snapshot-baseline.md)
 
 ## Active CI Scope
@@ -229,5 +230,7 @@ behavior.
 Use [Local quality workflow](local-quality-workflow.md) for day-to-day commands.
 Use [Local quality gate](local-quality-gate.md) for gate result shape and exit
 policy. Use [CI local dry run](ci-local-dry-run.md) to simulate the future CI
-sequence locally. Use [Quality snapshot baseline](quality-snapshot-baseline.md)
-for snapshot and baseline comparison behavior.
+sequence locally. Use [CI first-run observability](ci-first-run-observability.md)
+to inspect the first active workflow run. Use
+[Quality snapshot baseline](quality-snapshot-baseline.md) for snapshot and
+baseline comparison behavior.

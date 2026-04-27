@@ -6,9 +6,9 @@ Status: local guidance only
 ## Purpose
 
 This document explains how to simulate the future CI quality sequence locally.
-It is local and offline guidance only. CI is not active, and this phase does
-not add GitHub Actions, workflow files, package scripts, source changes, or
-runtime enforcement.
+It is the local companion to the active minimal CI workflow in
+`.github/workflows/quality.yml`. It does not add package scripts, source
+changes, or runtime enforcement.
 
 The local dry run is a developer signal. It helps decide whether a phase is
 healthy enough to review, but it is not permission to execute risky behavior.
