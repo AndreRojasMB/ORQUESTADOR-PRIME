@@ -163,3 +163,7 @@ Future phases may build on it for:
 Repair, migration, locks, runtime API, dashboard, and automation remain future
 work.
 
+The migration and lock policy is documented in
+[Store migration and lock policy](store-migration-locks.md). The runtime doctor
+may later report migration and lock readiness, but it must not create locks,
+repair stores, or run migrations.

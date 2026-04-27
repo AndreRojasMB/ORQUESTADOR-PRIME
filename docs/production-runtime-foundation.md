@@ -82,6 +82,10 @@ No storage engine migration should happen before the store inventory, health
 checks, migration policy, backup policy, and lock model are documented and
 tested.
 
+The store migration, backup, repair, and lock policy lives in
+[Store migration and lock policy](store-migration-locks.md). Migration,
+backup, repair, and lock behavior remain future implementation.
+
 ## Runtime Architecture Proposal
 
 Future runtime architecture should be layered:
