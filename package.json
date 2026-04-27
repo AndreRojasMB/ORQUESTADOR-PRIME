@@ -37,6 +37,7 @@
     "workspace:decision": "tsx scripts/workspace-decision.ts",
     "workspace:files": "tsx scripts/workspace-files.ts",
     "evals:run": "tsx scripts/evals-run.ts",
+    "evals:gate": "tsx scripts/evals-gate.ts",
     "action:dispatch": "tsx scripts/action-dispatch.ts",
     "action:approve": "tsx scripts/action-approve.ts"
   },
