@@ -68,6 +68,7 @@ See also:
 - [CI stability watch](ci-stability-watch.md)
 - [CI artifacts redaction](ci-artifacts-redaction.md)
 - [Quality snapshot baseline](quality-snapshot-baseline.md)
+- [Quality baseline policy](baseline-policy.md)
 
 ## Active CI Scope
 
@@ -92,6 +93,9 @@ but the active workflow does not upload artifacts yet.
 
 Artifact upload is intentionally deferred until the stability-watch criteria are
 confirmed or explicitly waived. The active CI workflow remains unchanged.
+
+Quality baseline policy exists, but committed baselines and CI baseline
+comparison remain deferred. CI `fail-on-regression` also remains deferred.
 
 Dependency installation may use network access as CI infrastructure. Project
 code should remain offline during the quality checks.

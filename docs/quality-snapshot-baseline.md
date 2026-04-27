@@ -7,6 +7,10 @@ This document defines the advisory quality snapshot and baseline comparison
 workflow. It is local, offline, data-only, and designed for phase-to-phase
 quality review without committing noisy baseline artifacts yet.
 
+See [Quality baseline policy](baseline-policy.md) for the future rules around
+creating, storing, reviewing, and updating baselines. Current comparisons remain
+advisory, and committed baselines remain deferred.
+
 ## Purpose
 
 Quality dashboard reports are useful but include generated timestamps and source
