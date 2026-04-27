@@ -30,6 +30,8 @@
     "openclaw:capabilities": "tsx scripts/openclaw-capabilities.ts",
     "computer:dry-run": "tsx scripts/computer-dry-run.ts",
     "computer:screenshot-traces": "tsx scripts/screenshot-traces-list.ts",
+    "multi-agent:review": "tsx scripts/multi-agent-review.ts",
+    "multi-agent:traces": "tsx scripts/multi-agent-traces.ts",
     "action:dispatch": "tsx scripts/action-dispatch.ts",
     "action:approve": "tsx scripts/action-approve.ts"
   },
