@@ -1,17 +1,15 @@
 # CI Readiness
 
 Phase: 46B-H
-Status: planning guidance only
+Status: first minimal workflow active
 
 ## Purpose
 
-This document prepares ORQUESTADOR-PRIME for a future CI workflow around the
-local quality stack. CI is not active yet. No GitHub Actions workflow is added
-in this phase.
+This document prepares ORQUESTADOR-PRIME for CI around the local quality stack.
+The first minimal GitHub Actions workflow is active as of Phase 47B-H.
 
-The goal is to make the future CI shape clear while preserving the current
-safety boundary: quality checks are local developer signals, not runtime
-approval enforcement.
+The goal is to keep CI narrow while preserving the current safety boundary:
+quality checks are developer signals, not runtime approval enforcement.
 
 ## Current Local Quality Stack
 
@@ -62,9 +60,30 @@ See also:
 - [CI local dry run](ci-local-dry-run.md)
 - [Quality snapshot baseline](quality-snapshot-baseline.md)
 
-## Future CI Goals
+## Active CI Scope
 
-A future CI workflow should:
+The active workflow is `.github/workflows/quality.yml`.
+
+It runs on a Linux runner for pull requests to `dev`, pushes to `dev`, and
+manual workflow dispatch. It installs dependencies, runs the direct TypeScript
+check, and runs the local quality gate:
+
+```bash
+npm ci
+npm run check:node
+npm run quality:gate
+```
+
+The workflow has read-only repository permissions, a 15-minute timeout,
+concurrency cancellation per ref, no secrets, no provider environment variables,
+no artifact upload, and no committed baselines.
+
+Dependency installation may use network access as CI infrastructure. Project
+code should remain offline during the quality checks.
+
+## CI Goals
+
+CI should:
 
 - run on a Linux runner,
 - install dependencies with `npm ci`,
@@ -78,9 +97,9 @@ A future CI workflow should:
 The CI runner may need network access to install dependencies from the npm
 registry. Project code should not use network access during the quality checks.
 
-## Recommended Future Command Sequence
+## Active Command Sequence
 
-Recommended future CI commands:
+Active CI commands:
 
 ```bash
 npm ci
@@ -97,36 +116,50 @@ npm run quality:gate -- --fail-on-review=true --fail-on-regression=true
 The stricter mode should wait until the team decides which advisory signals
 should fail CI.
 
-## Why No GitHub Actions Workflow Is Added Yet
+## Why The Workflow Stays Minimal
 
-No `.github/workflows` file is added in this phase because:
+The active workflow intentionally avoids artifacts and strict advisory gates
+because:
 
-- dependency and network policy is not finalized,
 - artifact upload policy is not finalized,
 - baselines are not stable enough to commit,
 - quality reports remain advisory,
 - secrets and provider policy is not ready for CI,
 - avoiding accidental CI overreach is intentional.
 
-This phase documents the target shape only.
+Future stricter modes and artifacts remain later work.
 
-## Future Non-Active Workflow Sketch
+## Active Workflow Shape
 
-This sketch is documentation only. It is not active and should not be copied into
-`.github/workflows` until CI policy is approved.
+The active workflow follows this shape:
 
 ```yaml
 name: quality
 
 on:
   pull_request:
+    branches:
+      - dev
   push:
     branches:
       - dev
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: true
+      ORQUESTADOR_CI: true
+      HOME: ${{ runner.temp }}/orq-home
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -149,7 +182,7 @@ jobs:
 
 ## Artifact Policy
 
-No CI artifacts should be uploaded by default yet.
+No CI artifacts are uploaded by default yet.
 
 Future artifacts, if enabled, must be redacted JSON only. They must not include:
 

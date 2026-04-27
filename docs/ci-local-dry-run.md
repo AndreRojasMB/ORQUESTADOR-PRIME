@@ -47,7 +47,7 @@ high-risk surfaces.
 
 ## Relationship To Future CI
 
-Future CI may run:
+The active minimal CI workflow runs:
 
 ```bash
 npm ci
@@ -55,8 +55,14 @@ npm run check:node
 npm run quality:gate
 ```
 
-This phase does not add GitHub Actions. It documents the local dry-run shape so
-the command sequence can stabilize before any workflow is activated.
+Locally, use the direct TypeScript fallback when WSL/Windows shims are unstable:
+
+```bash
+node node_modules/typescript/bin/tsc --noEmit
+```
+
+`npm ci` is part of CI dependency installation and is not normally needed for
+day-to-day local dry runs once dependencies are installed.
 
 ## WSL/Windows Shim Fallback
 
