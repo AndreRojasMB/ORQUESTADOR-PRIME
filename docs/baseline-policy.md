@@ -14,20 +14,28 @@ keep snapshot comparison useful before any baseline becomes part of CI.
 Baselines are not committed yet.
 
 For now, baselines remain local-only under `/tmp` for manual comparison and
-smoke checks. CI baseline comparison is not active, `fail-on-regression` remains
-deferred, and artifact upload remains deferred until stability criteria are met
-or explicitly waived.
+smoke checks. CI baseline comparison is not active, and `fail-on-regression`
+remains deferred.
+
+Redacted artifact upload is active and verified. The first verified upload
+produced only `quality-report.json`, `quality-snapshot.json`, and
+`manifest.json`, with a passing manifest scan. This is useful evidence for
+human inspection, but it does not yet justify committed baselines.
 
 ## Baseline Eligibility Criteria
 
 Future baseline creation requires:
 
 - CI stability criteria are met or explicitly waived.
-- Artifact dry-run and redaction checks are proven.
-- Warning ids and snapshot fingerprints are stable across several runs.
+- The artifact manifest scan is `pass`.
 - `privacyStatus` is not `unsafe`.
-- No active TypeScript, eval, or quality gate blocking failures exist.
-- Accepted warnings are intentionally documented.
+- No TypeScript failure is active.
+- No eval failure is active.
+- No quality gate blocking failure is active.
+- Warning ids and snapshot fingerprints are stable across several runs.
+- Warning ids are understood and intentionally documented.
+- Human approval is recorded before promoting a candidate.
+- Local candidates remain under `/tmp/orq-*`.
 - The snapshot contains only summarized safe fields.
 
 Baseline candidates must not include raw task bodies, secrets, raw paths,
@@ -75,8 +83,9 @@ A baseline update must never be used to hide unexplained regressions.
 There is no CI baseline comparison yet.
 
 Future baseline comparison in CI should start as advisory before becoming
-blocking. CI `fail-on-regression` remains deferred, and artifact upload plus
-redaction should be proven before CI baselines are considered.
+blocking. CI `fail-on-regression` remains deferred. Artifact upload and
+redaction are now proven for compact evidence, but CI baselines still require
+separate candidate evidence, fingerprint stability, and human approval.
 
 ## Artifacts Vs Baselines
 
@@ -85,6 +94,9 @@ Artifacts are evidence for inspection. Baselines are comparison anchors.
 They are not the same thing, and neither is runtime approval enforcement.
 Artifacts may help humans inspect quality state, while baselines define an
 intentional quality reference point for later comparisons.
+
+Verified artifacts may inform a future baseline candidate, but they are not a
+baseline by themselves.
 
 ## Safety Boundaries
 

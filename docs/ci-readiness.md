@@ -102,6 +102,8 @@ deferred.
 
 Quality baseline policy exists, but committed baselines and CI baseline
 comparison remain deferred. CI `fail-on-regression` also remains deferred.
+Future baseline work requires candidate evidence, fingerprint stability, and
+human approval before any committed fixture or CI comparison is introduced.
 
 Dependency installation may use network access as CI infrastructure. Project
 code should remain offline during the quality checks.

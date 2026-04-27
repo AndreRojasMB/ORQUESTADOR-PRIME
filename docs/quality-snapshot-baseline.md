@@ -9,7 +9,9 @@ quality review without committing noisy baseline artifacts yet.
 
 See [Quality baseline policy](baseline-policy.md) for the future rules around
 creating, storing, reviewing, and updating baselines. Current comparisons remain
-advisory, and committed baselines remain deferred.
+advisory, and committed baselines remain deferred. Local baseline candidates
+must stay under `/tmp/orq-*` unless a future phase explicitly approves a curated
+fixture.
 
 ## Purpose
 
@@ -172,6 +174,8 @@ npm run quality:snapshot -- \
 
 For now, keep baseline snapshots in explicit temporary paths such as `/tmp`.
 Do not commit baselines until the report has stabilized across several phases.
+Use `/tmp/orq-*` for local candidates, and treat every comparison as advisory
+unless a later phase explicitly changes that policy.
 
 ## Advisory Boundaries
 
