@@ -83,6 +83,34 @@ The future artifact job should generate reports from in-memory eval and risk
 sources where possible. Avoid explicit source report paths unless the artifact
 schema first removes or redacts those paths.
 
+## Local Artifact Dry-Run
+
+Phase 49I adds a local dry-run command for proving the artifact shape before CI
+upload is enabled:
+
+```bash
+npm run quality:artifacts:dry-run
+```
+
+Use an explicit temporary output directory when needed:
+
+```bash
+npm run quality:artifacts:dry-run -- --out-dir=/tmp/orq-quality-artifacts-test
+```
+
+The output directory must be a direct `/tmp/orq-*` path. The dry-run creates
+only these files:
+
+- `quality-report.json`
+- `quality-snapshot.json`
+- `manifest.json`
+
+The manifest records file names, SHA-256 hashes, byte sizes, JSON validation
+status, and the privacy scan result. It does not record absolute output paths.
+
+The dry-run does not upload artifacts to CI. `upload-artifact` remains deferred
+until a later workflow phase.
+
 ## Future Workflow Shape
 
 The following sketch is non-active. It documents the intended shape only and is

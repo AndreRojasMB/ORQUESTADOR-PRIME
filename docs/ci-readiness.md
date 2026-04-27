@@ -53,6 +53,12 @@ Current local commands:
   npm run quality:snapshot
   ```
 
+- Local quality artifact dry-run:
+
+  ```bash
+  npm run quality:artifacts:dry-run
+  ```
+
 See also:
 
 - [Local quality workflow](local-quality-workflow.md)
@@ -80,6 +86,9 @@ npm run quality:gate
 The workflow has read-only repository permissions, a 15-minute timeout,
 concurrency cancellation per ref, no secrets, no provider environment variables,
 no artifact upload, and no committed baselines.
+
+Local artifact dry-run support exists for validating future CI artifact shape,
+but the active workflow does not upload artifacts yet.
 
 Dependency installation may use network access as CI infrastructure. Project
 code should remain offline during the quality checks.
