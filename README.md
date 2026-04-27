@@ -204,6 +204,7 @@ npm run plan -- "your task here"
 
 Local quality workflow: see [docs/local-quality-workflow.md](docs/local-quality-workflow.md).
 CI readiness guidance: see [docs/ci-readiness.md](docs/ci-readiness.md).
+Local CI dry-run guidance: see [docs/ci-local-dry-run.md](docs/ci-local-dry-run.md).
 
 ---
 

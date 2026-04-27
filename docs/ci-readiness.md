@@ -59,6 +59,7 @@ See also:
 
 - [Local quality workflow](local-quality-workflow.md)
 - [Local quality gate](local-quality-gate.md)
+- [CI local dry run](ci-local-dry-run.md)
 - [Quality snapshot baseline](quality-snapshot-baseline.md)
 
 ## Future CI Goals
@@ -194,5 +195,6 @@ behavior.
 
 Use [Local quality workflow](local-quality-workflow.md) for day-to-day commands.
 Use [Local quality gate](local-quality-gate.md) for gate result shape and exit
-policy. Use [Quality snapshot baseline](quality-snapshot-baseline.md) for
-snapshot and baseline comparison behavior.
+policy. Use [CI local dry run](ci-local-dry-run.md) to simulate the future CI
+sequence locally. Use [Quality snapshot baseline](quality-snapshot-baseline.md)
+for snapshot and baseline comparison behavior.
