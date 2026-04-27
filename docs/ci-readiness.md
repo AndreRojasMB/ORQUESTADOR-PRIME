@@ -76,27 +76,29 @@ The active workflow is `.github/workflows/quality.yml`.
 
 It runs on a Linux runner for pull requests to `dev`, pushes to `dev`, and
 manual workflow dispatch. It installs dependencies, runs the direct TypeScript
-check, and runs the local quality gate:
+check, runs the local quality gate, generates redacted quality artifacts, and
+uploads the scanned JSON artifact:
 
 ```bash
 npm ci
 npm run check:node
 npm run quality:gate
+npm run quality:artifacts:dry-run -- --out-dir=/tmp/orq-quality-artifacts-ci
 ```
 
 The workflow has read-only repository permissions, a 15-minute timeout,
 concurrency cancellation per ref, no secrets, no provider environment variables,
-no artifact upload, and no committed baselines.
+and no committed baselines.
 
 The workflow uses Node24-capable GitHub action versions:
 `actions/checkout@v6` and `actions/setup-node@v6`. The project runtime remains
 Node `22` through `setup-node`, and the quality commands are unchanged.
 
-Local artifact dry-run support exists for validating future CI artifact shape,
-but the active workflow does not upload artifacts yet.
+The active workflow uploads `quality-redacted-json` with 3-day retention after
+the artifact dry-run validates JSON and passes the privacy scan.
 
-Artifact upload is intentionally deferred until the stability-watch criteria are
-confirmed or explicitly waived. The active CI workflow remains unchanged.
+Artifacts are advisory evidence only. Baselines and strict CI flags remain
+deferred.
 
 Quality baseline policy exists, but committed baselines and CI baseline
 comparison remain deferred. CI `fail-on-regression` also remains deferred.
@@ -135,6 +137,7 @@ Active CI commands:
 npm ci
 npm run check:node
 npm run quality:gate
+npm run quality:artifacts:dry-run -- --out-dir=/tmp/orq-quality-artifacts-ci
 ```
 
 Optional stricter future mode:
@@ -148,21 +151,20 @@ should fail CI.
 
 ## Why The Workflow Stays Minimal
 
-The active workflow intentionally avoids artifacts and strict advisory gates
+The active workflow intentionally avoids baselines and strict advisory gates
 because:
 
-- artifact upload policy is not finalized,
 - baselines are not stable enough to commit,
 - quality reports remain advisory,
 - secrets and provider policy is not ready for CI,
 - avoiding accidental CI overreach is intentional.
 
-Future stricter modes and artifacts remain later work.
+Future stricter modes remain later work.
 
 The workflow should remain minimal until the
-[CI stability watch](ci-stability-watch.md) criteria are met. Artifact upload
-also remains deferred until the [CI artifacts redaction](ci-artifacts-redaction.md)
-policy is accepted and implemented in a later targeted phase.
+[CI stability watch](ci-stability-watch.md) criteria are met for the next
+escalation. Artifact upload is limited by the
+[CI artifacts redaction](ci-artifacts-redaction.md) policy.
 
 ## Active Workflow Shape
 
@@ -216,13 +218,25 @@ jobs:
 
       - name: Local quality gate
         run: npm run quality:gate
+
+      - name: Generate redacted quality artifacts
+        run: npm run quality:artifacts:dry-run -- --out-dir=/tmp/orq-quality-artifacts-ci
+
+      - name: Upload redacted quality artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-redacted-json
+          path: /tmp/orq-quality-artifacts-ci/*.json
+          retention-days: 3
+          if-no-files-found: error
 ```
 
 ## Artifact Policy
 
-No CI artifacts are uploaded by default yet.
+CI uploads the compact redacted JSON artifact `quality-redacted-json` with
+3-day retention.
 
-Future artifacts, if enabled, must be redacted JSON only. They must not include:
+Artifacts must be redacted JSON only. They must not include:
 
 - raw task bodies,
 - secrets,
@@ -233,7 +247,7 @@ Future artifacts, if enabled, must be redacted JSON only. They must not include:
 
 Local smoke artifacts should continue to use `/tmp/orq-*`.
 
-See [CI artifacts redaction](ci-artifacts-redaction.md) for the future artifact
+See [CI artifacts redaction](ci-artifacts-redaction.md) for artifact
 eligibility, scan, retention, and forbidden-content policy.
 
 ## Baseline Policy
@@ -273,7 +287,7 @@ policy. Use [CI local dry run](ci-local-dry-run.md) to simulate the future CI
 sequence locally. Use [CI first-run observability](ci-first-run-observability.md)
 to inspect the first active workflow run. Use
 [CI stability watch](ci-stability-watch.md) before adding stricter CI behavior.
-[CI artifacts redaction](ci-artifacts-redaction.md) defines the policy that must
-be accepted before any CI artifact upload is added. Use
+[CI artifacts redaction](ci-artifacts-redaction.md) defines the active minimal
+redacted artifact upload policy. Use
 [Quality snapshot baseline](quality-snapshot-baseline.md) for snapshot and
 baseline comparison behavior.

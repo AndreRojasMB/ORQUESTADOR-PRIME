@@ -45,3 +45,14 @@ jobs:
 
       - name: Local quality gate
         run: npm run quality:gate
+
+      - name: Generate redacted quality artifacts
+        run: npm run quality:artifacts:dry-run -- --out-dir=/tmp/orq-quality-artifacts-ci
+
+      - name: Upload redacted quality artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-redacted-json
+          path: /tmp/orq-quality-artifacts-ci/*.json
+          retention-days: 3
+          if-no-files-found: error

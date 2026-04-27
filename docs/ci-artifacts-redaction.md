@@ -1,12 +1,12 @@
 # CI Artifacts Redaction
 
 Phase: 49B-H
-Status: policy only
+Status: minimal upload active
 
 ## Purpose
 
-This document defines the policy for future CI quality artifacts and redaction.
-Artifact upload is not active in this phase.
+This document defines the policy for CI quality artifacts and redaction.
+Minimal redacted artifact upload is active as of Phase 52B-H.
 
 The goal is to make sure any future downloadable CI evidence is compact,
 redacted, temporary, and useful for human review without turning quality output
@@ -20,12 +20,13 @@ The active `quality` workflow currently runs:
 npm ci
 npm run check:node
 npm run quality:gate
+npm run quality:artifacts:dry-run -- --out-dir=/tmp/orq-quality-artifacts-ci
 ```
 
 Current CI boundaries:
 
 - quality CI is active,
-- artifact upload is not active,
+- redacted artifact upload is active,
 - baselines are not active,
 - strict review and regression flags are not active,
 - provider secrets are not configured,
@@ -34,14 +35,15 @@ Current CI boundaries:
 
 ## Artifact Eligibility
 
-Future eligible artifacts should be compact redacted JSON only.
+Eligible artifacts must be compact redacted JSON only.
 
-The first artifact upload phase, if approved later, should prefer:
+The active upload includes:
 
 - `quality-report.json`
 - `quality-snapshot.json`
+- `manifest.json`
 
-Do not upload full eval, risk, or gate dumps initially. Those outputs are useful
+Do not upload full eval, risk, or gate dumps. Those outputs are useful
 locally, but they contain richer nested diagnostic context than the first CI
 artifact phase needs.
 
@@ -64,12 +66,12 @@ CI artifacts must not contain:
 - full file contents,
 - secrets or credential-like values.
 
-## Required Future Safeguards Before Upload
+## Required Safeguards Before Upload
 
-Before CI uploads any quality artifact, the implementation must:
+Before CI uploads any quality artifact, the workflow must:
 
 - generate artifacts under an isolated CI temporary directory,
-- use explicit `--out=<path>` paths only,
+- use an explicit `/tmp/orq-*` output directory,
 - validate generated files as JSON,
 - run a privacy and sentinel scan before upload,
 - fail the upload step if the privacy scan fails,
@@ -77,11 +79,10 @@ Before CI uploads any quality artifact, the implementation must:
 - avoid store mutation,
 - avoid baseline inputs,
 - keep strict CI flags disabled for the first artifact upload phase,
-- use a short retention period, recommended between 3 and 7 days.
+- use a short retention period.
 
-The future artifact job should generate reports from in-memory eval and risk
-sources where possible. Avoid explicit source report paths unless the artifact
-schema first removes or redacts those paths.
+The active artifact job generates reports from in-memory eval and risk sources.
+It does not use explicit source report paths.
 
 ## Local Artifact Dry-Run
 
@@ -108,55 +109,54 @@ only these files:
 The manifest records file names, SHA-256 hashes, byte sizes, JSON validation
 status, and the privacy scan result. It does not record absolute output paths.
 
-The dry-run does not upload artifacts to CI. `upload-artifact` remains deferred
-until a later workflow phase.
+The dry-run is the generation and scan step used by CI before upload.
 
 ## Upload Status
 
-Artifact upload is not active yet.
+Artifact upload is active.
 
-The local artifact dry-run is available and has been verified locally, but CI
-upload remains deferred until the CI stability criteria are met or explicitly
-waived.
+The workflow uploads only the compact JSON produced by the artifact dry-run
+after JSON validation and privacy scan pass.
 
-Future upload should include only scanned compact JSON:
+Artifact name:
+
+```text
+quality-redacted-json
+```
+
+Retention:
+
+```text
+3 days
+```
+
+Uploaded contents:
 
 - `quality-report.json`
 - `quality-snapshot.json`
 - `manifest.json`
 
-Future upload should use short retention, such as 3 days. Baselines and strict
-review or regression flags remain deferred.
+Baselines and strict review or regression flags remain deferred.
 
-## Future Workflow Shape
+## Active Workflow Shape
 
-The following sketch is non-active. It documents the intended shape only and is
-not implemented in the active workflow yet.
+The active workflow uses the artifact dry-run as the scan gate before upload:
 
 ```yaml
-- name: Prepare quality artifact directory
-  run: mkdir -p /tmp/orq-quality-artifacts
-
-- name: Generate quality report artifact
-  run: npm run quality:report -- --out=/tmp/orq-quality-artifacts/quality-report.json
-
-- name: Generate quality snapshot artifact
-  run: npm run quality:snapshot -- --quality-report=/tmp/orq-quality-artifacts/quality-report.json --out=/tmp/orq-quality-artifacts/quality-snapshot.json
-
-- name: Privacy scan quality artifacts
-  run: <approved privacy scan command for /tmp/orq-quality-artifacts>
+- name: Generate redacted quality artifacts
+  run: npm run quality:artifacts:dry-run -- --out-dir=/tmp/orq-quality-artifacts-ci
 
 - name: Upload redacted quality artifacts
   uses: actions/upload-artifact@v4
   with:
     name: quality-redacted-json
-    path: /tmp/orq-quality-artifacts/*.json
+    path: /tmp/orq-quality-artifacts-ci/*.json
     retention-days: 3
+    if-no-files-found: error
 ```
 
-A future phase may choose a different scan command, but it must keep the same
-policy: scan before upload, upload only compact redacted JSON, and stop upload
-on privacy failure.
+The upload step runs only after the dry-run succeeds. If JSON validation or the
+privacy scan fails, the dry-run exits nonzero and upload is skipped.
 
 ## Baseline Policy
 

@@ -9,9 +9,9 @@ This guide defines the stability watch for the active minimal `quality`
 workflow before ORQUESTADOR-PRIME adds stricter CI behavior, artifacts, or
 baselines.
 
-The watch period is intentionally conservative. One passing run proves the
-workflow can execute, but it does not yet justify stricter flags, committed
-baselines, artifact uploads, PR annotations, badges, or branch protection.
+The watch period is intentionally conservative. Multiple passing runs justified
+minimal redacted artifact upload, but they do not yet justify stricter flags,
+committed baselines, PR annotations, badges, or branch protection.
 
 ## Current Minimal Workflow
 
@@ -24,7 +24,8 @@ Workflow summary:
   - `npm ci`
   - `npm run check:node`
   - `npm run quality:gate`
-- Artifacts: none
+  - `npm run quality:artifacts:dry-run -- --out-dir=/tmp/orq-quality-artifacts-ci`
+- Artifacts: `quality-redacted-json`, retained for 3 days
 - Baselines: none
 - Provider secrets: none
 - Runtime approval enforcement: none
@@ -99,9 +100,8 @@ Possible escalations:
 - `--fail-on-regression=true`
   - Consider after baseline snapshots are stable and explicitly approved.
 - Artifact upload
-  - Consider only after redaction, retention, and access policy are approved.
-  - Keep deferred until the CI artifacts redaction policy is accepted and a
-    later phase implements upload safely.
+  - Minimal redacted upload is active.
+  - Continue observing retention, scan behavior, and artifact contents.
 - Committed baseline snapshots
   - Consider only after several stable runs and a baseline update policy.
 - PR annotations
@@ -111,12 +111,12 @@ Possible escalations:
 - Branch protection recommendations
   - Consider only after CI reliability and team policy are settled.
 
-All of these remain deferred during the stability watch.
+Strict flags, committed baselines, PR annotations, badges, and branch protection
+remain deferred during the stability watch.
 
-Artifact upload should wait until these stability criteria are satisfied and the
-[CI artifacts redaction](ci-artifacts-redaction.md) policy has been accepted.
-Do not enable artifacts based on only one passing run unless the stability-watch
-criteria are explicitly waived in a targeted follow-up phase.
+Artifact upload is limited to the scanned compact JSON described in
+[CI artifacts redaction](ci-artifacts-redaction.md). Do not broaden artifact
+contents based on one passing upload run.
 
 ## Optional Inspection
 
@@ -156,7 +156,6 @@ This watch period does not change workflow behavior.
 It does not add:
 
 - strict CI flags,
-- artifacts,
 - baselines,
 - provider secrets,
 - runtime approval enforcement,
