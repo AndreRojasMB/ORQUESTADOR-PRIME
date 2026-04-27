@@ -23,6 +23,10 @@
     "learning:export": "tsx scripts/learning-export.ts",
     "supervisor:status": "tsx scripts/supervisor-status.ts",
     "memory:v2:retrieve": "tsx scripts/memory-v2-retrieve.ts",
+    "jobs:list": "tsx scripts/jobs-list.ts",
+    "jobs:enqueue": "tsx scripts/jobs-enqueue.ts",
+    "jobs:run-due": "tsx scripts/jobs-run-due.ts",
+    "notifications:list": "tsx scripts/notifications-list.ts",
     "action:dispatch": "tsx scripts/action-dispatch.ts",
     "action:approve": "tsx scripts/action-approve.ts"
   },
