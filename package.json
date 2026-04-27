@@ -41,6 +41,7 @@
     "evals:gate": "tsx scripts/evals-gate.ts",
     "risk:assess": "tsx scripts/risk-assess.ts",
     "risk:from-evals": "tsx scripts/risk-from-evals.ts",
+    "quality:report": "tsx scripts/quality-report.ts",
     "action:dispatch": "tsx scripts/action-dispatch.ts",
     "action:approve": "tsx scripts/action-approve.ts"
   },
