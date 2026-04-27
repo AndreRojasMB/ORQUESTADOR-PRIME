@@ -173,6 +173,11 @@ Output must be safe to paste:
 - no full file contents,
 - no sensitive raw paths unless bounded and safe.
 
+Phase 59I adds the first read-only runtime doctor and store health checker for
+this area. It inventories known local stores and reports safe diagnostics only.
+Repair, migrations, locks, runtime server behavior, dashboard controls, and
+native automation remain future work.
+
 ## Auth / Rate Limit / Runtime Permission Model
 
 Future runtime permissions should include:

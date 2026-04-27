@@ -45,6 +45,7 @@
     "quality:snapshot": "tsx scripts/quality-snapshot.ts",
     "quality:artifacts:dry-run": "tsx scripts/quality-artifacts-dry-run.ts",
     "quality:gate": "tsx scripts/quality-gate.ts",
+    "runtime:doctor": "tsx scripts/runtime-doctor.ts",
     "action:dispatch": "tsx scripts/action-dispatch.ts",
     "action:approve": "tsx scripts/action-approve.ts"
   },
