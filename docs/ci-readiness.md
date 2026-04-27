@@ -66,6 +66,7 @@ See also:
 - [CI local dry run](ci-local-dry-run.md)
 - [CI first-run observability](ci-first-run-observability.md)
 - [CI stability watch](ci-stability-watch.md)
+- [CI strict readiness](ci-strict-readiness.md)
 - [CI artifacts redaction](ci-artifacts-redaction.md)
 - [Quality snapshot baseline](quality-snapshot-baseline.md)
 - [Quality baseline policy](baseline-policy.md)
@@ -98,7 +99,8 @@ The active workflow uploads `quality-redacted-json` with 3-day retention after
 the artifact dry-run validates JSON and passes the privacy scan.
 
 Artifacts are advisory evidence only. Baselines and strict CI flags remain
-deferred.
+deferred. Strict readiness criteria are documented in
+[CI strict readiness](ci-strict-readiness.md).
 
 Quality baseline policy exists, but committed baselines and CI baseline
 comparison remain deferred. CI `fail-on-regression` also remains deferred.
@@ -166,7 +168,9 @@ Future stricter modes remain later work.
 The workflow should remain minimal until the
 [CI stability watch](ci-stability-watch.md) criteria are met for the next
 escalation. Artifact upload is limited by the
-[CI artifacts redaction](ci-artifacts-redaction.md) policy.
+[CI artifacts redaction](ci-artifacts-redaction.md) policy. Strict CI should
+also satisfy the criteria in [CI strict readiness](ci-strict-readiness.md)
+before any strict flags are added.
 
 ## Active Workflow Shape
 
@@ -289,7 +293,8 @@ policy. Use [CI local dry run](ci-local-dry-run.md) to simulate the future CI
 sequence locally. Use [CI first-run observability](ci-first-run-observability.md)
 to inspect the first active workflow run. Use
 [CI stability watch](ci-stability-watch.md) before adding stricter CI behavior.
-[CI artifacts redaction](ci-artifacts-redaction.md) defines the active minimal
-redacted artifact upload policy. Use
+[CI strict readiness](ci-strict-readiness.md) defines the criteria for future
+strict flags. [CI artifacts redaction](ci-artifacts-redaction.md) defines the
+active minimal redacted artifact upload policy. Use
 [Quality snapshot baseline](quality-snapshot-baseline.md) for snapshot and
 baseline comparison behavior.

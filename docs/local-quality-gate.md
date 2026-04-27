@@ -89,6 +89,10 @@ By default, these remain advisory and exit `0`:
 Use `--fail-on-review=true` or `--fail-on-regression=true` for stricter local
 checks.
 
+CI does not enable these strict flags yet. See
+[CI strict readiness](ci-strict-readiness.md) for the criteria that must be met
+before strict quality gate behavior is considered for CI.
+
 ## Result Shape
 
 The JSON result includes:

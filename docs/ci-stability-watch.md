@@ -118,6 +118,10 @@ Artifact upload is limited to the scanned compact JSON described in
 [CI artifacts redaction](ci-artifacts-redaction.md). Do not broaden artifact
 contents based on one passing upload run.
 
+Strict flag readiness is documented in
+[CI strict readiness](ci-strict-readiness.md). Do not enable strict flags until
+those criteria are met and explicitly approved.
+
 ## Optional Inspection
 
 If GitHub CLI is installed and authenticated, these read-only commands can help:
