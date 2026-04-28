@@ -48,6 +48,7 @@
     "runtime:doctor": "tsx scripts/runtime-doctor.ts",
     "store:migration:plan": "tsx scripts/store-migration-plan.ts",
     "automation:validate": "tsx scripts/automation-validate.ts",
+    "automation:dry-run": "tsx scripts/automation-dry-run.ts",
     "action:dispatch": "tsx scripts/action-dispatch.ts",
     "action:approve": "tsx scripts/action-approve.ts"
   },

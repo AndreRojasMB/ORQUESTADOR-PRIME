@@ -38,33 +38,37 @@ Current foundations:
 - External channel surfaces exist for current bridges.
 
 Native automation has workflow graph schema/types, a pure validator, and a
-validation-only CLI. There is still no workflow execution, no scheduler, no
-webhook runtime, no connector runtime, and no credential engine.
+validation-only CLI. It also has a preview-only dry-run graph core and CLI.
+There is still no real workflow execution, no scheduler, no webhook runtime, no
+connector runtime, and no credential engine.
 
 ## Implementation Status
 
 Workflow graph schema/types and a pure source-level validator now exist under
 `src/automation`. A validation-only CLI is available through
-`npm run automation:validate`.
+`npm run automation:validate`. A graph dry-run simulation CLI is available
+through `npm run automation:dry-run`.
 
-The validator and CLI are validation-only. They run no workflow nodes, create no
-schedules or webhooks, load no connectors or credentials, mutate no stores,
-create no locks, write no output files, and perform no provider or network
-behavior.
+The validator, validation CLI, dry-run core, and dry-run CLI are preview-only.
+They run no real workflow nodes, create no schedules or webhooks, load no
+connectors or credentials, mutate no stores, create no locks, write no output
+files, create no proposal or approval records, deliver no notifications, and
+perform no provider or network behavior.
 
 Usage:
 
 ```bash
 npm run automation:validate -- --input=/tmp/orq-workflow.json
 npm run automation:validate -- --input=/tmp/orq-workflow.json --pretty
+npm run automation:dry-run -- --input=/tmp/orq-workflow.json
+npm run automation:dry-run -- --input=/tmp/orq-workflow.json --pretty
 ```
 
 Local WSL/Windows npm or `tsx` shims may require the same compiled `/tmp`
 fallback used by other local quality commands in this environment.
 
-The next future phase may plan the first dry-run graph core. Workflow execution,
-scheduler/webhook behavior, connectors, credentials, runtime server
-integration, and dashboard controls remain future work.
+Workflow execution, scheduler/webhook behavior, connectors, credentials,
+runtime server integration, and dashboard controls remain future work.
 
 ## Design Principles
 
@@ -296,9 +300,11 @@ Recommended grouping:
 1. 63I: docs/spec only.
 2. 64B: workflow graph schema plan.
 3. 64I: schema/types plus validator, no execution.
-4. 65B: dry-run graph core plan.
-5. 65I: dry-run graph core implementation.
-6. Later: scheduler, webhooks, connectors, credentials, dashboard.
+4. 65B: automation validation CLI plan.
+5. 65I: validation CLI implementation.
+6. 66B: dry-run graph core plan.
+7. 66I: dry-run graph core implementation.
+8. Later: scheduler, webhooks, connectors, credentials, dashboard.
 
 ## Verification And Smoke Standards For Future Work
 
