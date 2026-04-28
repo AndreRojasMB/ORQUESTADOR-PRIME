@@ -37,23 +37,34 @@ Current foundations:
 - Local jobs and notifications exist.
 - External channel surfaces exist for current bridges.
 
-No native automation engine exists yet. There is no workflow execution, no
-workflow schema code, no validator, no scheduler, no webhook runtime, no
-connector runtime, and no credential engine.
+Native automation has workflow graph schema/types, a pure validator, and a
+validation-only CLI. There is still no workflow execution, no scheduler, no
+webhook runtime, no connector runtime, and no credential engine.
 
 ## Implementation Status
 
 Workflow graph schema/types and a pure source-level validator now exist under
-`src/automation`.
+`src/automation`. A validation-only CLI is available through
+`npm run automation:validate`.
 
-The validator is validation-only. It has no CLI, runs no workflow nodes, creates
-no schedules or webhooks, loads no connectors or credentials, mutates no stores,
-creates no locks, and performs no provider or network behavior.
+The validator and CLI are validation-only. They run no workflow nodes, create no
+schedules or webhooks, load no connectors or credentials, mutate no stores,
+create no locks, write no output files, and perform no provider or network
+behavior.
 
-The next future phase may plan either an automation validation CLI or the first
-dry-run graph core. Workflow execution, scheduler/webhook behavior, connectors,
-credentials, runtime server integration, and dashboard controls remain future
-work.
+Usage:
+
+```bash
+npm run automation:validate -- --input=/tmp/orq-workflow.json
+npm run automation:validate -- --input=/tmp/orq-workflow.json --pretty
+```
+
+Local WSL/Windows npm or `tsx` shims may require the same compiled `/tmp`
+fallback used by other local quality commands in this environment.
+
+The next future phase may plan the first dry-run graph core. Workflow execution,
+scheduler/webhook behavior, connectors, credentials, runtime server
+integration, and dashboard controls remain future work.
 
 ## Design Principles
 
