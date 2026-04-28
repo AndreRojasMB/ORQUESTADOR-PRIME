@@ -145,6 +145,10 @@ Future locking support should include:
 The first implementation should use a JSON lock-file strategy. Later SQLite or
 Postgres adapters can use database-native locks behind the same contract.
 
+Phase 61I adds isolated lock primitives as the first runtime safety primitive.
+They are not wired into store migrations, backups, repairs, runtime APIs,
+workers, native automation, or existing store writes.
+
 ## Config Doctor / Health Check
 
 A future command concept is:

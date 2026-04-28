@@ -28,6 +28,12 @@ Current state:
 
 The runtime doctor must remain read-only and lock-free.
 
+Phase 61I adds isolated lock primitives under `src/runtime/locks`. They are
+library-level only: no CLI exists yet, no store/migration/repair/runtime-doctor
+integration exists yet, and no existing store writer uses them. Lock operations
+require an explicit lock root. Stale locks are reported safely and are not
+automatically cleaned up.
+
 ## Migration Model
 
 A future migration record should include:
@@ -192,4 +198,3 @@ Safety boundaries:
 - no locks from read-only commands,
 - no real HOME mutation in smoke tests,
 - no provider/network/action/proposal behavior.
-
