@@ -22,8 +22,10 @@ The catalog currently provides:
 - a pure catalog validator,
 - advisory safety boundaries.
 
-There is no CLI, no artifact output, no module blueprint generator, no runtime
-execution, and no connection to legacy scaffold or execute modes.
+There is no CLI, no artifact output, no runtime execution, and no connection to
+legacy scaffold or execute modes. The Module Blueprint Generator now exists as
+a source-only advisory helper that reads the catalog, but it does not generate
+systems, scaffold applications, or create database schemas.
 
 ## Family Taxonomy
 
@@ -121,7 +123,9 @@ questions about actors, modules, reports, integrations, and risk areas.
 The estimation and roadmap engine can use catalog metadata to reason about
 scope bands, dependencies, assumptions, and phased delivery plans.
 
-Neither relationship is implemented in this phase.
+The Requirements Interview Engine now provides source-only interview planning.
+It does not change catalog metadata, create sessions, persist answers, or call
+providers.
 
 ## Future Phases
 
