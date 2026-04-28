@@ -38,22 +38,31 @@ Current foundations:
 - External channel surfaces exist for current bridges.
 
 Native automation has workflow graph schema/types, a pure validator, and a
-validation-only CLI. It also has a preview-only dry-run graph core and CLI.
-There is still no real workflow execution, no scheduler, no webhook runtime, no
-connector runtime, and no credential engine.
+validation-only CLI. It also has a preview-only dry-run graph core and CLI, plus
+a source-only dry-run trace report helper for compact safe summaries. There is
+still no real workflow execution, no scheduler, no webhook runtime, no connector
+runtime, and no credential engine.
 
 ## Implementation Status
 
 Workflow graph schema/types and a pure source-level validator now exist under
 `src/automation`. A validation-only CLI is available through
 `npm run automation:validate`. A graph dry-run simulation CLI is available
-through `npm run automation:dry-run`.
+through `npm run automation:dry-run`. A source-only dry-run trace report helper
+is available in `src/automation/dryRunReport.ts` for summarizing dry-run results
+without adding a CLI output mode.
 
-The validator, validation CLI, dry-run core, and dry-run CLI are preview-only.
-They run no real workflow nodes, create no schedules or webhooks, load no
-connectors or credentials, mutate no stores, create no locks, write no output
-files, create no proposal or approval records, deliver no notifications, and
-perform no provider or network behavior.
+The validator, validation CLI, dry-run core, dry-run CLI, and trace report
+helper are preview-only. They run no real workflow nodes, create no schedules or
+webhooks, load no connectors or credentials, mutate no stores, create no locks,
+write no output files, create no proposal or approval records, deliver no
+notifications, and perform no provider or network behavior.
+
+The trace report helper summarizes existing dry-run results only. It has no
+`--summary` flag, no `--out` support, no trace persistence, no store or lock
+integration, and no CLI behavior change. It preserves advisory-only boundaries
+and reports counts, status, risk, permissions, approval previews, unsupported
+features, and safe warnings/errors without raw workflow JSON or secrets.
 
 Usage:
 
@@ -68,7 +77,8 @@ Local WSL/Windows npm or `tsx` shims may require the same compiled `/tmp`
 fallback used by other local quality commands in this environment.
 
 Workflow execution, scheduler/webhook behavior, connectors, credentials,
-runtime server integration, and dashboard controls remain future work.
+runtime server integration, dashboard controls, CLI summary mode, and artifact
+support remain future work.
 
 ## Design Principles
 
@@ -304,7 +314,10 @@ Recommended grouping:
 5. 65I: validation CLI implementation.
 6. 66B: dry-run graph core plan.
 7. 66I: dry-run graph core implementation.
-8. Later: scheduler, webhooks, connectors, credentials, dashboard.
+8. 67B: dry-run trace report plan.
+9. 67I: source-only dry-run trace report helper.
+10. Later: CLI summary mode or artifact support.
+11. Later: scheduler, webhooks, connectors, credentials, dashboard.
 
 ## Verification And Smoke Standards For Future Work
 
