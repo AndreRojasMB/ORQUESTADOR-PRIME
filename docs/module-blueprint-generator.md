@@ -163,6 +163,14 @@ Process models remain source-only metadata. They do not create workflow JSON,
 execute automation, scaffold files, create database schemas, or make module
 blueprints executable.
 
+## Relationship To BI / Reporting Layer
+
+The BI / Reporting Layer can compare module reports, permissions, consumers,
+and reporting risks with module blueprint scope.
+
+Reporting models remain source-only metadata. They do not generate dashboards,
+SQL files, ETL jobs, database schemas, BI tool payloads, or runtime behavior.
+
 ## Relationship To Future Safe Scaffold Phase
 
 A later scaffold phase may use reviewed module blueprints as input, but only

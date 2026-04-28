@@ -187,6 +187,12 @@ checkpoints, SLA assumptions, metrics, risks, and MVP versus enterprise maturity
 notes. It remains source-only and does not execute workflows, automation,
 approvals, actions, proposals, or runtime behavior.
 
+The BI / Reporting Layer can later contribute KPI scope, report consumers,
+freshness assumptions, data quality checks, reporting risks, and MVP versus
+enterprise reporting maturity notes. It remains source-only and does not
+execute reports, run ETL, call BI tool APIs, run SQL, create schemas, or
+generate dashboards.
+
 ## Future Phases
 
 Possible future work:

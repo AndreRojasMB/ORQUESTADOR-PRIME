@@ -240,9 +240,14 @@ and dependencies as advisory planning inputs.
 Language and Framework Profiles may later add tooling assumptions for reviewed
 implementation phases, but process models do not inspect code or choose stacks.
 
-Future BI/reporting, transactional systems, enterprise UI patterns,
-automation, dashboards, and scaffold lanes may consume reviewed process models
-only after separate approval gates.
+The BI / Reporting Layer can compare process checkpoints, handoffs,
+exceptions, SLA assumptions, and metrics with reporting model scope. Reporting
+models remain source-only metadata and do not execute reports, run ETL, call BI
+tools, create SQL, or generate dashboards.
+
+Future transactional systems, enterprise UI patterns, automation, dashboards,
+and scaffold lanes may consume reviewed process models only after separate
+approval gates.
 
 ## Future Phases
 
