@@ -160,6 +160,11 @@ Missing:
 - demo and MVP generation,
 - integration map.
 
+Current roadmap note: older phase numbering in this document is historical. In
+the current roadmap, Phase 68 introduces the Enterprise Software Factory
+specification. Source implementation, catalogs, generators, scaffolding, and
+runtime behavior remain future work.
+
 ### E. Requirements Interview Engine
 
 Missing:

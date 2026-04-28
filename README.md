@@ -211,6 +211,7 @@ Final hardening readiness: see [docs/final-hardening-readiness.md](docs/final-ha
 Release readiness closeout: see [docs/release-readiness.md](docs/release-readiness.md).
 Complete JARVIS gap map: see [docs/jarvis-complete-gap-analysis.md](docs/jarvis-complete-gap-analysis.md).
 Production runtime foundation: see [docs/production-runtime-foundation.md](docs/production-runtime-foundation.md).
+Enterprise Software Factory spec: see [docs/enterprise-software-factory.md](docs/enterprise-software-factory.md).
 Minimal quality CI is active on `dev` pushes and pull requests.
 
 ---
