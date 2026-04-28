@@ -145,13 +145,14 @@ complete.
 
 The module blueprint generator remains source-only and advisory.
 
-## Relationship To Future Estimation And Planning
+## Relationship To Estimation And Planning
 
-A future estimation and roadmap lane may use completed interview summaries to
-reason about scope, confidence, dependencies, and rollout phases.
+The Estimation Planning Engine can use interview plans to reason about scope,
+confidence, dependencies, and rollout phases.
 
-The current engine does not estimate effort, create backlogs, or produce
-delivery commitments.
+The interview engine still does not estimate effort, create backlogs, or
+produce delivery commitments. The planning lane remains source-only and
+advisory.
 
 ## Safety Boundaries
 
@@ -179,7 +180,7 @@ Recommended next work:
 
 1. Add answer capture as explicit in-memory data only.
 2. Add deterministic answer summarization and missing-answer scoring.
-3. Plan estimation and roadmap helpers.
-4. Add richer family-specific question templates after review.
+3. Add richer family-specific question templates after review.
+4. Add answer summaries for planning after explicit in-memory answer modeling.
 5. Defer persistence, CLI, and scaffold planning until explicit approval gates
    exist.

@@ -145,12 +145,14 @@ about actors, rules, reports, integrations, risks, and assumptions.
 That future engine should keep outputs advisory until a separate implementation
 phase is approved.
 
-## Relationship To Future Estimation And Planning
+## Relationship To Estimation And Planning
 
-The estimation and roadmap lane may use module blueprints to reason about
+The Estimation Planning Engine may use module blueprints to reason about
 relative scope, dependencies, risk, and delivery phases.
 
-The current helper does not estimate effort or create backlogs.
+The module blueprint helper still does not estimate effort or create backlogs.
+Planning output remains advisory and does not create systems, scaffolds,
+database schemas, delivery commitments, or commercial quotations.
 
 ## Relationship To Future Safe Scaffold Phase
 
@@ -166,5 +168,5 @@ Recommended next work:
 
 1. Plan the requirements interview engine.
 2. Add richer family-specific templates only after review.
-3. Plan estimation and roadmap helpers.
+3. Add richer planning heuristics after the estimation helper is reviewed.
 4. Defer safe scaffold planning until blueprint review gates are explicit.
