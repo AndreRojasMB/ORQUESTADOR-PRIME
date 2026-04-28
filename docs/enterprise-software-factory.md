@@ -27,10 +27,16 @@ ORQUESTADOR-PRIME currently has:
 - a read-only runtime doctor,
 - isolated lock primitives that are not integrated into workflow execution,
 - a read-only migration planner,
-- native automation schema, validation, dry-run, and trace reporting.
+- native automation schema, validation, dry-run, and trace reporting,
+- business systems catalog source metadata and pure validation.
 
-The Enterprise Software Factory is still missing. Existing scaffold and execute
-modes are legacy CLI surfaces and are not part of this phase.
+The Enterprise Software Factory is still missing as a generator/runtime layer.
+No module blueprint generator, enterprise system generation, scaffolding, or
+database schema generation exists yet. Existing scaffold and execute modes are
+legacy CLI surfaces and are not part of this phase.
+
+Catalog details live in
+[Business systems catalog](business-systems-catalog.md).
 
 ## Factory Objective
 
