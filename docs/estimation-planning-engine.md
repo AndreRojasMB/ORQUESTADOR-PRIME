@@ -173,6 +173,10 @@ signals.
 The Estimation Planning Engine combines those advisory inputs into bounded
 planning artifacts for review. It does not make any of those lanes executable.
 
+Language Profiles can later contribute advisory tooling assumptions, static
+check hints, review heuristics, and risk notes. They remain source-only and do
+not inspect files, execute commands, install dependencies, or modify projects.
+
 ## Future Phases
 
 Possible future work:
