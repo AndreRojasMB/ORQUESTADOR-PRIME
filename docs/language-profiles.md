@@ -190,8 +190,7 @@ Phase 73I does not add:
 - runtime execution,
 - project generation,
 - scaffold output,
-- audit integration,
-- framework profiles.
+- audit integration.
 
 ## Future Integration
 
@@ -205,3 +204,10 @@ Future phases may connect language profiles to:
 - scaffold planning after explicit approval gates.
 
 Those integrations are out of scope for Phase 73I.
+
+## Relationship To Framework Profiles
+
+Framework Profiles now reference the supported `LanguageId` values from this
+registry. They add framework and platform context while remaining source-only
+and advisory. They do not inspect files, execute commands, install dependencies,
+modify projects, or scaffold applications.

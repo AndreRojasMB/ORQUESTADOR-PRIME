@@ -177,6 +177,11 @@ Language Profiles can later contribute advisory tooling assumptions, static
 check hints, review heuristics, and risk notes. They remain source-only and do
 not inspect files, execute commands, install dependencies, or modify projects.
 
+Framework Profiles can later contribute framework/platform assumptions,
+architecture risks, packaging notes, and review heuristics. They remain
+source-only and do not scan files, run commands, install dependencies, scaffold
+systems, or guarantee deployment outcomes.
+
 ## Future Phases
 
 Possible future work:

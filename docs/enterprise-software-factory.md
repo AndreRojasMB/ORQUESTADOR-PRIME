@@ -32,7 +32,8 @@ ORQUESTADOR-PRIME currently has:
 - module blueprint generator source helper and pure validation,
 - requirements interview source question bank, planner, and validation,
 - estimation planning source helper and pure validation,
-- language profiles source metadata, resolver, and pure validation.
+- language profiles source metadata, resolver, and pure validation,
+- framework profiles source metadata, resolver, and pure validation.
 
 The Enterprise Software Factory is still missing as a generator/runtime layer.
 The catalog, module blueprint helper, and interview planner are advisory and
@@ -50,9 +51,11 @@ Estimation planning details live in
 [Estimation planning engine](estimation-planning-engine.md).
 Language profile details live in
 [Language profiles](language-profiles.md).
+Framework profile details live in
+[Framework profiles](framework-profiles.md).
 
-The next future lane can plan framework profiles, answer summaries, commercial
-proposal support, or richer family-specific templates.
+The next future lane can plan answer summaries, commercial proposal support,
+richer family-specific templates, or framework-to-blueprint integration.
 
 ## Factory Objective
 
@@ -255,8 +258,10 @@ Recommended future grouping:
 7. 71I: interview engine implementation.
 8. 72B: estimation and roadmap planner.
 9. 72I: estimation planning implementation.
-10. Later: safe scaffold planner.
-11. Later: scaffold generator only after approval gates.
+10. 73I: language profiles implementation.
+11. 74I: framework profiles implementation.
+12. Later: safe scaffold planner.
+13. Later: scaffold generator only after approval gates.
 
 CLI surfaces, scripts, database schemas, dashboard UI, scaffold output, and
 runtime behavior remain future work.
