@@ -28,15 +28,22 @@ ORQUESTADOR-PRIME currently has:
 - isolated lock primitives that are not integrated into workflow execution,
 - a read-only migration planner,
 - native automation schema, validation, dry-run, and trace reporting,
-- business systems catalog source metadata and pure validation.
+- business systems catalog source metadata and pure validation,
+- module blueprint generator source helper and pure validation.
 
 The Enterprise Software Factory is still missing as a generator/runtime layer.
-No module blueprint generator, enterprise system generation, scaffolding, or
-database schema generation exists yet. Existing scaffold and execute modes are
-legacy CLI surfaces and are not part of this phase.
+The module blueprint helper is advisory and data-only. No CLI, enterprise
+system generation, scaffolding, or database schema generation exists yet.
+Existing scaffold and execute modes are legacy CLI surfaces and are not part of
+this phase.
 
 Catalog details live in
 [Business systems catalog](business-systems-catalog.md).
+Module blueprint details live in
+[Module blueprint generator](module-blueprint-generator.md).
+
+The next future lane can plan the requirements interview engine or richer
+family-specific module templates.
 
 ## Factory Objective
 
