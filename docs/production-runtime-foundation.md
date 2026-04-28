@@ -127,6 +127,10 @@ Migration output must be safe to paste into issue reports. It should identify
 store names, version states, and status codes without dumping full file
 contents.
 
+Phase 62I adds a dry-run migration planner for advisory version/readiness
+reporting. Actual migration apply behavior, backups, repairs, and lock
+integration remain future work.
+
 ## Locking And Concurrency
 
 Future locking support should include:

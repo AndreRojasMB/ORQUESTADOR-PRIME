@@ -34,6 +34,16 @@ integration exists yet, and no existing store writer uses them. Lock operations
 require an explicit lock root. Stale locks are reported safely and are not
 automatically cleaned up.
 
+Phase 62I adds a dry-run migration planner:
+
+```bash
+npm run store:migration:plan
+```
+
+The planner is report-only. It does not apply migrations, create backups,
+create locks, repair stores, mutate stores, or integrate with existing store
+writes. Locks remain required only for future apply, repair, and backup phases.
+
 ## Migration Model
 
 A future migration record should include:
