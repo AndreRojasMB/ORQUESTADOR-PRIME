@@ -154,6 +154,16 @@ The interview engine still does not estimate effort, create backlogs, or
 produce delivery commitments. The planning lane remains source-only and
 advisory.
 
+## Relationship To Business Process Modeling
+
+Business Process Modeling can use interview topics about actors, business
+rules, processes, exceptions, SLA expectations, handoffs, and risks to shape
+reviewable process templates.
+
+The interview engine does not collect or persist process answers in this phase.
+Process models remain advisory metadata and do not execute workflows,
+automation, approvals, actions, or proposals.
+
 ## Safety Boundaries
 
 The interview engine is data-only and advisory.

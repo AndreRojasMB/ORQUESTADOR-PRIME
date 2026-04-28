@@ -182,6 +182,11 @@ architecture risks, packaging notes, and review heuristics. They remain
 source-only and do not scan files, run commands, install dependencies, scaffold
 systems, or guarantee deployment outcomes.
 
+Business Process Modeling can later contribute process states, handoffs,
+checkpoints, SLA assumptions, metrics, risks, and MVP versus enterprise maturity
+notes. It remains source-only and does not execute workflows, automation,
+approvals, actions, proposals, or runtime behavior.
+
 ## Future Phases
 
 Possible future work:

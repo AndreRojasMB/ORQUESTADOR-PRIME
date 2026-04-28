@@ -154,6 +154,15 @@ The module blueprint helper still does not estimate effort or create backlogs.
 Planning output remains advisory and does not create systems, scaffolds,
 database schemas, delivery commitments, or commercial quotations.
 
+## Relationship To Business Process Modeling
+
+Business Process Modeling can compare process roles, states, transitions,
+handoffs, checkpoints, risks, and metrics with module blueprint scope.
+
+Process models remain source-only metadata. They do not create workflow JSON,
+execute automation, scaffold files, create database schemas, or make module
+blueprints executable.
+
 ## Relationship To Future Safe Scaffold Phase
 
 A later scaffold phase may use reviewed module blueprints as input, but only
