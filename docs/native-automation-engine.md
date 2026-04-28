@@ -41,6 +41,20 @@ No native automation engine exists yet. There is no workflow execution, no
 workflow schema code, no validator, no scheduler, no webhook runtime, no
 connector runtime, and no credential engine.
 
+## Implementation Status
+
+Workflow graph schema/types and a pure source-level validator now exist under
+`src/automation`.
+
+The validator is validation-only. It has no CLI, runs no workflow nodes, creates
+no schedules or webhooks, loads no connectors or credentials, mutates no stores,
+creates no locks, and performs no provider or network behavior.
+
+The next future phase may plan either an automation validation CLI or the first
+dry-run graph core. Workflow execution, scheduler/webhook behavior, connectors,
+credentials, runtime server integration, and dashboard controls remain future
+work.
+
 ## Design Principles
 
 Future automation must follow these principles:
