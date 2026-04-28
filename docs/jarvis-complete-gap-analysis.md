@@ -139,6 +139,10 @@ Missing:
 This lane must not start with real execution. It should begin with a graph
 schema, validation, dry-run output, and permission checks.
 
+The canonical native automation engine specification lives in
+[Native automation engine](native-automation-engine.md). Automation execution
+remains future work.
+
 ### D. Enterprise Software Factory
 
 Missing:

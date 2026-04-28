@@ -274,6 +274,11 @@ This foundation unlocks:
 Native automation, dashboard mutation controls, enterprise generators, and
 connectors should wait for runtime permissions, locks, audit, and health checks.
 
+The native automation engine specification lives in
+[Native automation engine](native-automation-engine.md). Runtime foundation work
+remains a prerequisite for automation execution; no automation execution is
+implemented yet.
+
 ## Future Implementation Grouping
 
 Recommended grouping:
