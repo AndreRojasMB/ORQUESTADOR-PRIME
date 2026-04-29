@@ -394,3 +394,11 @@ The future connector governance path is documented in
 depends on runtime maturity, credential policy, rate limits, audit records,
 operator controls, and approval gates. Phase 84I is docs-only and does not add
 runtime connector behavior.
+
+## Productization / Release Path
+
+The future productization path is documented in
+[Productization / Release Path](productization-release-path.md). Production
+runtime maturity is required before executable release claims, packaging, or
+deployment candidates can be treated as product-ready. Phase 85I is docs-only
+and adds no runtime, package, tag, release, or deployment behavior.

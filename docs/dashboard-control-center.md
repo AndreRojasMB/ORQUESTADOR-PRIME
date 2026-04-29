@@ -355,3 +355,11 @@ The future connector governance path is documented in
 [Integrations / Connectors](integrations-connectors.md). A later control center
 may show read-only connector inventory, risk, permission, credential
 requirement, and audit summaries, but Phase 84I adds no dashboard behavior.
+
+## Productization / Release Path
+
+The future productization path is documented in
+[Productization / Release Path](productization-release-path.md). A later control
+center may show read-only release status, maturity stage, checklist state, and
+artifact policy summaries, but Phase 85I adds no release controls and no
+dashboard behavior.

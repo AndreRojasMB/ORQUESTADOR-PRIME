@@ -413,3 +413,12 @@ The future connector governance path is documented in
 connector nodes depend on connector governance, credential strategy, dry-run
 contracts, audit policy, rate limits, and approval gates. Phase 84I is
 docs-only and does not enable connector execution.
+
+## Productization / Release Path
+
+The future productization path is documented in
+[Productization / Release Path](productization-release-path.md). Automation
+execution cannot be productized until approval-gated runtime maturity,
+operator controls, audit policy, rollback strategy, and release governance
+exist. Phase 85I adds no automation execution, package, tag, release, or
+deployment behavior.

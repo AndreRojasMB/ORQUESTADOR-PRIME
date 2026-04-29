@@ -420,3 +420,12 @@ Future connector metadata should validate:
 - no provider, network, filesystem write, action, store, runtime, or automation
   execution behavior,
 - no production, security, or compliance guarantees.
+
+## Productization / Release Path
+
+The future productization path is documented in
+[Productization / Release Path](productization-release-path.md). Connector
+execution cannot be productized before credential governance, audit records,
+rate limits, sandboxing, approval gates, runtime maturity, and rollback policy
+exist. Phase 85I adds no connector execution, package, tag, release, or
+deployment behavior.

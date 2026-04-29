@@ -354,3 +354,12 @@ documented in
 [Baseline / Strict CI maturation](baseline-strict-ci-maturation.md). Phase 83I
 does not let self-improvement update baselines, mutate artifacts, or enforce
 regressions autonomously.
+
+## Productization / Release Path
+
+The future productization path is documented in
+[Productization / Release Path](productization-release-path.md). Safe
+self-improvement must not autonomously update release artifacts, tags,
+baselines, changelog entries, prompts, router behavior, agent instructions, or
+source files. Phase 85I adds no self-improvement behavior and no release
+execution.

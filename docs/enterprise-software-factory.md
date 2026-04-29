@@ -278,6 +278,13 @@ Integrations and connector governance is documented in
 governance layer for external systems. Phase 84I is docs-only and does not add
 connector execution, credentials, webhooks, or external writes.
 
+Productization and release governance is documented in
+[Productization / Release Path](productization-release-path.md). It is the
+future governance layer for packaging, publishing, documenting, and supporting
+the factory later. Phase 85I is docs-only and does not change versions, create
+tags, publish releases, package artifacts, deploy systems, or make
+production-ready claims.
+
 ## Implementation Grouping
 
 Recommended future grouping:

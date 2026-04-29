@@ -161,3 +161,12 @@ Future release readiness may depend on staged strict CI and approved committed
 baselines. The governance path is documented in
 [Baseline / Strict CI maturation](baseline-strict-ci-maturation.md). Phase 83I
 does not add new release gates, mutate baselines, or modify CI behavior.
+
+## Productization / Release Path
+
+The future productization and release governance path is documented in
+[Productization / Release Path](productization-release-path.md). This release
+readiness document is one quality/CI input to productization, not product
+readiness by itself. Phase 85I is docs-only and does not create tags, publish
+release notes, change versions, package artifacts, or make production-ready
+claims.

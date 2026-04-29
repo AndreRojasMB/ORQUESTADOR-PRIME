@@ -316,3 +316,11 @@ Future source metadata should validate:
 - no provider, network, filesystem write, action, store, runtime, or automation
   execution behavior,
 - no production, security, or compliance guarantees.
+
+## Productization / Release Path
+
+The future productization path is documented in
+[Productization / Release Path](productization-release-path.md). Approved
+baseline and strict CI maturity are prerequisites for stronger release gates,
+but Phase 85I does not enable strict CI, create baselines, mutate artifacts, or
+publish a release.
