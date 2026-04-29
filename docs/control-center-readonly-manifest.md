@@ -9,6 +9,14 @@ read files, read stores, implement redaction, or implement auth.
 This document defines a future read-only inventory contract for control-center
 consumption. It does not make ORQUESTADOR-PRIME production-ready.
 
+## Dashboard Prototype Gate Relationship
+
+The Phase 98I [Dashboard Readonly Prototype Gate](dashboard-readonly-prototype-gate.md)
+records that the readonly manifest policy is a prerequisite but not sufficient
+for a real dashboard prototype. Dashboard write paths, including config writes
+and server-action mutation paths, must be isolated before manifest entries are
+used by any prototype view.
+
 ## A. Purpose
 
 A readonly manifest is needed because a future control center should know which

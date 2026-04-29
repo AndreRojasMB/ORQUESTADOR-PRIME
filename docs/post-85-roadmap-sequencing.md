@@ -161,7 +161,7 @@ Source-only connector metadata may happen before real connector calls.
 | 95I | CREDENTIAL-VAULT-STRATEGY | Docs-only credential/vault architecture and threat model. | Docs-only. | Critical | GPT-5.5 Extra High | Docs-only | Connector metadata taxonomy approved. | No secrets, env writes, OAuth, vault source, credential storage, network, or provider calls. | Status, typecheck, diff check, secret grep. | No secret examples; vault remains future-only. | `docs:` |
 | 96I | SAFE-SCAFFOLD-GENERATOR-PLAN | Docs-only or source-only scaffold planning metadata; no generated projects. | Advisory only. | High | GPT-5.5 High | Advisory only | Factory lanes mature; scaffold boundaries approved. | Do not touch `src/scaffold/*`, prompts, templates, generated systems, package scripts, or files outside docs/advisory metadata. | Typecheck if source; grep for scaffold generation. | Planning metadata only; no generated files. | `docs:` or `feat:` |
 | 97I | ENTERPRISE-DEMO-GENERATOR-ADVISORY | Source-only advisory demo model templates, not runnable demos. | Metadata/templates/validators only. | Medium | GPT-5.5 Medium | Source-only advisory | Factory and UI/transaction/reporting metadata available. | No generated projects, UI, routes, data stores, demos, scaffolds, or runtime actions. | Typecheck, validator smoke. | Demo models are advisory and non-executable. | `feat:` |
-| 98I | DASHBOARD-READONLY-PROTOTYPE-GATE | Only after 88-89; add read-only views if write paths are isolated. | Dashboard implementation. | High | GPT-5.5 Extra High | Dashboard implementation | 88I audit and 89I manifest complete; read-only policy approved. | No config writes, mutation server actions, raw store leakage, job/action execution, automation execution, or operator controls. | Dashboard build/typecheck, route smoke, grep for write paths. | Views render read-only summaries; write paths not touched. | `feat:` |
+| 98I | DASHBOARD-READONLY-PROTOTYPE-GATE | Record the gate decision before any read-only dashboard prototype. | Docs-only gate spec. | High | GPT-5.5 Extra High | Docs-only | 88I audit and 89I manifest complete; blockers reviewed. | No `dashboard/*` edits, config writes, mutation server actions, raw store browsing, job/action execution, automation execution, or operator controls. | Status, typecheck, diff check, grep for dashboard implementation wording. | Gate decision exists; prototype remains blocked until prerequisites are met. | `docs:` |
 | 99I | RELEASE-GOVERNANCE-TEMPLATES | Docs templates for release notes/operator/onboarding/support, no release. | Docs-only/templates. | Low | GPT-5.5 Medium | Docs-only/templates | 85I and 86I complete. | No tags, releases, version changes, CHANGELOG publication, LICENSE/SECURITY creation unless separately approved. | Status, typecheck, diff check, grep. | Templates exist; no release behavior. | `docs:` |
 | 100I | PRODUCTIZATION-READINESS-REVIEW | Docs-only readiness review for whether runtime/dashboard/CI can advance. | Docs-only. | Medium | GPT-5.5 High | Docs-only | Prior roadmap phases complete or explicitly deferred. | No production-ready claims, release/tag/package, deployment, strict CI activation, runtime mutation, or dashboard controls. | Status, typecheck, diff check, grep. | Readiness decision is review-only and bounded. | `docs:` |
 
@@ -187,6 +187,14 @@ documented in [Safe Scaffold Generator](safe-scaffold-generator.md). It keeps
 scaffold planning docs-only/spec-only and does not modify `src/scaffold/*`,
 `src/prompts/scaffold.ts`, package scripts, workflows, generated projects, or
 runtime/dashboard/automation/connector behavior.
+
+## Dashboard Readonly Prototype Gate
+
+Phase 98I records a docs-only gate decision in
+[Dashboard Readonly Prototype Gate](dashboard-readonly-prototype-gate.md). A
+real read-only dashboard prototype remains blocked until dashboard write paths
+are isolated, redaction and auth/role strategy exist, privacy review is
+complete, and future views are manifest-backed.
 
 ## G. Deferred Critical Work
 

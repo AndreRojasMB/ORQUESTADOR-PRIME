@@ -11,6 +11,15 @@ It does not make ORQUESTADOR-PRIME production-ready. This document inventories
 the existing dashboard safety posture and records prerequisites before future
 read-only control-center work.
 
+## Phase 98I Prototype Gate
+
+The Phase 98I [Dashboard Readonly Prototype Gate](dashboard-readonly-prototype-gate.md)
+records that a real read-only dashboard prototype remains blocked. The gate is
+docs-only/spec-only and does not modify `dashboard/*`. Prototype work must wait
+until write paths are isolated, redaction and auth/role policy exist, privacy
+review is complete, and future views are bound to approved readonly manifest
+sources.
+
 ## A. Purpose
 
 The dashboard safety audit exists because the tracked dashboard app is useful

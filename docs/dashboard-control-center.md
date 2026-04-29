@@ -10,6 +10,13 @@ auth, runtime controls, or operator actions. It does not make
 ORQUESTADOR-PRIME production-ready. This document defines a safe future
 read-only-first Dashboard / Control Center architecture.
 
+## Phase 98I Prototype Gate
+
+The Phase 98I [Dashboard Readonly Prototype Gate](dashboard-readonly-prototype-gate.md)
+keeps a real read-only dashboard prototype blocked. The gate is docs-only and
+requires write-path isolation, redaction, auth/role strategy, privacy review,
+and manifest-backed data sourcing before any dashboard implementation resumes.
+
 ## A. Purpose
 
 The Dashboard / Control Center exists to give operators a single place to

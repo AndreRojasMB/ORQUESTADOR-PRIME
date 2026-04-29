@@ -12,6 +12,14 @@ repository, execute commands, mutate stores, change workflows, change packages,
 create baselines, create artifacts, create branches, create tags, create
 releases, or make ORQUESTADOR-PRIME production-ready.
 
+## Dashboard Prototype Gate Relationship
+
+The dashboard/control-center readiness lane remains blocked for implementation
+by the Phase 98I [Dashboard Readonly Prototype Gate](dashboard-readonly-prototype-gate.md).
+Readiness metadata may inform future read-only summaries, but it does not
+authorize dashboard source changes, raw store browsing, config writes, server
+actions, or prototype implementation.
+
 ## Purpose
 
 Readiness / Maturity Metadata gives ORQUESTADOR-PRIME a static way to describe
