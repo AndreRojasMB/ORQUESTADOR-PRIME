@@ -10,6 +10,14 @@ package publishing, or support policy.
 
 This template set does not make ORQUESTADOR-PRIME production-ready.
 
+## Productization Readiness Review Relationship
+
+The Phase 100I [Productization Readiness Review](productization-readiness-review.md)
+uses these templates as evidence that release governance drafts exist. The
+review does not publish a release, approve a package, create tags, update
+`CHANGELOG.md`, create `LICENSE`, create `SECURITY.md`, or change template
+status.
+
 ## Purpose
 
 Release governance templates give future reviewers a safe vocabulary for

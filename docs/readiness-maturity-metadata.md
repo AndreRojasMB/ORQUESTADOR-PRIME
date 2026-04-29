@@ -28,6 +28,13 @@ docs-only/template-only evidence. The templates do not publish releases, create
 tags, change packages, update changelogs, create policy files, deploy systems,
 or make production-ready claims.
 
+## Productization Readiness Review Relationship
+
+Phase 100I summarizes readiness dimensions conservatively in
+[Productization Readiness Review](productization-readiness-review.md). It uses
+readiness evidence for review only and does not change maturity labels, execute
+work, publish releases, or approve productization.
+
 ## Purpose
 
 Readiness / Maturity Metadata gives ORQUESTADOR-PRIME a static way to describe
