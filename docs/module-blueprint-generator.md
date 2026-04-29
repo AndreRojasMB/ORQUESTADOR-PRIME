@@ -199,6 +199,11 @@ after explicit approval gates exist.
 This phase does not create scaffold output, database schemas, files, runtime
 jobs, providers, actions, or proposals.
 
+The scaffold safety path is documented in
+[Safe Scaffold Generator](safe-scaffold-generator.md). Module blueprints are
+planning input only; they do not generate files, execute templates, mutate
+packages, or create generated projects by themselves.
+
 ## Future Phases
 
 Recommended next work:

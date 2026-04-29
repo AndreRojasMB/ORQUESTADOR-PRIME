@@ -244,6 +244,14 @@ maturity stage for the baseline/strict CI lane. Warning mode is report-only and
 does not enable strict flags, create baselines, mutate artifacts, or change CI
 behavior in Phase 93I.
 
+## Safe Scaffold Generator Relationship
+
+[Safe Scaffold Generator](safe-scaffold-generator.md) records the scaffold
+safety path as docs-only/spec-only governance. Scaffold readiness remains
+deferred until safe scaffold planning, generated-file manifests, approval
+gates, path safety, and rollback strategy mature. Readiness metadata must not
+treat existing scaffold surfaces as safe execution capability.
+
 ## Future Read-Only Dashboard Visibility
 
 A future control center may display readiness metadata as read-only lane

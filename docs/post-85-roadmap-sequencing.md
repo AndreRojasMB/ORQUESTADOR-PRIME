@@ -180,6 +180,14 @@ edit workflows, or wire into runtime behavior.
 
 Phase 86I does not implement Phase 87.
 
+## Safe Scaffold Generator Checkpoint
+
+Phase 96I records scaffold safety before any generator work. The checkpoint is
+documented in [Safe Scaffold Generator](safe-scaffold-generator.md). It keeps
+scaffold planning docs-only/spec-only and does not modify `src/scaffold/*`,
+`src/prompts/scaffold.ts`, package scripts, workflows, generated projects, or
+runtime/dashboard/automation/connector behavior.
+
 ## G. Deferred Critical Work
 
 The following work remains deferred:

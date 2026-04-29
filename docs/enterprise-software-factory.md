@@ -338,3 +338,12 @@ describe factory and governance lane maturity as advisory metadata so future
 work can distinguish source-only planning assets from live-adjacent or
 executable capabilities. It does not generate systems, scaffold projects,
 execute runtime behavior, or promote factory outputs to productized assets.
+
+## Safe Scaffold Governance
+
+The future scaffold safety path is documented in
+[Safe Scaffold Generator](safe-scaffold-generator.md). Future scaffold
+generation must follow that governance path before any file writes, generated
+projects, template execution, package/script changes, workflow changes, or
+runtime/dashboard/connector behavior are considered. Factory metadata remains
+planning input only until separate approval gates exist.
