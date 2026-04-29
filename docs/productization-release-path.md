@@ -469,3 +469,11 @@ The safe implementation order after Phase 85 is documented in
 should follow that sequence and its maturity gates before any package, tag,
 release, deployment, dashboard control, runtime execution, connector execution,
 or strict CI work advances.
+
+## Readiness / Maturity Metadata
+
+Future release readiness may reference
+[Readiness / Maturity Metadata](readiness-maturity-metadata.md) as non-blocking
+review evidence. The readiness lane does not create release gates, change
+versions, update changelogs, publish packages, create tags, create releases,
+deploy systems, or make productization claims.

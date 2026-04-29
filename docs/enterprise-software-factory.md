@@ -329,3 +329,12 @@ capabilities is governed by
 [Post-85 Roadmap Sequencing](post-85-roadmap-sequencing.md). Factory metadata
 should remain advisory until the roadmap's runtime, dashboard, CI, scaffold,
 connector, and release prerequisites are satisfied.
+
+## Readiness / Maturity Metadata
+
+The source-only readiness lane is documented in
+[Readiness / Maturity Metadata](readiness-maturity-metadata.md). It helps
+describe factory and governance lane maturity as advisory metadata so future
+work can distinguish source-only planning assets from live-adjacent or
+executable capabilities. It does not generate systems, scaffold projects,
+execute runtime behavior, or promote factory outputs to productized assets.

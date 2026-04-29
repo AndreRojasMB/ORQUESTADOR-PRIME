@@ -370,3 +370,11 @@ Future dashboard/control-center implementation order is governed by
 [Post-85 Roadmap Sequencing](post-85-roadmap-sequencing.md). Dashboard work must
 not advance to read-only views or controls before write-capable paths are
 audited, isolated, and explicitly approved.
+
+## Readiness / Maturity Metadata
+
+Future read-only control-center views may display
+[Readiness / Maturity Metadata](readiness-maturity-metadata.md) as static lane
+summaries after dashboard write paths are audited and isolated. Phase 87I does
+not modify `dashboard/`, add routes, add components, add server actions, read
+stores, or create operator controls.

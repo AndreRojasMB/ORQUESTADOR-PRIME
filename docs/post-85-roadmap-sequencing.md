@@ -330,3 +330,12 @@ Phase 86I explicitly does not include:
 - branch, tag, or release creation,
 - production-ready claims,
 - security or compliance guarantees.
+
+## Readiness / Maturity Metadata
+
+The recommended next advisory source lane is documented in
+[Readiness / Maturity Metadata](readiness-maturity-metadata.md). It records
+curated lane maturity, risk, blockers, evidence references, and next-step
+recommendations as source-only metadata. It does not scan the repository, read
+stores, feed dashboard controls, activate CI, execute jobs, dispatch actions, or
+advance runtime, automation, connector, release, or deployment behavior.
