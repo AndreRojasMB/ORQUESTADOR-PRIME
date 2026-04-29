@@ -107,6 +107,12 @@ later, be explicit, and be approval-gated.
 
 No anonymous dangerous actions should be allowed.
 
+Phase 79I adds a deeper runtime specification in
+[Production runtime deeper](production-runtime-deeper.md). It is docs-only and
+does not implement a runtime API, server, workers, queues, schedulers, store
+adapters, migration apply, backups, repair mode, auth, rate limits, or runtime
+execution.
+
 ## Store Migration System
 
 Future store migration support should require:
@@ -288,7 +294,8 @@ Recommended grouping:
 3. 59I: config doctor/store health implementation.
 4. 60B: store migration/lock plan.
 5. 60I: store migration/lock implementation.
-6. Later: runtime API, worker/queue, scheduler, dashboard, automation engine.
+6. 79I: deeper production runtime specification, docs-only.
+7. Later: runtime API, worker/queue, scheduler, dashboard, automation engine.
 
 ## Verification And Smoke Standards
 

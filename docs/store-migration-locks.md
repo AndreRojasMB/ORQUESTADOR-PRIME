@@ -44,6 +44,11 @@ The planner is report-only. It does not apply migrations, create backups,
 create locks, repair stores, mutate stores, or integrate with existing store
 writes. Locks remain required only for future apply, repair, and backup phases.
 
+Phase 79I documents the broader future runtime path in
+[Production runtime deeper](production-runtime-deeper.md). Migration apply,
+backup, restore, repair mode, database adapters, and runtime orchestration
+remain future topics; this policy remains dry-run/spec/safe as described here.
+
 ## Migration Model
 
 A future migration record should include:

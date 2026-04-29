@@ -80,6 +80,12 @@ Workflow execution, scheduler/webhook behavior, connectors, credentials,
 runtime server integration, dashboard controls, CLI summary mode, and artifact
 support remain future work.
 
+The deeper production runtime path is documented in
+[Production runtime deeper](production-runtime-deeper.md). That future runtime
+may eventually provide an execution substrate for automation, but Phase 79I is
+docs-only and does not enable workflow execution, scheduler behavior, webhooks,
+connectors, credentials, or automation runtime wiring.
+
 ## Design Principles
 
 Future automation must follow these principles:
