@@ -429,3 +429,11 @@ execution cannot be productized before credential governance, audit records,
 rate limits, sandboxing, approval gates, runtime maturity, and rollback policy
 exist. Phase 85I adds no connector execution, package, tag, release, or
 deployment behavior.
+
+## Post-85 Roadmap Sequencing
+
+Future connector work should follow
+[Post-85 Roadmap Sequencing](post-85-roadmap-sequencing.md). Connector metadata
+may advance before real calls, but credential vaults, external API calls,
+webhooks, payments, SSO, and write behavior remain deferred until their
+roadmap prerequisites are satisfied.

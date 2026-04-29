@@ -422,3 +422,10 @@ execution cannot be productized until approval-gated runtime maturity,
 operator controls, audit policy, rollback strategy, and release governance
 exist. Phase 85I adds no automation execution, package, tag, release, or
 deployment behavior.
+
+## Post-85 Roadmap Sequencing
+
+Future automation work should follow
+[Post-85 Roadmap Sequencing](post-85-roadmap-sequencing.md). Automation
+execution remains deferred until runtime maturity, approval gates, connector
+governance, audit, cancellation, rollback, and operator controls are ready.

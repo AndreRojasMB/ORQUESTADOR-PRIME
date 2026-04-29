@@ -324,3 +324,10 @@ The future productization path is documented in
 baseline and strict CI maturity are prerequisites for stronger release gates,
 but Phase 85I does not enable strict CI, create baselines, mutate artifacts, or
 publish a release.
+
+## Post-85 Roadmap Sequencing
+
+Future baseline and strict CI work should follow
+[Post-85 Roadmap Sequencing](post-85-roadmap-sequencing.md). Blocking CI should
+not advance before committed baseline governance, warning-mode trials, rollback
+policy, and human approval are in place.

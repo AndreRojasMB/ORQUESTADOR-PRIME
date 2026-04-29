@@ -461,3 +461,11 @@ Future metadata should validate:
   behavior,
 - no release publication claims,
 - no production, security, or compliance guarantees.
+
+## Post-85 Roadmap Sequencing
+
+The safe implementation order after Phase 85 is documented in
+[Post-85 Roadmap Sequencing](post-85-roadmap-sequencing.md). Productization
+should follow that sequence and its maturity gates before any package, tag,
+release, deployment, dashboard control, runtime execution, connector execution,
+or strict CI work advances.

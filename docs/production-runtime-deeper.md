@@ -402,3 +402,10 @@ The future productization path is documented in
 runtime maturity is required before executable release claims, packaging, or
 deployment candidates can be treated as product-ready. Phase 85I is docs-only
 and adds no runtime, package, tag, release, or deployment behavior.
+
+## Post-85 Roadmap Sequencing
+
+Future runtime work should follow
+[Post-85 Roadmap Sequencing](post-85-roadmap-sequencing.md). Runtime changes
+should begin with read-only planning, validation, or doctor expansion before
+any mutation API, worker, queue, scheduler, migration apply, or deployment work.

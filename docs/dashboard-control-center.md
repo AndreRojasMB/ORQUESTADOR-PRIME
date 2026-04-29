@@ -363,3 +363,10 @@ The future productization path is documented in
 center may show read-only release status, maturity stage, checklist state, and
 artifact policy summaries, but Phase 85I adds no release controls and no
 dashboard behavior.
+
+## Post-85 Roadmap Sequencing
+
+Future dashboard/control-center implementation order is governed by
+[Post-85 Roadmap Sequencing](post-85-roadmap-sequencing.md). Dashboard work must
+not advance to read-only views or controls before write-capable paths are
+audited, isolated, and explicitly approved.

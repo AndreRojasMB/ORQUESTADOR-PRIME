@@ -170,3 +170,10 @@ readiness document is one quality/CI input to productization, not product
 readiness by itself. Phase 85I is docs-only and does not create tags, publish
 release notes, change versions, package artifacts, or make production-ready
 claims.
+
+## Post-85 Roadmap Sequencing
+
+Future release readiness depends on
+[Post-85 Roadmap Sequencing](post-85-roadmap-sequencing.md). Release work should
+not jump ahead of runtime, strict CI, dashboard safety, connector governance,
+license/security, or productization maturity gates.

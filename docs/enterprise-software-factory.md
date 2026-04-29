@@ -321,3 +321,11 @@ runtime behavior remain future work.
 | Huge scope | Split factory work into catalog, blueprint, interview, estimation, and scaffold lanes. |
 | Mixing blueprint generation with execution | Keep factory outputs as plans, not runtime actions. |
 | Generic low-quality modules | Require family-specific metadata, process context, and review gates. |
+
+## Post-85 Roadmap Sequencing
+
+The transition from advisory factory lanes to future executable or productized
+capabilities is governed by
+[Post-85 Roadmap Sequencing](post-85-roadmap-sequencing.md). Factory metadata
+should remain advisory until the roadmap's runtime, dashboard, CI, scaffold,
+connector, and release prerequisites are satisfied.
