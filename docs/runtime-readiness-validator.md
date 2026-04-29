@@ -180,6 +180,16 @@ write artifacts, or import runtime-adjacent modules.
 
 Unknown check ids fail safely with a structured result.
 
+## Runtime Doctor Relationship
+
+The runtime doctor may surface presence-only evidence that this readiness
+metadata lane exists. It must not import the readiness module, execute the
+builder, run the validator, read the readiness source files, or treat static
+metadata as live runtime status.
+
+Phase 91I keeps that boundary by adding only doctor presence checks for the
+readiness source files and documentation.
+
 ## Validator
 
 `runtimeReadinessValidator.ts` validates:

@@ -219,6 +219,14 @@ The manifest should make safe display possible without encouraging operators to
 treat visibility as permission to mutate runtime, config, jobs, actions,
 automation, connectors, or releases.
 
+## Runtime Doctor Summary Relationship
+
+The Phase 91I [Runtime Doctor Safe Expansion](runtime-doctor-safe-expansion.md)
+keeps doctor output read-only and redacted. Future control-center manifests may
+reference bounded doctor summaries, but they must not use the dashboard to read
+raw stores, expose raw config values, invoke migration planning, acquire locks,
+or execute runtime behavior.
+
 ## L. Future Validation Strategy
 
 Future validation should require:

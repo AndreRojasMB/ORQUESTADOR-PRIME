@@ -481,6 +481,67 @@ function workflowAbsentCheck(workflowText: string | null, needle: string, id: st
   });
 }
 
+async function presenceGroupCheck(input: {
+  projectRoot: string;
+  id: string;
+  label: string;
+  relativePaths: string[];
+  safePresentMessage: string;
+  safeMissingMessage: string;
+}): Promise<DoctorCheck> {
+  const presentResults = await Promise.all(
+    input.relativePaths.map((relativePath) =>
+      fileExists(join(input.projectRoot, ...relativePath.split("/"))),
+    ),
+  );
+  const presentCount = presentResults.filter(Boolean).length;
+  const missingCount = input.relativePaths.length - presentCount;
+  const complete = missingCount === 0;
+
+  return makeCheck({
+    id: input.id,
+    label: input.label,
+    status: complete ? "pass" : "warn",
+    reasonCode: complete
+      ? "presence.expected_files.present"
+      : "presence.expected_files.missing",
+    safeMessage: complete ? input.safePresentMessage : input.safeMissingMessage,
+    metadata: {
+      expectedCount: input.relativePaths.length,
+      presentCount,
+      missingCount,
+      presenceOnly: true,
+    },
+  });
+}
+
+function doctorBoundaryStatusCheck(): DoctorCheck {
+  const boundaryValues = Object.values(BOUNDARIES);
+  const allBoundariesTrue = boundaryValues.every((value) => value === true);
+
+  return makeCheck({
+    id: "doctor-boundary-status",
+    label: "Runtime doctor boundaries",
+    status: allBoundariesTrue ? "pass" : "fail",
+    reasonCode: allBoundariesTrue
+      ? "doctor.boundaries.read_only"
+      : "doctor.boundaries.invalid",
+    safeMessage: allBoundariesTrue
+      ? "Runtime doctor boundaries remain read-only and non-mutating."
+      : "Runtime doctor boundaries are not all true.",
+    metadata: {
+      readOnly: BOUNDARIES.readOnly,
+      noStoreMutation: BOUNDARIES.noStoreMutation,
+      noRepair: BOUNDARIES.noRepair,
+      noMigration: BOUNDARIES.noMigration,
+      noLocksCreated: BOUNDARIES.noLocksCreated,
+      noProviderCalls: BOUNDARIES.noProviderCalls,
+      noNetwork: BOUNDARIES.noNetwork,
+      noActionDispatch: BOUNDARIES.noActionDispatch,
+    },
+  });
+}
+
 async function buildChecks(projectRoot: string, dataRootMetadata: SafeMetadata): Promise<DoctorCheck[]> {
   const packagePath = join(projectRoot, "package.json");
   const packageText = await readTextIfPresent(packagePath);
@@ -492,6 +553,95 @@ async function buildChecks(projectRoot: string, dataRootMetadata: SafeMetadata):
   }
 
   const workflowText = await readTextIfPresent(join(projectRoot, ".github", "workflows", "quality.yml"));
+  const presenceChecks = await Promise.all([
+    presenceGroupCheck({
+      projectRoot,
+      id: "runtime-readiness-metadata-presence",
+      label: "Runtime readiness metadata",
+      relativePaths: [
+        "src/runtime/readiness/types.ts",
+        "src/runtime/readiness/runtimeReadinessTemplates.ts",
+        "src/runtime/readiness/runtimeReadinessBuilder.ts",
+        "src/runtime/readiness/runtimeReadinessValidator.ts",
+      ],
+      safePresentMessage: "Runtime readiness metadata source files are present.",
+      safeMissingMessage: "One or more runtime readiness metadata source files are missing.",
+    }),
+    presenceGroupCheck({
+      projectRoot,
+      id: "runtime-readiness-doc-presence",
+      label: "Runtime readiness documentation",
+      relativePaths: ["docs/runtime-readiness-validator.md"],
+      safePresentMessage: "Runtime readiness validator documentation is present.",
+      safeMissingMessage: "Runtime readiness validator documentation is missing.",
+    }),
+    presenceGroupCheck({
+      projectRoot,
+      id: "runtime-docs-presence",
+      label: "Runtime governance documentation",
+      relativePaths: [
+        "docs/production-runtime-deeper.md",
+        "docs/production-runtime-foundation.md",
+        "docs/production-runtime.md",
+      ],
+      safePresentMessage: "Runtime governance documentation is present.",
+      safeMissingMessage: "One or more runtime governance documents are missing.",
+    }),
+    presenceGroupCheck({
+      projectRoot,
+      id: "readonly-manifest-policy-presence",
+      label: "Readonly manifest policy",
+      relativePaths: ["docs/control-center-readonly-manifest.md"],
+      safePresentMessage: "Readonly manifest policy documentation is present.",
+      safeMissingMessage: "Readonly manifest policy documentation is missing.",
+    }),
+    presenceGroupCheck({
+      projectRoot,
+      id: "dashboard-safety-audit-presence",
+      label: "Dashboard safety audit",
+      relativePaths: ["docs/dashboard-safety-audit.md"],
+      safePresentMessage: "Dashboard safety audit documentation is present.",
+      safeMissingMessage: "Dashboard safety audit documentation is missing.",
+    }),
+    presenceGroupCheck({
+      projectRoot,
+      id: "artifact-redaction-policy-presence",
+      label: "Artifact redaction policy",
+      relativePaths: ["docs/ci-artifacts-redaction.md"],
+      safePresentMessage: "Artifact redaction policy documentation is present.",
+      safeMissingMessage: "Artifact redaction policy documentation is missing.",
+    }),
+    presenceGroupCheck({
+      projectRoot,
+      id: "baseline-policy-presence",
+      label: "Baseline policy",
+      relativePaths: [
+        "docs/baseline-policy.md",
+        "docs/baseline-strict-ci-maturation.md",
+      ],
+      safePresentMessage: "Baseline policy documentation is present.",
+      safeMissingMessage: "One or more baseline policy documents are missing.",
+    }),
+    presenceGroupCheck({
+      projectRoot,
+      id: "migration-planner-presence-only",
+      label: "Migration planner presence",
+      relativePaths: [
+        "scripts/store-migration-plan.ts",
+        "src/runtime/migrations/migrationPlanner.ts",
+      ],
+      safePresentMessage: "Migration planner source is present; it was not invoked.",
+      safeMissingMessage: "Migration planner source presence is incomplete; no planner was invoked.",
+    }),
+    presenceGroupCheck({
+      projectRoot,
+      id: "lock-primitive-presence-only",
+      label: "Lock primitive presence",
+      relativePaths: ["src/runtime/locks/lockManager.ts"],
+      safePresentMessage: "Lock primitive source is present; no lock was acquired or released.",
+      safeMissingMessage: "Lock primitive source is missing; no lock was acquired or released.",
+    }),
+  ]);
   const checks: DoctorCheck[] = [
     makeCheck({
       id: "node-runtime",
@@ -552,6 +702,8 @@ async function buildChecks(projectRoot: string, dataRootMetadata: SafeMetadata):
       "workflow-no-fail-on-regression",
       "fail-on-regression deferred",
     ),
+    ...presenceChecks,
+    doctorBoundaryStatusCheck(),
     makeCheck({
       id: "runtime-server-placeholder",
       label: "Runtime server",

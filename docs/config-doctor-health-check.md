@@ -184,3 +184,11 @@ health surfaces. The source-only advisory
 does not import the doctor, read files, inspect stores, scan the repository, or
 run diagnostics. It records static readiness metadata for future runtime
 maturity review.
+
+## Runtime Doctor Safe Expansion
+
+[Runtime Doctor Safe Expansion](runtime-doctor-safe-expansion.md) documents the
+Phase 91I presence-only checks added to the doctor. The doctor remains
+read-only and privacy-aware: it may report safe doc/source presence, but it does
+not invoke migration planning, acquire locks, repair stores, write config,
+execute jobs/actions/automation, call providers, or expand raw store browsing.

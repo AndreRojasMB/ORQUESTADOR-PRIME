@@ -419,3 +419,11 @@ store adapters, migrations, backups, repair, auth, observability, dashboard
 visibility, and deployment. It does not implement runtime behavior, import the
 runtime doctor, import migration or lock source, read files, scan repositories,
 or execute jobs/actions.
+
+## Runtime Doctor Safe Expansion
+
+[Runtime Doctor Safe Expansion](runtime-doctor-safe-expansion.md) documents the
+Phase 91I presence-only doctor checks. This expansion keeps the runtime doctor
+read-only and does not implement runtime APIs, workers, queues, schedulers,
+database adapters, migration apply, locks, backup/restore, repair, auth,
+rate-limits, dashboard behavior, automation, connectors, jobs, or actions.
