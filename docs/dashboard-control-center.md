@@ -332,3 +332,11 @@ Future source metadata should validate:
 - no provider, network, filesystem write, action, store, runtime, or automation
   execution wording,
 - no production, security, or compliance guarantees.
+
+## Safe Self-Improvement Relationship
+
+The deeper safe self-improvement path is documented in
+[Safe self-improvement deeper](safe-self-improvement-deeper.md). Future
+control-center views may show redacted self-improvement findings, proposal
+summaries, risk levels, review status, and eval comparison plans, but those
+views must remain read-only until a later explicit guarded phase.

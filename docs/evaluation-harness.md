@@ -186,3 +186,10 @@ Future smoke should verify:
 - reports write only to explicit path or stdout,
 - no provider/network calls occur.
 
+## Deeper Self-Improvement Relationship
+
+The deeper safe self-improvement path is documented in
+[Safe self-improvement deeper](safe-self-improvement-deeper.md). Eval
+comparison may later support before/after review for self-improvement
+proposals, but Phase 82I does not execute evals, mutate baselines, rewrite
+prompts, change router behavior, or alter agent instructions.

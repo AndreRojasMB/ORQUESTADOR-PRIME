@@ -509,3 +509,11 @@ visibility in a later control center must remain separate from approval,
 second-approval, proposal mutation, and dispatch execution. Read-only review
 metadata can come first; executable controls require a later explicit guarded
 phase.
+
+## Deeper Self-Improvement Relationship
+
+The deeper safe self-improvement path is documented in
+[Safe self-improvement deeper](safe-self-improvement-deeper.md).
+Self-improvement proposals must not bypass channel identity, approval,
+second-approval, action dispatch, or proposal safety. Phase 82I adds no action
+bridge, approval execution, dispatch behavior, or self-PR creation.

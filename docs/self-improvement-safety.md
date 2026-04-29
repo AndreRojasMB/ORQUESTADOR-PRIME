@@ -174,3 +174,10 @@ These remain disabled by default:
 - dataset upload,
 - automatic implementation of proposals.
 
+## Deeper Self-Improvement Relationship
+
+The deeper safe self-improvement path is documented in
+[Safe self-improvement deeper](safe-self-improvement-deeper.md). It keeps
+self-improvement proposal-only and non-autonomous: no prompt, router, agent,
+source, baseline, branch, pull request, approval, or execution behavior is
+enabled by Phase 82I.

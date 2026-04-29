@@ -153,3 +153,11 @@ Baselines do not:
 
 For the consolidated pre-55B-F readiness checklist, see
 [Final hardening readiness](final-hardening-readiness.md).
+
+## Deeper Self-Improvement Relationship
+
+The deeper safe self-improvement path is documented in
+[Safe self-improvement deeper](safe-self-improvement-deeper.md). Baseline and
+strict CI maturity must come before regression-enforced self-improvement.
+Phase 82I does not create baselines, update baselines, mutate artifacts, enable
+strict CI, or treat quality comparison as permission to modify the system.

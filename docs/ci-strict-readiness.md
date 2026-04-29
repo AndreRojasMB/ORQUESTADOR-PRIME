@@ -108,3 +108,11 @@ Strict CI is not:
 - runtime gate wiring,
 - provider calls,
 - store mutation.
+
+## Deeper Self-Improvement Relationship
+
+The deeper safe self-improvement path is documented in
+[Safe self-improvement deeper](safe-self-improvement-deeper.md). Strict CI
+readiness is a prerequisite for safer automated comparison, but it is not
+permission for autonomous modification. Phase 82I does not change CI, run
+strict checks, update workflows, or enable prompt/router/agent/source changes.

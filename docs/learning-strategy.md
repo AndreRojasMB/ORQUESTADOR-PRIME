@@ -266,3 +266,10 @@ A future DPO/fine-tune workflow must be separate from this export layer:
 
 No part of this path is implemented in Phase 34A-F.
 
+## Deeper Self-Improvement Relationship
+
+The deeper safe self-improvement path is documented in
+[Safe self-improvement deeper](safe-self-improvement-deeper.md). Learning
+signals may later feed redacted retrospective findings and proposal-only
+improvement plans, but they must not directly mutate prompts, router behavior,
+agent instructions, source files, memory stores, learning stores, or CI.
