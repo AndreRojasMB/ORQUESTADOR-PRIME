@@ -290,9 +290,13 @@ create ledgers, or generate queues and workers.
 Language and Framework Profiles may later add implementation assumptions after
 review, but reporting models do not inspect code, choose stacks, or run tools.
 
-Future transactional systems, enterprise UI patterns, automation, dashboards,
-external BI tools, and scaffold lanes may consume reviewed reporting metadata
-only after separate approval gates.
+Enterprise UI Patterns can compare reporting definitions, consumers,
+permissions, and visualization placement with advisory dashboard-like UI
+metadata. UI pattern models do not generate dashboards, execute BI tools, or
+render screens.
+
+Future automation, dashboards, external BI tools, and scaffold lanes may
+consume reviewed reporting metadata only after separate approval gates.
 
 ## Future Phases
 

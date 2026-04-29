@@ -200,6 +200,11 @@ remains source-only and does not execute transactions, write databases, run
 SQL, apply migrations, generate ledgers, create queues or workers, or mutate
 stores.
 
+Enterprise UI Patterns can later contribute UI surface complexity, accessibility
+recommendations, responsive assumptions, state coverage, review risks, and MVP
+versus enterprise UI maturity notes. It remains source-only and does not render
+UI, generate routes, scaffold frontends, or create dashboard artifacts.
+
 ## Future Phases
 
 Possible future work:

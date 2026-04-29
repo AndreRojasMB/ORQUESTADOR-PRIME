@@ -251,9 +251,13 @@ controls, and reconciliation metadata. Transactional models remain source-only
 metadata and do not execute transactions, write databases, run SQL, apply
 migrations, generate ledgers, or create queues and workers.
 
-Future transactional systems, enterprise UI patterns, automation, dashboards,
-and scaffold lanes may consume reviewed process models only after separate
-approval gates.
+Enterprise UI Patterns can compare process states, handoffs, queues, approvals,
+exceptions, and checkpoints with advisory UI surface metadata. UI pattern
+models do not render screens, execute workflows, execute approvals, or scaffold
+frontends.
+
+Future automation, dashboards, and scaffold lanes may consume reviewed process
+models only after separate approval gates.
 
 ## Future Phases
 

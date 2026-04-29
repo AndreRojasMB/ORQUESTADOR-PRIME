@@ -181,6 +181,16 @@ Transactional models remain source-only metadata. They do not execute
 transactions, write databases, run SQL, apply migrations, generate ledgers,
 create queues or workers, or make module blueprints executable.
 
+## Relationship To Enterprise UI Patterns
+
+Enterprise UI Patterns can compare module responsibilities, reports,
+permissions, workflows, risks, and `uiPatterns` vocabulary with reviewable UI
+surface metadata.
+
+UI pattern models remain source-only metadata. They do not render UI, generate
+components, create routes, scaffold frontends, or make module blueprints
+executable.
+
 ## Relationship To Future Safe Scaffold Phase
 
 A later scaffold phase may use reviewed module blueprints as input, but only

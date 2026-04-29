@@ -36,7 +36,8 @@ ORQUESTADOR-PRIME currently has:
 - framework profiles source metadata, resolver, and pure validation,
 - business process modeling source templates, builder, and validation,
 - BI/reporting layer source templates, builder, and validation,
-- transactional systems layer source templates, builder, and validation.
+- transactional systems layer source templates, builder, and validation,
+- enterprise UI patterns source templates, builder, and validation.
 
 The Enterprise Software Factory is still missing as a generator/runtime layer.
 The catalog, module blueprint helper, and interview planner are advisory and
@@ -62,10 +63,13 @@ BI/reporting layer details live in
 [BI reporting layer](bi-reporting-layer.md).
 Transactional systems layer details live in
 [Transactional systems layer](transactional-systems-layer.md).
+Enterprise UI pattern details live in
+[Enterprise UI patterns](enterprise-ui-patterns.md).
 
 The next future lane can plan answer summaries, commercial proposal support,
 richer family-specific templates, transaction-to-planning integration,
-reporting-to-planning integration, or process-to-blueprint integration.
+reporting-to-planning integration, process-to-blueprint integration, or
+dashboard/control center foundations.
 
 ## Factory Objective
 
@@ -273,8 +277,9 @@ Recommended future grouping:
 12. 75I: business process modeling implementation.
 13. 76I: BI/reporting layer implementation.
 14. 77I: transactional systems layer implementation.
-15. Later: safe scaffold planner.
-16. Later: scaffold generator only after approval gates.
+15. 78I: enterprise UI patterns implementation.
+16. Later: safe scaffold planner.
+17. Later: scaffold generator only after approval gates.
 
 CLI surfaces, scripts, database schemas, dashboard UI, scaffold output, and
 runtime behavior remain future work.

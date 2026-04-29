@@ -316,13 +316,17 @@ exceptions, and checkpoints with transactional states.
 The BI / Reporting Layer can compare transactional traceability, metrics, and
 reconciliation notes with reporting scope.
 
+Enterprise UI Patterns can compare transactional states, exceptions,
+reconciliation notes, audit checkpoints, and traceability requirements with
+advisory review surfaces. UI pattern models do not execute transactions,
+payments, approvals, workflows, or UI rendering.
+
 Language and Framework Profiles may later add implementation assumptions after
 review, but transactional models do not inspect code, choose stacks, or run
 tools.
 
-Future enterprise UI patterns, automation, dashboards, runtime, stores,
-migrations, and scaffold lanes may consume reviewed transactional metadata only
-after separate approval gates.
+Future automation, dashboards, runtime, stores, migrations, and scaffold lanes
+may consume reviewed transactional metadata only after separate approval gates.
 
 ## Future Phases
 
