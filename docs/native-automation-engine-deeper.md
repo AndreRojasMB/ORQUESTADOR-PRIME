@@ -396,3 +396,12 @@ Future source metadata should validate:
 - no secret examples, tokens, provider keys, raw credentials, or real webhook
   secrets,
 - no production, security, or compliance guarantees.
+
+## Dashboard / Control Center Relationship
+
+The future Dashboard / Control Center path is documented in
+[Dashboard / Control Center](dashboard-control-center.md). A later control
+center may display automation validation, dry-run, trace, and risk summaries,
+but it must not enable automation execution, workflow persistence, scheduler or
+trigger behavior, webhook listeners, connector calls, credential access, or
+approval/action execution. Phase 81I is docs-only.

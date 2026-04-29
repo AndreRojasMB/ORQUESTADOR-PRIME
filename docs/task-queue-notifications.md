@@ -307,3 +307,11 @@ not bypass safe job rules, dangerous job blocking, local-only notification
 policy, approval gates, or runtime readiness checks. Phase 80I is docs-only and
 adds no scheduler, queue worker, workflow persistence, notification delivery,
 or automation execution.
+
+## Dashboard / Control Center Relationship
+
+The future Dashboard / Control Center path is documented in
+[Dashboard / Control Center](dashboard-control-center.md). Jobs and
+notifications may later appear as read-only status and inbox views, but those
+views must not execute jobs, deliver notifications, activate schedulers or
+workers, mutate queues, or bypass safe job rules.

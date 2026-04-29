@@ -500,3 +500,12 @@ Automation execution must remain approval-gated and separate from direct action
 dispatch. Phase 80I is docs-only and adds no channel dispatch path, approval
 execution, workflow activation, webhook listener, connector behavior, or
 runtime wiring.
+
+## Dashboard / Control Center Relationship
+
+The future Dashboard / Control Center path is documented in
+[Dashboard / Control Center](dashboard-control-center.md). Approval and action
+visibility in a later control center must remain separate from approval,
+second-approval, proposal mutation, and dispatch execution. Read-only review
+metadata can come first; executable controls require a later explicit guarded
+phase.

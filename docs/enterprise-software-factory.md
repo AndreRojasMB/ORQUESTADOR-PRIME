@@ -256,10 +256,16 @@ The factory depends on or informs:
 - enterprise UI patterns,
 - native automation engine,
 - production runtime.
+- dashboard/control center.
 
 Factory blueprints may describe workflows, but they must not execute workflows.
 Native automation remains validation, dry-run, and trace only until future
 execution phases are explicitly approved.
+
+The future Dashboard / Control Center is documented in
+[Dashboard / Control Center](dashboard-control-center.md). It is an operator
+visibility layer over factory/runtime metadata, not a scaffold generator,
+runtime controller, approval executor, or production dashboard in Phase 81I.
 
 ## Implementation Grouping
 

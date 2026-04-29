@@ -377,3 +377,12 @@ Future source metadata should validate:
 - no server creation wording,
 - no SQL, schema, or migration implementation,
 - no production, security, or compliance guarantees.
+
+## Dashboard / Control Center Relationship
+
+The future Dashboard / Control Center path is documented in
+[Dashboard / Control Center](dashboard-control-center.md). It is a
+read-only-first operator visibility strategy over runtime, config, artifact,
+and maturity signals. Phase 81I is docs-only and does not enable runtime
+controls, server/API behavior, config writes, repair, migration apply,
+worker/queue control, or operator actions.

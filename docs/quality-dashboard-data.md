@@ -179,3 +179,11 @@ This phase does not add:
 - store mutation,
 - provider calls,
 - network calls.
+
+## Dashboard / Control Center Relationship
+
+The future Dashboard / Control Center path is documented in
+[Dashboard / Control Center](dashboard-control-center.md). Quality dashboard
+data can feed future read-only control center views as redacted artifact-style
+input, but it is not itself a dashboard UI, runtime gate, CI mutation surface,
+approval system, dispatch path, or operator control.
