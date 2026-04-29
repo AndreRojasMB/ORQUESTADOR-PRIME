@@ -229,6 +229,14 @@ observability, dashboard visibility, and deployment readiness. It does not
 import runtime-adjacent modules, read files, scan the repository, or execute
 runtime behavior.
 
+## Baseline Manifest Dry-Run Relationship
+
+The baseline/strict CI lane can reference
+[Baseline Manifest Dry-Run](baseline-manifest-dry-run.md) as advisory evidence
+for future baseline candidate maturity. The metadata is dry-run-only and does
+not create baselines, generate artifacts, enable strict CI, or change release
+readiness.
+
 ## Future Read-Only Dashboard Visibility
 
 A future control center may display readiness metadata as read-only lane

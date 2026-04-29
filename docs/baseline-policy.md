@@ -169,3 +169,10 @@ and staged strict CI is documented in
 [Baseline / Strict CI maturation](baseline-strict-ci-maturation.md). Phase 83I
 is docs-only and does not create committed baselines or change baseline update
 policy.
+
+## Baseline Manifest Dry-Run
+
+[Baseline Manifest Dry-Run](baseline-manifest-dry-run.md) defines source-only
+advisory metadata that future baseline candidates can use before promotion.
+Phase 92I creates no committed baselines, writes no artifacts, and does not
+change this baseline policy.

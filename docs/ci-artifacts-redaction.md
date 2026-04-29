@@ -207,3 +207,10 @@ Manifest entries should reference artifact names, retention, hashes, byte
 sizes, and privacy scan status as read-only metadata. Phase 89I does not change
 artifact generation, artifact retention, upload behavior, CI behavior, or
 dashboard behavior.
+
+## Baseline Manifest Dry-Run Relationship
+
+[Baseline Manifest Dry-Run](baseline-manifest-dry-run.md) may later reference
+redacted artifact metadata as baseline candidate evidence. Phase 92I does not
+generate artifacts, change artifact retention, upload artifact changes, create
+baselines, or alter CI behavior.

@@ -331,3 +331,11 @@ Future baseline and strict CI work should follow
 [Post-85 Roadmap Sequencing](post-85-roadmap-sequencing.md). Blocking CI should
 not advance before committed baseline governance, warning-mode trials, rollback
 policy, and human approval are in place.
+
+## Baseline Manifest Dry-Run
+
+The future candidate vocabulary is defined in
+[Baseline Manifest Dry-Run](baseline-manifest-dry-run.md). Phase 92I adds
+source-only advisory metadata for describing baseline candidates before
+committed baselines or strict gates exist; it does not create baselines, mutate
+artifacts, or change CI behavior.

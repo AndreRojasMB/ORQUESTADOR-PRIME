@@ -274,6 +274,15 @@ should be metadata strings and readiness status only. They must not become live
 runtime probes, direct store reads, runtime doctor wrappers, migration planner
 wrappers, lock operations, dashboard controls, or server-action behavior.
 
+## Baseline Manifest Dry-Run Relationship
+
+Future read-only manifest entries may include bounded summaries from
+[Baseline Manifest Dry-Run](baseline-manifest-dry-run.md). Those entries should
+remain metadata strings for baseline candidate status, redacted artifact
+references, privacy status, approval needs, rollback references, and retention
+notes; they must not become artifact reads, baseline writes, strict CI gates, or
+dashboard controls.
+
 ## N. Risks And Open Questions
 
 Open questions for later phases:
