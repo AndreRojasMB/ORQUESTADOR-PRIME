@@ -245,6 +245,12 @@ exceptions, SLA assumptions, and metrics with reporting model scope. Reporting
 models remain source-only metadata and do not execute reports, run ETL, call BI
 tools, create SQL, or generate dashboards.
 
+The Transactional Systems Layer can compare process states, handoffs,
+approvals, exceptions, and checkpoints with transaction boundaries, integrity
+controls, and reconciliation metadata. Transactional models remain source-only
+metadata and do not execute transactions, write databases, run SQL, apply
+migrations, generate ledgers, or create queues and workers.
+
 Future transactional systems, enterprise UI patterns, automation, dashboards,
 and scaffold lanes may consume reviewed process models only after separate
 approval gates.

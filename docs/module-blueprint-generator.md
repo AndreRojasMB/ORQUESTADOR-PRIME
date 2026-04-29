@@ -171,6 +171,16 @@ and reporting risks with module blueprint scope.
 Reporting models remain source-only metadata. They do not generate dashboards,
 SQL files, ETL jobs, database schemas, BI tool payloads, or runtime behavior.
 
+## Relationship To Transactional Systems Layer
+
+The Transactional Systems Layer can compare module responsibilities, reports,
+permissions, and audit concerns with transaction boundaries, reconciliation
+rules, idempotency notes, and integrity controls.
+
+Transactional models remain source-only metadata. They do not execute
+transactions, write databases, run SQL, apply migrations, generate ledgers,
+create queues or workers, or make module blueprints executable.
+
 ## Relationship To Future Safe Scaffold Phase
 
 A later scaffold phase may use reviewed module blueprints as input, but only

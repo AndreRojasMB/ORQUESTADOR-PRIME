@@ -193,6 +193,13 @@ enterprise reporting maturity notes. It remains source-only and does not
 execute reports, run ETL, call BI tool APIs, run SQL, create schemas, or
 generate dashboards.
 
+The Transactional Systems Layer can later contribute transaction boundaries,
+idempotency notes, reconciliation assumptions, audit and traceability needs,
+concurrency risks, and MVP versus enterprise transactional maturity notes. It
+remains source-only and does not execute transactions, write databases, run
+SQL, apply migrations, generate ledgers, create queues or workers, or mutate
+stores.
+
 ## Future Phases
 
 Possible future work:

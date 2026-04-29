@@ -281,6 +281,12 @@ and exclusions as advisory planning inputs.
 Business Process Modeling can provide checkpoints, handoffs, exceptions, SLA
 assumptions, and process metrics that reporting models can reference.
 
+The Transactional Systems Layer can provide traceability, reconciliation,
+posting/settlement review notes, integrity controls, and transactional metrics
+that reporting models can compare against. Transactional models remain
+source-only metadata and do not execute transactions, write databases, run SQL,
+create ledgers, or generate queues and workers.
+
 Language and Framework Profiles may later add implementation assumptions after
 review, but reporting models do not inspect code, choose stacks, or run tools.
 
