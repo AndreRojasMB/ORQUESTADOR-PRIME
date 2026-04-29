@@ -86,6 +86,12 @@ may eventually provide an execution substrate for automation, but Phase 79I is
 docs-only and does not enable workflow execution, scheduler behavior, webhooks,
 connectors, credentials, or automation runtime wiring.
 
+Phase 80I adds a deeper automation specification in
+[Native automation engine deeper](native-automation-engine-deeper.md). It is
+docs-only and does not enable automation execution, workflow persistence,
+scheduler behavior, trigger behavior, webhooks, connectors, credentials, or
+runtime wiring.
+
 ## Design Principles
 
 Future automation must follow these principles:
@@ -322,8 +328,9 @@ Recommended grouping:
 7. 66I: dry-run graph core implementation.
 8. 67B: dry-run trace report plan.
 9. 67I: source-only dry-run trace report helper.
-10. Later: CLI summary mode or artifact support.
-11. Later: scheduler, webhooks, connectors, credentials, dashboard.
+10. 80I: deeper native automation specification, docs-only.
+11. Later: CLI summary mode or artifact support.
+12. Later: scheduler, webhooks, connectors, credentials, dashboard.
 
 ## Verification And Smoke Standards For Future Work
 

@@ -269,6 +269,11 @@ Future runtime-deeper work should align with:
 - Deployment/productization: future packaging requires separate deployment
   planning and security review.
 
+The deeper native automation path is documented in
+[Native automation engine deeper](native-automation-engine-deeper.md).
+Automation execution depends on future runtime maturity and remains disabled in
+Phase 80I.
+
 ## R. Runtime Maturity Stages
 
 Future maturity should advance in stages:

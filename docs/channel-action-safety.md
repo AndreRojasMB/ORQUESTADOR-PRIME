@@ -491,3 +491,12 @@ invariants before delegating to the existing dispatcher.
 - No direct external call to `dispatchAction`.
 - No auto-approval.
 - No runtime change in this phase.
+
+## Automation Deeper Relationship
+
+The deeper native automation path is documented in
+[Native automation engine deeper](native-automation-engine-deeper.md).
+Automation execution must remain approval-gated and separate from direct action
+dispatch. Phase 80I is docs-only and adds no channel dispatch path, approval
+execution, workflow activation, webhook listener, connector behavior, or
+runtime wiring.

@@ -298,3 +298,12 @@ Future implementation should verify:
 - negative grep for dispatch, approvals, second approval, provider calls, and
   OpenClaw real actions remains clean.
 
+## Automation Deeper Relationship
+
+The deeper native automation path is documented in
+[Native automation engine deeper](native-automation-engine-deeper.md).
+Automation scheduling and automation notifications remain future work and must
+not bypass safe job rules, dangerous job blocking, local-only notification
+policy, approval gates, or runtime readiness checks. Phase 80I is docs-only and
+adds no scheduler, queue worker, workflow persistence, notification delivery,
+or automation execution.
