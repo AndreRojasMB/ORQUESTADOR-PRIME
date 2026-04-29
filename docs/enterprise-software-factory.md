@@ -347,3 +347,12 @@ generation must follow that governance path before any file writes, generated
 projects, template execution, package/script changes, workflow changes, or
 runtime/dashboard/connector behavior are considered. Factory metadata remains
 planning input only until separate approval gates exist.
+
+## Enterprise Demo Advisory Metadata
+
+Source-only demo metadata is documented in
+[Enterprise Demo Generator Advisory](enterprise-demo-generator-advisory.md).
+It can describe reviewable demo scenarios, personas, modules, workflows,
+reports, transactions, UI patterns, sample data policy, and narrative flow as
+advisory metadata only. It does not generate demos, scaffold projects, create
+dashboards, write files, create DB schemas, or make commercial claims.

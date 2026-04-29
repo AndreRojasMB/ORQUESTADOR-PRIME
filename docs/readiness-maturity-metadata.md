@@ -252,6 +252,14 @@ deferred until safe scaffold planning, generated-file manifests, approval
 gates, path safety, and rollback strategy mature. Readiness metadata must not
 treat existing scaffold surfaces as safe execution capability.
 
+## Enterprise Demo Advisory Relationship
+
+[Enterprise Demo Generator Advisory](enterprise-demo-generator-advisory.md)
+adds source-only advisory demo metadata for factory narratives. It is
+non-executable and does not generate demos, projects, files, dashboards,
+scaffolds, DB schemas, SQL, runtime behavior, connectors, or commercial
+guarantees.
+
 ## Future Read-Only Dashboard Visibility
 
 A future control center may display readiness metadata as read-only lane

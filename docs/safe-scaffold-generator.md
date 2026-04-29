@@ -308,3 +308,11 @@ Future type candidates:
 
 These candidates must remain source-only advisory metadata unless a later phase
 explicitly approves any write-capable scaffold behavior.
+
+## Enterprise Demo Advisory Relationship
+
+[Enterprise Demo Generator Advisory](enterprise-demo-generator-advisory.md)
+can describe demo scenarios and narratives as source-only metadata. Demo
+metadata does not authorize scaffold generation, generated files, generated
+projects, template execution, generated-file manifests, package/script changes,
+or any write-capable scaffold behavior.

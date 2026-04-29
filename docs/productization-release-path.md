@@ -477,3 +477,12 @@ Future release readiness may reference
 review evidence. The readiness lane does not create release gates, change
 versions, update changelogs, publish packages, create tags, create releases,
 deploy systems, or make productization claims.
+
+## Enterprise Demo Advisory Relationship
+
+[Enterprise Demo Generator Advisory](enterprise-demo-generator-advisory.md)
+can support future product narrative review, but demos are not product or
+release evidence until governed. Phase 97I demo metadata does not generate demo
+apps, scaffold projects, write files, create dashboards, create DB schemas,
+publish artifacts, or make production, commercial, security, or compliance
+claims.
