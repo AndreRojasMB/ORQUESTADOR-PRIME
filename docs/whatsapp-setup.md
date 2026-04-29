@@ -280,3 +280,12 @@ The future connector governance path is documented in
 guide includes historical/local channel setup guidance and is not the full
 connector governance model. Future WhatsApp connector behavior must classify
 inbound, read, reply, send, create, and update capabilities separately.
+
+## Credential Vault Strategy
+
+The future credential governance path is documented in
+[Credential Vault Strategy](credential-vault-strategy.md). Channel tokens,
+webhook secrets, and signature material should move toward opaque credential
+references and redaction policy in later phases. Phase 95I does not change the
+current WhatsApp bridge, mutate config, store credentials, implement vault
+behavior, or add webhook secret handling.

@@ -447,3 +447,12 @@ requirements, dry-run expectations, audit plans, approval gates, sandbox plans,
 redaction rules, and maturity stages. It is not connector implementation and
 does not enable external API calls, credential handling, webhooks, payments,
 SSO, browser automation, terminal execution, or connector writes.
+
+## Credential Vault Strategy
+
+The future credential path is documented in
+[Credential Vault Strategy](credential-vault-strategy.md). Connector execution
+depends on credential governance, opaque references, least-privilege scopes,
+redaction, approval, audit, rotation, revocation, and incident response. Phase
+95I does not implement a vault, store credentials, handle OAuth/tokens, call
+external services, or enable connector execution.

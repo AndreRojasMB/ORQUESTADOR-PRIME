@@ -176,3 +176,12 @@ The future connector governance path is documented in
 separate from connector credentials: provider diagnostics report required env
 names only, while future connector credentials need their own vault, scope,
 audit, and approval policy.
+
+## Credential Vault Strategy
+
+The future credential governance path is documented in
+[Credential Vault Strategy](credential-vault-strategy.md). Current provider
+setup remains env-based diagnostics and routing documentation; it is not a
+vault. Future provider and connector credentials should move toward opaque
+references, redacted diagnostics, scoped access, approval, audit, rotation, and
+revocation before any productized credential use.

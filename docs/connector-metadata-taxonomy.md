@@ -300,3 +300,12 @@ Phase 94I explicitly includes:
 - no DB schemas/SQL,
 - no production-ready claims,
 - no security/compliance guarantees.
+
+## Credential Vault Strategy Relationship
+
+The future credential governance path is documented in
+[Credential Vault Strategy](credential-vault-strategy.md). Connector credential
+fields remain requirements only: they do not include values, do not implement
+vault references, and do not authorize connector execution. Future vault refs
+must be introduced only after opaque reference, redaction, approval, audit,
+rotation, revocation, and threat-model prerequisites are approved.
