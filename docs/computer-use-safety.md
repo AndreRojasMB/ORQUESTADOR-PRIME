@@ -272,3 +272,10 @@ Future implementation should verify:
 - no runtime channel imports a real computer-use wrapper,
 - no dashboard dispatch or approval buttons are added.
 
+## Integrations / Connectors Relationship
+
+The future connector governance path is documented in
+[Integrations / Connectors](integrations-connectors.md). OpenClaw and
+computer-use connectors remain critical-risk, default-deny, dry-run first, and
+future approval-gated. Phase 84I adds no browser automation, connector
+execution, or real computer-use behavior.

@@ -405,3 +405,11 @@ center may display automation validation, dry-run, trace, and risk summaries,
 but it must not enable automation execution, workflow persistence, scheduler or
 trigger behavior, webhook listeners, connector calls, credential access, or
 approval/action execution. Phase 81I is docs-only.
+
+## Integrations / Connectors Relationship
+
+The future connector governance path is documented in
+[Integrations / Connectors](integrations-connectors.md). Future automation
+connector nodes depend on connector governance, credential strategy, dry-run
+contracts, audit policy, rate limits, and approval gates. Phase 84I is
+docs-only and does not enable connector execution.

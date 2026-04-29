@@ -386,3 +386,11 @@ read-only-first operator visibility strategy over runtime, config, artifact,
 and maturity signals. Phase 81I is docs-only and does not enable runtime
 controls, server/API behavior, config writes, repair, migration apply,
 worker/queue control, or operator actions.
+
+## Integrations / Connectors Relationship
+
+The future connector governance path is documented in
+[Integrations / Connectors](integrations-connectors.md). Connector execution
+depends on runtime maturity, credential policy, rate limits, audit records,
+operator controls, and approval gates. Phase 84I is docs-only and does not add
+runtime connector behavior.

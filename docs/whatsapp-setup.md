@@ -272,3 +272,11 @@ enabled but any required context is missing, the bridge fails closed.
 If n8n already validates Twilio itself, keep
 `WHATSAPP_VALIDATE_TWILIO_SIGNATURE=false` and rely on the n8n shared secret for
 the n8n-to-ORQUESTADOR hop.
+
+## Integrations / Connectors Relationship
+
+The future connector governance path is documented in
+[Integrations / Connectors](integrations-connectors.md). This WhatsApp setup
+guide includes historical/local channel setup guidance and is not the full
+connector governance model. Future WhatsApp connector behavior must classify
+inbound, read, reply, send, create, and update capabilities separately.

@@ -168,3 +168,11 @@ Future provider-router work should separate:
 
 For now, diagnostics flag OpenAI defaulting so operators can catch accidental
 spend risks before running expensive modes.
+
+## Integrations / Connectors Relationship
+
+The future connector governance path is documented in
+[Integrations / Connectors](integrations-connectors.md). Model/provider setup is
+separate from connector credentials: provider diagnostics report required env
+names only, while future connector credentials need their own vault, scope,
+audit, and approval policy.

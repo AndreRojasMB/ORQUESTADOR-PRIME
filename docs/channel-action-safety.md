@@ -517,3 +517,11 @@ The deeper safe self-improvement path is documented in
 Self-improvement proposals must not bypass channel identity, approval,
 second-approval, action dispatch, or proposal safety. Phase 82I adds no action
 bridge, approval execution, dispatch behavior, or self-PR creation.
+
+## Integrations / Connectors Relationship
+
+The future connector governance path is documented in
+[Integrations / Connectors](integrations-connectors.md). Connector write and
+mutation actions must remain proposal/approval-gated, default-deny, audited,
+and separate from direct channel dispatch. Phase 84I adds no connector
+execution.

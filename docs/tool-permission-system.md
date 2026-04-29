@@ -337,3 +337,10 @@ Future implementation should verify:
 - no `dispatchAction`, approval, or second-approval behavior is added by the
   registry or permission checker.
 
+## Integrations / Connectors Relationship
+
+The future connector governance path is documented in
+[Integrations / Connectors](integrations-connectors.md). Connector permissions
+should build on tool capability risk, scopes, and default-deny policy, but they
+also need credential requirements, connector audit policy, dry-run contracts,
+and approval gates before any execution path exists.

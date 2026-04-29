@@ -273,6 +273,11 @@ future governance layer over quality evidence and factory outputs. Phase 83I is
 docs-only and does not change workflows, create baselines, mutate artifacts, or
 enable quality enforcement.
 
+Integrations and connector governance is documented in
+[Integrations / Connectors](integrations-connectors.md). It is a future
+governance layer for external systems. Phase 84I is docs-only and does not add
+connector execution, credentials, webhooks, or external writes.
+
 ## Implementation Grouping
 
 Recommended future grouping:

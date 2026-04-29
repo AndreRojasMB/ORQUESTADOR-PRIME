@@ -348,3 +348,10 @@ results, strict CI maturity stage, and reviewer notes. The governance path is
 documented in
 [Baseline / Strict CI maturation](baseline-strict-ci-maturation.md). Phase 83I
 does not implement dashboard views or operator controls.
+
+## Integrations / Connectors Relationship
+
+The future connector governance path is documented in
+[Integrations / Connectors](integrations-connectors.md). A later control center
+may show read-only connector inventory, risk, permission, credential
+requirement, and audit summaries, but Phase 84I adds no dashboard behavior.
