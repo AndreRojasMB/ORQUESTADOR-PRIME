@@ -267,6 +267,12 @@ The future Dashboard / Control Center is documented in
 visibility layer over factory/runtime metadata, not a scaffold generator,
 runtime controller, approval executor, or production dashboard in Phase 81I.
 
+Baseline and strict CI maturity is documented in
+[Baseline / Strict CI maturation](baseline-strict-ci-maturation.md). It is a
+future governance layer over quality evidence and factory outputs. Phase 83I is
+docs-only and does not change workflows, create baselines, mutate artifacts, or
+enable quality enforcement.
+
 ## Implementation Grouping
 
 Recommended future grouping:

@@ -161,3 +161,11 @@ The deeper safe self-improvement path is documented in
 strict CI maturity must come before regression-enforced self-improvement.
 Phase 82I does not create baselines, update baselines, mutate artifacts, enable
 strict CI, or treat quality comparison as permission to modify the system.
+
+## Baseline / Strict CI Maturation
+
+The future governance path for committed baselines, update approval, rollback,
+and staged strict CI is documented in
+[Baseline / Strict CI maturation](baseline-strict-ci-maturation.md). Phase 83I
+is docs-only and does not create committed baselines or change baseline update
+policy.

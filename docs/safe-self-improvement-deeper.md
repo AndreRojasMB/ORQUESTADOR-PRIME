@@ -345,3 +345,12 @@ Future source metadata should validate:
 - no secret exposure,
 - no autonomous production self-modification,
 - no production, security, or compliance guarantees.
+
+## Baseline / Strict CI Maturation
+
+Safe self-improvement depends on future strict CI and approved baseline
+governance before regression-enforced changes are considered. The staged path is
+documented in
+[Baseline / Strict CI maturation](baseline-strict-ci-maturation.md). Phase 83I
+does not let self-improvement update baselines, mutate artifacts, or enforce
+regressions autonomously.

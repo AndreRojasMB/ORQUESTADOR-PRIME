@@ -340,3 +340,11 @@ The deeper safe self-improvement path is documented in
 control-center views may show redacted self-improvement findings, proposal
 summaries, risk levels, review status, and eval comparison plans, but those
 views must remain read-only until a later explicit guarded phase.
+
+## Baseline / Strict CI Maturation
+
+A future read-only control center may display baseline status, comparison
+results, strict CI maturity stage, and reviewer notes. The governance path is
+documented in
+[Baseline / Strict CI maturation](baseline-strict-ci-maturation.md). Phase 83I
+does not implement dashboard views or operator controls.

@@ -116,3 +116,10 @@ The deeper safe self-improvement path is documented in
 readiness is a prerequisite for safer automated comparison, but it is not
 permission for autonomous modification. Phase 82I does not change CI, run
 strict checks, update workflows, or enable prompt/router/agent/source changes.
+
+## Baseline / Strict CI Maturation
+
+The staged governance path for strict CI is documented in
+[Baseline / Strict CI maturation](baseline-strict-ci-maturation.md). Phase 83I
+does not enable strict CI, modify workflows, or turn local strict flags into CI
+defaults.

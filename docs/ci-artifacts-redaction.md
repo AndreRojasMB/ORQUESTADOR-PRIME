@@ -190,3 +190,11 @@ behavior.
 
 For the consolidated pre-55B-F readiness checklist, see
 [Final hardening readiness](final-hardening-readiness.md).
+
+## Baseline / Strict CI Maturation
+
+Redacted quality artifacts may later support PR annotations, dashboard views,
+and committed baseline review, as described in
+[Baseline / Strict CI maturation](baseline-strict-ci-maturation.md). Phase 83I
+does not change artifact retention, artifact contents, upload behavior, or CI
+strictness.

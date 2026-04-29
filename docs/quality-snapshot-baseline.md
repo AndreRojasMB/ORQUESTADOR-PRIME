@@ -229,3 +229,10 @@ This phase does not add:
 - store mutation,
 - provider calls,
 - network calls.
+
+## Baseline / Strict CI Maturation
+
+Snapshot comparison may support future committed baselines and CI comparison
+reports, as described in
+[Baseline / Strict CI maturation](baseline-strict-ci-maturation.md). Phase 83I
+does not create committed baselines or change snapshot comparison behavior.

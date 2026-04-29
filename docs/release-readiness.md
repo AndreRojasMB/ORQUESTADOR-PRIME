@@ -154,3 +154,10 @@ Baselines and strict CI are intentionally deferred.
 
 Runtime production readiness and full JARVIS completion are outside this
 closeout.
+
+## Baseline / Strict CI Maturation
+
+Future release readiness may depend on staged strict CI and approved committed
+baselines. The governance path is documented in
+[Baseline / Strict CI maturation](baseline-strict-ci-maturation.md). Phase 83I
+does not add new release gates, mutate baselines, or modify CI behavior.
