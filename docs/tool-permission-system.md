@@ -344,3 +344,12 @@ The future connector governance path is documented in
 should build on tool capability risk, scopes, and default-deny policy, but they
 also need credential requirements, connector audit policy, dry-run contracts,
 and approval gates before any execution path exists.
+
+## Connector Metadata Taxonomy Relationship
+
+[Connector Metadata Taxonomy](connector-metadata-taxonomy.md) aligns future
+connector categories, capability kinds, risk tiers, credential requirements,
+approval gates, audit plans, dry-run plans, and sandbox expectations with the
+tool permission model. Phase 94I does not import the tool registry or permission
+stores from the taxonomy source files; it keeps connector metadata static,
+source-only, and advisory.

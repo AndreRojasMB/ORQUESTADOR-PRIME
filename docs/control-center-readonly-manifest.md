@@ -349,3 +349,13 @@ Future type candidates:
 - `ControlCenterManifestConsumerNote`,
 - `ControlCenterManifestValidationFinding`,
 - `ControlCenterManifestValidationResult`.
+
+## Connector Metadata Taxonomy Relationship
+
+Future readonly manifest entries may include bounded summaries from
+[Connector Metadata Taxonomy](connector-metadata-taxonomy.md), such as connector
+category, risk tier, maturity stage, credential requirement status, dry-run
+expectations, audit requirement status, and approval-gate requirement status.
+Those entries must remain read-only metadata strings and must not become direct
+connector imports, external service calls, credential access, webhook listeners,
+dashboard controls, or connector writes.

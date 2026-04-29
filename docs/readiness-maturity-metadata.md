@@ -339,3 +339,12 @@ Any later readiness expansion should continue to require:
 - no provider, network, filesystem, action, store, runtime, automation,
   connector, job, dashboard, CI, release, or deployment behavior,
 - no production, security, compliance, or certification guarantees.
+
+## Connector Metadata Taxonomy Relationship
+
+The connector readiness lane may later reference
+[Connector Metadata Taxonomy](connector-metadata-taxonomy.md) entries as
+advisory evidence for connector categories, risk tiers, credential
+requirements, dry-run expectations, audit plans, approval gates, sandbox plans,
+and maturity stages. Phase 94I taxonomy metadata does not execute connectors,
+call providers, handle credentials, create webhooks, or make network/API calls.

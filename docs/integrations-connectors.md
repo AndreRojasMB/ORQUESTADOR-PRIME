@@ -437,3 +437,13 @@ Future connector work should follow
 may advance before real calls, but credential vaults, external API calls,
 webhooks, payments, SSO, and write behavior remain deferred until their
 roadmap prerequisites are satisfied.
+
+## Connector Metadata Taxonomy
+
+Phase 94I adds the source-only advisory
+[Connector Metadata Taxonomy](connector-metadata-taxonomy.md). The taxonomy
+defines connector categories, capability kinds, risk tiers, credential
+requirements, dry-run expectations, audit plans, approval gates, sandbox plans,
+redaction rules, and maturity stages. It is not connector implementation and
+does not enable external API calls, credential handling, webhooks, payments,
+SSO, browser automation, terminal execution, or connector writes.

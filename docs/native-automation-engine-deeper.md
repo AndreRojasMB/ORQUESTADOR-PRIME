@@ -429,3 +429,13 @@ Future automation work should follow
 [Post-85 Roadmap Sequencing](post-85-roadmap-sequencing.md). Automation
 execution remains deferred until runtime maturity, approval gates, connector
 governance, audit, cancellation, rollback, and operator controls are ready.
+
+## Connector Metadata Taxonomy Relationship
+
+Future automation connector nodes should depend on the source-only advisory
+[Connector Metadata Taxonomy](connector-metadata-taxonomy.md) before any
+execution path is considered. The taxonomy provides categories, capability
+kinds, risk tiers, credential requirements, dry-run expectations, audit plans,
+approval gates, sandbox plans, redaction rules, and maturity stages, but it
+does not enable connector calls, credential handling, webhooks, automation
+execution, or runtime behavior.
