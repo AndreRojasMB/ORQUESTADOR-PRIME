@@ -227,6 +227,11 @@ summaries after the existing dashboard write paths are audited and isolated.
 Phase 87I does not modify `dashboard/`, add routes, add components, add server
 actions, or create operator controls.
 
+The current dashboard lane risk is documented in
+[Dashboard Safety Audit](dashboard-safety-audit.md). That audit is the
+prerequisite record for separating live-adjacent dashboard read/write paths from
+future read-only control-center visibility.
+
 ## Release / Productization Use
 
 Future release readiness may reference readiness metadata as non-blocking review

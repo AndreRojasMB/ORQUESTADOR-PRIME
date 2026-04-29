@@ -339,3 +339,11 @@ curated lane maturity, risk, blockers, evidence references, and next-step
 recommendations as source-only metadata. It does not scan the repository, read
 stores, feed dashboard controls, activate CI, execute jobs, dispatch actions, or
 advance runtime, automation, connector, release, or deployment behavior.
+
+## Dashboard Safety Audit
+
+Phase 88I records dashboard safety prerequisites in
+[Dashboard Safety Audit](dashboard-safety-audit.md). It audits the existing
+dashboard read paths, write-capable config paths, and missing auth/redaction
+boundaries before any future read-only prototype or operator-facing
+control-center work advances.

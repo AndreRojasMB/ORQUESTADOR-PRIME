@@ -378,3 +378,12 @@ Future read-only control-center views may display
 summaries after dashboard write paths are audited and isolated. Phase 87I does
 not modify `dashboard/`, add routes, add components, add server actions, read
 stores, or create operator controls.
+
+## Dashboard Safety Audit
+
+The existing tracked dashboard safety posture is documented in
+[Dashboard Safety Audit](dashboard-safety-audit.md). That audit inventories
+dashboard read paths, write-capable config paths, server actions, local data
+sources, raw/private exposure risks, and missing auth/redaction boundaries.
+Future read-only control-center work should not advance until those write paths
+are isolated and the audit prerequisites are satisfied.

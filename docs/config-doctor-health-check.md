@@ -167,3 +167,11 @@ The migration and lock policy is documented in
 [Store migration and lock policy](store-migration-locks.md). The runtime doctor
 may later report migration and lock readiness, but it must not create locks,
 repair stores, or run migrations.
+
+## Dashboard Safety Audit Relationship
+
+Dashboard config views are covered by
+[Dashboard Safety Audit](dashboard-safety-audit.md). Future dashboard config
+surfaces must not mutate config without an approved auth, redaction, approval,
+audit, and write-isolation policy. Phase 88I documents that risk only and does
+not change the runtime doctor or dashboard behavior.
