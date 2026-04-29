@@ -280,3 +280,11 @@ Phase 92I explicitly includes:
 - no SQL,
 - no production-ready claims,
 - no security/compliance guarantees.
+
+## Strict CI Warning Mode Relationship
+
+Future warning-mode CI reports may use baseline manifest metadata as advisory
+vocabulary for candidate readiness, approval needs, privacy status, rollback
+references, and retention notes. [Strict CI Warning Mode](strict-ci-warning-mode.md)
+is report-only and Phase 93I does not execute comparisons, read baseline files,
+create baselines, generate artifacts, or enable strict flags.

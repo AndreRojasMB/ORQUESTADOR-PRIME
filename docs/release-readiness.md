@@ -177,3 +177,10 @@ Future release readiness depends on
 [Post-85 Roadmap Sequencing](post-85-roadmap-sequencing.md). Release work should
 not jump ahead of runtime, strict CI, dashboard safety, connector governance,
 license/security, or productization maturity gates.
+
+## Strict CI Warning Mode
+
+Future release readiness may consume report-only warning evidence from
+[Strict CI Warning Mode](strict-ci-warning-mode.md) after it is approved in a
+later phase. Phase 93I does not add release gates, enable strict CI, create
+baselines, mutate artifacts, tag releases, or make product readiness claims.

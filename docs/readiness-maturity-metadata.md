@@ -237,6 +237,13 @@ for future baseline candidate maturity. The metadata is dry-run-only and does
 not create baselines, generate artifacts, enable strict CI, or change release
 readiness.
 
+## Strict CI Warning Mode Relationship
+
+[Strict CI Warning Mode](strict-ci-warning-mode.md) remains a future advisory
+maturity stage for the baseline/strict CI lane. Warning mode is report-only and
+does not enable strict flags, create baselines, mutate artifacts, or change CI
+behavior in Phase 93I.
+
 ## Future Read-Only Dashboard Visibility
 
 A future control center may display readiness metadata as read-only lane

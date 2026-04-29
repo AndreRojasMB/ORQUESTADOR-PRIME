@@ -339,3 +339,10 @@ The future candidate vocabulary is defined in
 source-only advisory metadata for describing baseline candidates before
 committed baselines or strict gates exist; it does not create baselines, mutate
 artifacts, or change CI behavior.
+
+## Strict CI Warning Mode
+
+The report-only bridge before blocking strict CI is documented in
+[Strict CI Warning Mode](strict-ci-warning-mode.md). Warning mode should surface
+future strict signals without failing CI, enabling strict flags, creating
+baselines, mutating artifacts, or changing workflow behavior.

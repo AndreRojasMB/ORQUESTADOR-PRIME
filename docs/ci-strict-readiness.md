@@ -123,3 +123,10 @@ The staged governance path for strict CI is documented in
 [Baseline / Strict CI maturation](baseline-strict-ci-maturation.md). Phase 83I
 does not enable strict CI, modify workflows, or turn local strict flags into CI
 defaults.
+
+## Strict CI Warning Mode
+
+The future report-only bridge is documented in
+[Strict CI Warning Mode](strict-ci-warning-mode.md). Warning mode is advisory
+and does not enable `fail-on-review`, enable `fail-on-regression`, modify CI
+workflows, or change package scripts.

@@ -214,3 +214,10 @@ dashboard behavior.
 redacted artifact metadata as baseline candidate evidence. Phase 92I does not
 generate artifacts, change artifact retention, upload artifact changes, create
 baselines, or alter CI behavior.
+
+## Strict CI Warning Mode Relationship
+
+[Strict CI Warning Mode](strict-ci-warning-mode.md) requires future warning
+evidence to remain compact, bounded, and redacted. Phase 93I does not generate
+artifacts, mutate artifacts, change upload behavior, enable strict flags, or
+modify CI.
