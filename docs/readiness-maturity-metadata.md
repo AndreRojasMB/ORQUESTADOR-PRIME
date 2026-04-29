@@ -219,6 +219,16 @@ execution.
 
 It does not replace Phase 86 sequencing and does not approve future phases.
 
+## Runtime Readiness Detail
+
+The detailed runtime readiness profile is documented in
+[Runtime Readiness Validator](runtime-readiness-validator.md). It provides a
+source-only advisory runtime lane for server/API, workers, queues, schedulers,
+store adapters, migration apply, backup/restore, repair, auth/rate-limit,
+observability, dashboard visibility, and deployment readiness. It does not
+import runtime-adjacent modules, read files, scan the repository, or execute
+runtime behavior.
+
 ## Future Read-Only Dashboard Visibility
 
 A future control center may display readiness metadata as read-only lane

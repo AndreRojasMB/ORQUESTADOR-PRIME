@@ -245,6 +245,7 @@ The readonly manifest should later support:
 
 - Dashboard / Control Center read-only source inventory,
 - Readiness / Maturity Metadata lane visibility,
+- Runtime Readiness Validator summaries,
 - quality, evals, and risk summaries,
 - baseline and strict CI maturity summaries,
 - production runtime and config doctor status,
@@ -256,6 +257,14 @@ The readonly manifest should later support:
 
 Integration should start with redacted summaries and metadata strings before any
 direct store access or dashboard UI work.
+
+## Runtime Readiness Relationship
+
+Future read-only manifest entries may include bounded summaries from
+[Runtime Readiness Validator](runtime-readiness-validator.md). Those entries
+should be metadata strings and readiness status only. They must not become live
+runtime probes, direct store reads, runtime doctor wrappers, migration planner
+wrappers, lock operations, dashboard controls, or server-action behavior.
 
 ## N. Risks And Open Questions
 

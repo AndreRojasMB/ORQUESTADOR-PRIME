@@ -175,3 +175,12 @@ Dashboard config views are covered by
 surfaces must not mutate config without an approved auth, redaction, approval,
 audit, and write-isolation policy. Phase 88I documents that risk only and does
 not change the runtime doctor or dashboard behavior.
+
+## Runtime Readiness Validator Relationship
+
+The existing runtime doctor is a read-only diagnostic that inspects configured
+health surfaces. The source-only advisory
+[Runtime Readiness Validator](runtime-readiness-validator.md) is different: it
+does not import the doctor, read files, inspect stores, scan the repository, or
+run diagnostics. It records static readiness metadata for future runtime
+maturity review.

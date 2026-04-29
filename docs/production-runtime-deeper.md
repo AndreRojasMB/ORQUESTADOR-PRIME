@@ -409,3 +409,13 @@ Future runtime work should follow
 [Post-85 Roadmap Sequencing](post-85-roadmap-sequencing.md). Runtime changes
 should begin with read-only planning, validation, or doctor expansion before
 any mutation API, worker, queue, scheduler, migration apply, or deployment work.
+
+## Runtime Readiness Validator Relationship
+
+The source-only advisory runtime readiness metadata is documented in
+[Runtime Readiness Validator](runtime-readiness-validator.md). It records
+static readiness checks for runtime API/server, workers, queues, schedulers,
+store adapters, migrations, backups, repair, auth, observability, dashboard
+visibility, and deployment. It does not implement runtime behavior, import the
+runtime doctor, import migration or lock source, read files, scan repositories,
+or execute jobs/actions.
