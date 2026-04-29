@@ -10,6 +10,17 @@ ORQUESTADOR-PRIME production-ready.
 
 This document defines a future release governance path only.
 
+## Phase 99I Release Governance Templates
+
+Phase 99I adds docs-only draft templates in
+[Release Governance Templates](release-governance-templates.md). The templates
+cover release notes, release checklist, operator manual, onboarding,
+troubleshooting/support, rollback, telemetry decision, license decision, and
+security disclosure decision workflows. They do not publish a release, create
+tags, change package versions, update `CHANGELOG.md`, create `LICENSE`, create
+`SECURITY.md`, implement deployment, implement telemetry, or make
+ORQUESTADOR-PRIME production-ready.
+
 ## A. Purpose
 
 Productization and release governance exists so ORQUESTADOR-PRIME can

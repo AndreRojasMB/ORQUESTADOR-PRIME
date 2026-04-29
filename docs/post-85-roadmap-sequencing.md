@@ -196,6 +196,14 @@ real read-only dashboard prototype remains blocked until dashboard write paths
 are isolated, redaction and auth/role strategy exist, privacy review is
 complete, and future views are manifest-backed.
 
+## Release Governance Templates
+
+Phase 99I adds docs-only templates in
+[Release Governance Templates](release-governance-templates.md). It does not
+release, tag, package, update `CHANGELOG.md`, create `LICENSE`, create
+`SECURITY.md`, implement deployment, implement telemetry, or publish support
+policy.
+
 ## G. Deferred Critical Work
 
 The following work remains deferred:

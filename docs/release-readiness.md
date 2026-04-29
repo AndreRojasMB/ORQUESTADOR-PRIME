@@ -184,3 +184,12 @@ Future release readiness may consume report-only warning evidence from
 [Strict CI Warning Mode](strict-ci-warning-mode.md) after it is approved in a
 later phase. Phase 93I does not add release gates, enable strict CI, create
 baselines, mutate artifacts, tag releases, or make product readiness claims.
+
+## Release Governance Templates
+
+Future release readiness reviews may use the draft
+[Release Checklist Template](release-checklist-template.md) and the broader
+[Release Governance Templates](release-governance-templates.md) as review
+structure. Template completion does not approve a release, create a tag, publish
+a package, update `CHANGELOG.md`, create `LICENSE`, create `SECURITY.md`, or
+make product readiness claims.

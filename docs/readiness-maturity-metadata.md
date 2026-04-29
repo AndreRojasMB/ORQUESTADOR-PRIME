@@ -20,6 +20,14 @@ Readiness metadata may inform future read-only summaries, but it does not
 authorize dashboard source changes, raw store browsing, config writes, server
 actions, or prototype implementation.
 
+## Release Governance Template Relationship
+
+The productization/release lane may reference
+[Release Governance Templates](release-governance-templates.md) as
+docs-only/template-only evidence. The templates do not publish releases, create
+tags, change packages, update changelogs, create policy files, deploy systems,
+or make production-ready claims.
+
 ## Purpose
 
 Readiness / Maturity Metadata gives ORQUESTADOR-PRIME a static way to describe
