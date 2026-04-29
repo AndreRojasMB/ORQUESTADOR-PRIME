@@ -336,3 +336,12 @@ Phase 88I explicitly includes:
 - no package/workflow changes,
 - no production-ready claims,
 - no security/compliance guarantees.
+
+## S. Readonly Manifest Next Layer
+
+The next policy layer after this audit is documented in
+[Control Center Readonly Manifest](control-center-readonly-manifest.md). That
+spec defines a future read-only inventory contract for approved redacted data
+sources. It does not modify `dashboard/`, implement a read-only control center,
+generate manifests, generate artifacts, read files, read stores, or isolate the
+existing write-capable dashboard paths.

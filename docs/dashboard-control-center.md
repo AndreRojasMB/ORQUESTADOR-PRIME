@@ -387,3 +387,12 @@ dashboard read paths, write-capable config paths, server actions, local data
 sources, raw/private exposure risks, and missing auth/redaction boundaries.
 Future read-only control-center work should not advance until those write paths
 are isolated and the audit prerequisites are satisfied.
+
+## Readonly Manifest Policy
+
+The future read-only data inventory policy is documented in
+[Control Center Readonly Manifest](control-center-readonly-manifest.md).
+Future dashboard data consumption should go through that manifest policy and
+redacted summaries, not direct raw store browsing. Phase 89I does not implement
+dashboard behavior, routes, components, server actions, manifest generation, or
+artifact generation.

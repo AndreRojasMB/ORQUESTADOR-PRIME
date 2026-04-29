@@ -198,3 +198,12 @@ and committed baseline review, as described in
 [Baseline / Strict CI maturation](baseline-strict-ci-maturation.md). Phase 83I
 does not change artifact retention, artifact contents, upload behavior, or CI
 strictness.
+
+## Readonly Manifest Candidate
+
+Redacted artifacts are candidate sources for the future
+[Control Center Readonly Manifest](control-center-readonly-manifest.md).
+Manifest entries should reference artifact names, retention, hashes, byte
+sizes, and privacy scan status as read-only metadata. Phase 89I does not change
+artifact generation, artifact retention, upload behavior, CI behavior, or
+dashboard behavior.

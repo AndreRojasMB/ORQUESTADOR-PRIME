@@ -232,6 +232,12 @@ The current dashboard lane risk is documented in
 prerequisite record for separating live-adjacent dashboard read/write paths from
 future read-only control-center visibility.
 
+The future manifest policy is documented in
+[Control Center Readonly Manifest](control-center-readonly-manifest.md).
+Readiness metadata may later be exposed through that readonly manifest as
+metadata strings and bounded summaries, not through direct dashboard store
+reads, live repository scanning, or source imports.
+
 ## Release / Productization Use
 
 Future release readiness may reference readiness metadata as non-blocking review

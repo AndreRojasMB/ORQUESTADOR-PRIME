@@ -187,3 +187,11 @@ The future Dashboard / Control Center path is documented in
 data can feed future read-only control center views as redacted artifact-style
 input, but it is not itself a dashboard UI, runtime gate, CI mutation surface,
 approval system, dispatch path, or operator control.
+
+## Readonly Manifest Candidate
+
+The future read-only manifest policy is documented in
+[Control Center Readonly Manifest](control-center-readonly-manifest.md).
+Quality dashboard data is a candidate manifest entry because it is compact,
+advisory, and redaction-oriented. Phase 89I does not change the report schema,
+generate artifacts, add dashboard routes, or create a manifest generator.
