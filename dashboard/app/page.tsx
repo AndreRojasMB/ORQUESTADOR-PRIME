@@ -13,6 +13,7 @@ import { classifyForDistillation } from "@/lib/distillation";
 import { Card } from "@/components/Card";
 import { RunTable } from "@/components/RunTable";
 import type { DistillationTier, ActionCategory } from "@/lib/types";
+import { readViernesBridgeStatus } from "../../src/viernesBridge/status/statusStore";
 
 const PREVIEW_CATEGORIES = new Set<ActionCategory>([
   "file-write",
@@ -43,7 +44,17 @@ const TIER_PILL: Record<DistillationTier, string> = {
 };
 
 export default async function OverviewPage() {
-  const [store, recent, config, trajectories, actions, executions, approvals, channelAuditStats] =
+  const [
+    store,
+    recent,
+    config,
+    trajectories,
+    actions,
+    executions,
+    approvals,
+    channelAuditStats,
+    viernesBridgeStatus,
+  ] =
     await Promise.all([
       readMemoryStore(),
       getRecentEntries(5),
@@ -53,6 +64,7 @@ export default async function OverviewPage() {
       getExecutionResults(),
       getSecondApprovals(),
       getDashboardChannelAuditStats(),
+      readViernesBridgeStatus(),
     ]);
 
   const realExecutionEnabled = getRealExecutionEnabled();
@@ -277,6 +289,42 @@ export default async function OverviewPage() {
         </p>
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
           <StatusDot label="WhatsApp" active={config.whatsapp.enabled} />
+        </div>
+      </div>
+
+      {/* Local operational bridges: read-only dashboard status */}
+      <div className="rounded-lg border border-zinc-800 bg-zinc-900 p-5">
+        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-zinc-500">
+          Operational Bridges
+        </p>
+        <div className="space-y-3 text-sm">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <StatusDot
+              label="Viernes Bridge"
+              active={viernesBridgeStatus.connected}
+            />
+            <span className="text-xs text-zinc-500">
+              mode: <span className="text-zinc-300">{viernesBridgeStatus.mode}</span>
+            </span>
+            <span className="text-xs text-zinc-500">
+              last status:{" "}
+              <span className="text-zinc-300">
+                {viernesBridgeStatus.lastStatus ?? "unknown"}
+              </span>
+            </span>
+            <span className="text-xs text-zinc-500">
+              last handshake:{" "}
+              <span className="text-zinc-300">
+                {viernesBridgeStatus.lastHandshakeAt
+                  ? relativeTime(viernesBridgeStatus.lastHandshakeAt)
+                  : "never"}
+              </span>
+            </span>
+            <span className="text-xs text-zinc-500">
+              writes:{" "}
+              <span className="text-zinc-300">disabled</span>
+            </span>
+          </div>
         </div>
       </div>
 

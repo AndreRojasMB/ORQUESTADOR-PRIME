@@ -19,7 +19,7 @@ export async function saveConfig(
 
     // ─── WhatsApp ─────────────────────────────────────────
     const whatsappEnabled = formData.get("whatsapp.enabled") === "on";
-    const hookToken = formData.get("whatsapp.hookToken");
+    const hookToken = String(formData.get("whatsapp.hookToken") ?? "").trim();
     const maxMessagesRaw = formData.get("whatsapp.maxMessagesPerHour");
     const n8nWebhookPath = formData.get("whatsapp.n8nWebhookPath");
     const replyViaRaw = formData.get("whatsapp.replyVia");
@@ -78,7 +78,7 @@ export async function saveConfig(
       allowedDomains,
       whatsapp: {
         enabled: whatsappEnabled,
-        hookToken: hookToken != null ? String(hookToken) : current.whatsapp.hookToken,
+        hookToken: hookToken ? hookToken : current.whatsapp.hookToken,
         allowedPhones,
         maxMessagesPerHour: maxMessages,
         safeModes,

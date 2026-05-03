@@ -66,10 +66,10 @@ export function ConfigForm({ config }: ConfigFormProps) {
         {/* Hook Token */}
         <Field label="Hook Token" hint="Shared secret for webhook verification">
           <input
-            type="text"
+            type="password"
             name="whatsapp.hookToken"
-            defaultValue={config.whatsapp.hookToken}
             placeholder={mask(config.whatsapp.hookToken) || "not set"}
+            autoComplete="new-password"
             className="w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-500 focus:outline-none"
           />
         </Field>
