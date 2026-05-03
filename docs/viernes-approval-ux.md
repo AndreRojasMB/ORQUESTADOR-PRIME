@@ -1,5 +1,18 @@
 # Viernes Approval UX
 
+Phase 25 adds an ORQUESTADOR-side resume boundary for approval commands. A
+future Viernes client can send approved/rejected ACT text to:
+
+```text
+POST /viernes/approval-command
+```
+
+The boundary validates correlation, ACT, audit trail, target policy, and
+executor allowlist before anything can resume. Only read-only allowlisted
+actions can resume; writes remain blocked.
+
+See [Viernes Approval Resume Flow](viernes-approval-resume-flow.md).
+
 Phase 20 adds a local/dev approval UX layer for Viernes and WhatsApp-facing
 flows. It formats ACT approval prompts, parses approval/rejection replies, and
 can resume already-approved read-only allowlisted actions through the existing

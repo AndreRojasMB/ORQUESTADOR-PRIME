@@ -1,6 +1,10 @@
 import { timingSafeEqual } from "crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "http";
-import type { ViernesBridgeBoundaryPayload } from "../boundary/types.js";
+import type {
+  ViernesBridgeApprovalCommandBoundaryResult,
+  ViernesBridgeApprovalCommandPayload,
+  ViernesBridgeBoundaryPayload,
+} from "../boundary/types.js";
 
 type BoundaryAdapterModule = typeof import("../boundary/cliAdapter.js");
 type StatusStoreModule = typeof import("../status/statusStore.js");
@@ -90,6 +94,14 @@ function parsePayload(raw: string): ViernesBridgeBoundaryPayload {
   return parsed as ViernesBridgeBoundaryPayload;
 }
 
+function parseApprovalCommandPayload(raw: string): ViernesBridgeApprovalCommandPayload {
+  const parsed = JSON.parse(raw || "{}") as unknown;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("payload_must_be_json_object");
+  }
+  return parsed as ViernesBridgeApprovalCommandPayload;
+}
+
 function payloadIntent(payload: ViernesBridgeBoundaryPayload | undefined): string | undefined {
   return typeof payload?.intent === "string" ? payload.intent : undefined;
 }
@@ -104,6 +116,20 @@ function publicResponse(result: Awaited<ReturnType<BoundaryAdapterModule["proces
     approvalRequests: response.approvalRequests ?? [],
     executionResults: response.executionResults ?? [],
     blockedReasons: response.blockedReasons ?? [],
+    createdAt: response.createdAt,
+  };
+}
+
+function publicApprovalResponse(result: ViernesBridgeApprovalCommandBoundaryResult) {
+  const response = result.response;
+  return {
+    requestId: response.requestId,
+    status: response.status,
+    summary: response.summary,
+    ...(response.approvalId ? { approvalId: response.approvalId } : {}),
+    ...(response.actionId ? { actionId: response.actionId } : {}),
+    blockedReasons: response.blockedReasons ?? [],
+    ...(response.executionResult ? { executionResult: response.executionResult } : {}),
     createdAt: response.createdAt,
   };
 }
@@ -141,7 +167,12 @@ async function handleRequest(
   response: ServerResponse,
   options: ViernesBridgeHttpServerOptions,
 ): Promise<void> {
-  if (request.method !== "POST" || request.url !== "/viernes/request") {
+  const path = request.url ?? "";
+  const isViernesRequest = request.method === "POST" && path === "/viernes/request";
+  const isApprovalCommand =
+    request.method === "POST" && path === "/viernes/approval-command";
+
+  if (!isViernesRequest && !isApprovalCommand) {
     jsonResponse(response, 404, {
       status: "error",
       summary: "not_found",
@@ -165,6 +196,34 @@ async function handleRequest(
 
   try {
     const raw = await readRequestBody(request);
+
+    if (isApprovalCommand) {
+      const payload = parseApprovalCommandPayload(raw);
+      const { processViernesBridgeApprovalCommandPayload } =
+        await loadBoundaryAdapterModule();
+      const result = await processViernesBridgeApprovalCommandPayload(payload, {
+        policyOptions: {
+          env: options.env ?? process.env,
+          envFiles: [],
+        },
+        env: options.env ?? process.env,
+        envFiles: [],
+      });
+      const responseBody = publicApprovalResponse(result);
+      await updateHandshakeStatus({
+        options,
+        status: result.response.status,
+        connected: true,
+        intent: "approval_command",
+        requestId: result.response.requestId,
+        ...(result.response.blockedReasons?.[0]
+          ? { errorCode: result.response.blockedReasons[0] }
+          : {}),
+      });
+      jsonResponse(response, 200, responseBody);
+      return;
+    }
+
     const payload = parsePayload(raw);
     const { processViernesBridgeBoundaryPayload } =
       await loadBoundaryAdapterModule();

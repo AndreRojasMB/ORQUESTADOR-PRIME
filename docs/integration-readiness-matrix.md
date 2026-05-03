@@ -70,6 +70,11 @@ and a read-only dashboard Operational Bridges view. Viernes is still not one of
 the eight external integrations and writes remain disabled. See
 [Viernes Bridge Handshake](viernes-bridge-handshake.md).
 
+Phase 25 adds the ORQUESTADOR-side approval command resume boundary:
+`POST /viernes/approval-command`. It can approve/reject local ACT requests and
+resume only read-only allowlisted actions. Writes remain blocked even when
+approved. See [Viernes Approval Resume Flow](viernes-approval-resume-flow.md).
+
 ## Matrix
 
 | Integration | Required variables | Current level | Health check | Actions currently allowed | Actions blocked | Risks | Next step |
@@ -143,6 +148,7 @@ npm run viernes:bridge:cli -- --intent validate_whatsapp_bridge --message "valid
 npm run viernes:bridge:server
 npm run viernes:bridge:boundary:test
 npm run viernes:bridge:handshake:test
+npm run viernes:bridge:approval-resume:test
 ```
 
 Both commands avoid printing secrets. `integrations:status` exits with code `0`
@@ -210,3 +216,7 @@ redaction, and no Viernes workspace modification.
 Phase 24 adds handshake tests for safe status persistence, blocked dangerous
 requests, no writes, and no storage of message text or local tokens. The
 dashboard reads this status only.
+
+Phase 25 adds approval resume tests for correct ACT approval, incorrect ACT
+blocking, rejection, expired approvals, missing audit trail blocking, read-only
+resume, write blocking after approval, and status-store redaction.

@@ -4,6 +4,10 @@ export type ViernesBridgeOperationalMode = "local_http" | "cli" | "unknown";
 
 export type ViernesBridgeStoredStatus =
   | ViernesBridgeStatus
+  | "approved"
+  | "rejected"
+  | "resumed_read_only"
+  | "not_found"
   | "unauthorized"
   | "invalid_request"
   | "error";

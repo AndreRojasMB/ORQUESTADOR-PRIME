@@ -106,6 +106,37 @@ X-Orquestador-Bridge-Token: <token>
 
 The server never prints the token.
 
+## Approval Command Endpoint
+
+Phase 25 adds a second local endpoint:
+
+```text
+POST http://127.0.0.1:8789/viernes/approval-command
+```
+
+Payload:
+
+```json
+{
+  "type": "approval_command",
+  "text": "aprobar ACT-LOCAL-XXXX-YYYY",
+  "approvalId": "approval-id",
+  "actionId": "action-id",
+  "source": "local"
+}
+```
+
+`approvalId` or `actionId` is required. ORQUESTADOR does not infer approvals
+from free text alone. Reject commands require `approvalId`.
+
+This endpoint reuses `parseApprovalCommand` and
+`processViernesApprovalCommand`, then requires persistent approval state and an
+existing audit record before ACT validation can approve anything. If the action
+is read-only and allowlisted, the execution gate may resume it. Writes remain
+blocked even after approval.
+
+See [Viernes Approval Resume Flow](viernes-approval-resume-flow.md).
+
 ## Handshake Status
 
 Phase 24 adds a safe local status store for the HTTP boundary. Every processed
@@ -131,6 +162,7 @@ See [Viernes Bridge Handshake](viernes-bridge-handshake.md).
 ```bash
 npm run viernes:bridge:boundary:test
 npm run viernes:bridge:handshake:test
+npm run viernes:bridge:approval-resume:test
 ```
 
 Coverage:
