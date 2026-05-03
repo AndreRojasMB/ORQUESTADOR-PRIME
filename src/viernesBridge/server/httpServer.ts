@@ -112,6 +112,18 @@ function publicResponse(result: Awaited<ReturnType<BoundaryAdapterModule["proces
     requestId: response.requestId,
     status: response.status,
     summary: response.summary,
+    ...(response.approvalId ? { approvalId: response.approvalId } : {}),
+    ...(response.actionId ? { actionId: response.actionId } : {}),
+    ...(response.approvalCode ? { approvalCode: response.approvalCode } : {}),
+    ...(response.approvalInstruction
+      ? { approvalInstruction: response.approvalInstruction }
+      : {}),
+    ...(response.rejectInstruction
+      ? { rejectInstruction: response.rejectInstruction }
+      : {}),
+    ...(response.riskLevel ? { riskLevel: response.riskLevel } : {}),
+    ...(response.expiresAt ? { expiresAt: response.expiresAt } : {}),
+    ...(response.localDevOnly ? { localDevOnly: response.localDevOnly } : {}),
     proposedActions: response.proposedActions ?? [],
     approvalRequests: response.approvalRequests ?? [],
     executionResults: response.executionResults ?? [],
@@ -128,8 +140,14 @@ function publicApprovalResponse(result: ViernesBridgeApprovalCommandBoundaryResu
     summary: response.summary,
     ...(response.approvalId ? { approvalId: response.approvalId } : {}),
     ...(response.actionId ? { actionId: response.actionId } : {}),
+    ...(response.approvalStatus ? { approvalStatus: response.approvalStatus } : {}),
     blockedReasons: response.blockedReasons ?? [],
-    ...(response.executionResult ? { executionResult: response.executionResult } : {}),
+    ...(response.executionResult
+      ? {
+          executionResult: response.executionResult,
+          executionResults: [response.executionResult],
+        }
+      : {}),
     createdAt: response.createdAt,
   };
 }

@@ -146,6 +146,21 @@ async function postApprovalCommand(
   return (await response.json()) as Record<string, unknown>;
 }
 
+async function postViernesRequest(
+  url: string,
+  body: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const response = await fetch(`${url}/viernes/request`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  assert(response.status === 200, `expected 200, got ${response.status}`);
+  return (await response.json()) as Record<string, unknown>;
+}
+
 function reasons(body: Record<string, unknown>): string[] {
   return Array.isArray(body.blockedReasons)
     ? body.blockedReasons.filter((reason): reason is string => typeof reason === "string")
@@ -158,6 +173,14 @@ function assertNoSecret(value: unknown): void {
     assert(!serialized.includes(secret), "provider secret leaked");
   }
   assert(!serialized.toLowerCase().includes("authorization"), "authorization leaked");
+}
+
+function firstApproval(body: Record<string, unknown>): Record<string, unknown> {
+  const approvals = body.approvalRequests;
+  assert(Array.isArray(approvals) && approvals.length > 0, "expected approval request");
+  const approval = approvals[0];
+  assert(approval && typeof approval === "object" && !Array.isArray(approval), "expected approval object");
+  return approval as Record<string, unknown>;
 }
 
 async function main(): Promise<number> {
@@ -173,6 +196,56 @@ async function main(): Promise<number> {
 
   try {
     tests.push(
+      await test("needs_approval response includes ACT but status and stores do not", async () => {
+        const requestBody = await postViernesRequest(handle.url, {
+          source: "local",
+          messageText: "revisa estado github",
+          intent: "check_github_repo_status",
+          context: {
+            owner: "orquestador-demo-owner",
+          },
+        });
+        assert(requestBody.status === "needs_approval", `expected needs_approval, got ${requestBody.status}`);
+        const act = typeof requestBody.approvalCode === "string" ? requestBody.approvalCode : undefined;
+        assert(!!act && act.startsWith("ACT-LOCAL-"), "expected top-level approvalCode");
+        assert(requestBody.approvalInstruction === `aprobar ${act}`, "expected top-level approvalInstruction");
+        assert(requestBody.rejectInstruction === `rechazar ${act}`, "expected top-level rejectInstruction");
+        assert(requestBody.localDevOnly === true, "expected localDevOnly marker");
+        assert(typeof requestBody.riskLevel === "string", "expected top-level riskLevel");
+        assert(typeof requestBody.expiresAt === "string", "expected top-level expiresAt");
+        const approvalId = typeof requestBody.approvalId === "string" ? requestBody.approvalId : undefined;
+        const actionId = typeof requestBody.actionId === "string" ? requestBody.actionId : undefined;
+        assert(!!approvalId, "expected top-level approvalId");
+        assert(!!actionId, "expected top-level actionId");
+        const approval = firstApproval(requestBody);
+        assert(approval.id === approvalId, "approval request id mismatch");
+        assert(approval.actionId === actionId, "approval request actionId mismatch");
+        const message = approval.message as Record<string, unknown> | undefined;
+        assert(message?.channel === "local_dev", "expected local_dev message");
+        assert(message?.containsLocalDevAct === true, "expected local/dev ACT marker");
+        const text = typeof message?.text === "string" ? message.text : "";
+        assert(text.includes(act), "expected matching ACT in immediate local/dev response");
+
+        const statusRaw = await readFile(join(dataDir, "viernes-bridge-status.json"), "utf-8");
+        assert(!statusRaw.includes(act), "ACT leaked to status store");
+        const auditRaw = await readFile(join(dataDir, "integration-actions", "audit-records.json"), "utf-8");
+        assert(!auditRaw.includes(act), "ACT leaked to audit store");
+        const approvalRaw = await readFile(join(dataDir, "integration-actions", "approvals.json"), "utf-8");
+        assert(!approvalRaw.includes(act), "ACT leaked to approval store");
+
+        const approved = await postApprovalCommand(handle.url, {
+          type: "approval_command",
+          text: `aprobar ${act}`,
+          approvalId,
+          source: "local",
+        });
+        assert(approved.status === "read_only_executed", `expected read_only_executed, got ${approved.status}`);
+        assertNoSecret(requestBody);
+        assertNoSecret(approved);
+      }),
+    );
+
+    tests.push(
       await test("correct ACT approves and resumes read-only action", async () => {
         const action = githubReadAction("approval-resume-readonly-ok");
         const approval = await createApprovalFixture({ env, action });
@@ -182,7 +255,7 @@ async function main(): Promise<number> {
           approvalId: approval.id,
           source: "local",
         });
-        assert(body.status === "resumed_read_only", `expected resumed_read_only, got ${body.status}`);
+        assert(body.status === "read_only_executed", `expected read_only_executed, got ${body.status}`);
         assert((body.executionResult as Record<string, unknown> | undefined)?.status === "simulated", "expected safe simulated execution");
         const stored = await approvalStatus(env, approval.id);
         assert(stored?.status === "approved", "approval should be approved");
@@ -204,6 +277,20 @@ async function main(): Promise<number> {
         assert(reasons(body).includes("invalid_act_code"), "expected invalid_act_code");
         const stored = await approvalStatus(env, approval.id);
         assert(stored?.status === "pending", "approval should remain pending");
+        assertNoSecret(body);
+      }),
+    );
+
+    tests.push(
+      await test("unknown approval id returns not_found", async () => {
+        const body = await postApprovalCommand(handle.url, {
+          type: "approval_command",
+          text: "aprobar ACT-LOCAL-FAKE-CODE",
+          approvalId: "approval-does-not-exist",
+          source: "local",
+        });
+        assert(body.status === "not_found", `expected not_found, got ${body.status}`);
+        assert(reasons(body).includes("approval_not_found"), "expected approval_not_found");
         assertNoSecret(body);
       }),
     );
@@ -292,7 +379,7 @@ async function main(): Promise<number> {
         assert(status.mode === "local_http", "expected local_http mode");
         assert(status.writesEnabled === false, "writes must remain disabled");
         assert(status.lastIntent === "approval_command", "expected approval_command intent");
-        assert(status.lastStatus === "resumed_read_only", "expected resumed_read_only status");
+        assert(status.lastStatus === "read_only_executed", "expected read_only_executed status");
         const raw = await readFile(join(dataDir, "viernes-bridge-status.json"), "utf-8");
         assert(!raw.includes(approval.actCode), "ACT code leaked to status store");
         assertNoSecret(raw);

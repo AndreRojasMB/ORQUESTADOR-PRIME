@@ -1,5 +1,57 @@
 # Viernes Bridge Contract
 
+## Local/Dev ACT Message
+
+When a request returns `needs_approval`, ORQUESTADOR returns a complete
+local/dev approval contract in the immediate response:
+
+```json
+{
+  "status": "needs_approval",
+  "approvalId": "approval-id",
+  "actionId": "action-id",
+  "approvalCode": "ACT-LOCAL-1234-ABCD",
+  "approvalInstruction": "aprobar ACT-LOCAL-1234-ABCD",
+  "rejectInstruction": "rechazar ACT-LOCAL-1234-ABCD",
+  "summary": "Action proposal is valid but requires ACT approval.",
+  "riskLevel": "low",
+  "expiresAt": "2026-05-02T12:00:00.000Z",
+  "localDevOnly": true,
+  "approvalRequests": [
+    {
+      "id": "approval-id",
+      "actionId": "action-id",
+      "status": "pending",
+      "message": {
+        "channel": "local_dev",
+        "text": "ORQUESTADOR-PRIME solicita aprobacion ACT local/dev...",
+        "containsLocalDevAct": true
+      }
+    }
+  ]
+}
+```
+
+The top-level `approvalCode`, `approvalInstruction`, and `rejectInstruction`
+are intended for local/dev approval UX only. Viernes must never invent an ACT
+code; if these fields are missing on `needs_approval`, Viernes should block and
+report an incomplete approval contract.
+
+The ACT is not written to the bridge status store, dashboard, audit evidence,
+or persistent approval store. The persistent approval store keeps the ACT
+hashed/redacted.
+
+Viernes must send the command back with explicit correlation:
+
+```json
+{
+  "type": "approval_command",
+  "text": "aprobar ACT-LOCAL-1234-ABCD",
+  "approvalId": "approval-id",
+  "source": "local"
+}
+```
+
 Phase 19 adds a safe bridge contract for Viernes to request integration actions
 from ORQUESTADOR-PRIME. The bridge accepts a structured request, maps supported
 intents to `ProposedIntegrationAction`, and runs the same local safety path used
@@ -17,8 +69,8 @@ It does not give Viernes free execution.
 6. Dry-run validation is recorded.
 7. Target policy is applied.
 8. Read-only allowlisted actions may execute through the execution gate.
-9. Actions that require approval create a safe approval summary, without ACT
-   code exposure.
+9. Actions that require approval create a safe local/dev approval response with
+   the ACT exposed only in that immediate response.
 10. The bridge returns a redacted `ViernesBridgeResponse`.
 
 The dashboard must not import this bridge.
@@ -55,7 +107,8 @@ message-provider credentials in `context`.
 | `no_action` | No supported action was requested. |
 | `error` | Reserved for unexpected bridge failures. |
 
-Approval summaries never include ACT codes.
+`needs_approval` responses include the local/dev ACT contract above. Other
+statuses do not include ACT codes.
 
 ## Allowed Intents In Phase 19
 

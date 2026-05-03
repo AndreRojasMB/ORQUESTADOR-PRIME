@@ -22,9 +22,14 @@ type ApprovalProcessorModule = typeof import("../approval/approvalProcessor.js")
 type RedactModule = typeof import("../../integrations/actions/audit/redact.js");
 
 const KNOWN_SOURCES = new Set(["local", "whatsapp", "api"]);
-const APPROVAL_INTENTS = new Set(["check_github_repo_status", "prepare_whatsapp_reply"]);
+const APPROVAL_INTENTS = new Set([
+  "check_github_repo_status",
+  "prepare_whatsapp_reply",
+  "e2e_readonly_status_demo",
+]);
 
 const KNOWN_INTENTS = new Set([
+  "e2e_readonly_status_demo",
   "check_github_repo_status",
   "validate_whatsapp_bridge",
   "prepare_whatsapp_reply",
@@ -374,6 +379,7 @@ function approvalSummary(
   if (status === "approved") return "Approval command approved the action.";
   if (status === "rejected") return "Approval command rejected the action.";
   if (status === "resumed_read_only") return "Approved read-only action resumed safely.";
+  if (status === "read_only_executed") return "Approved read-only action executed safely.";
   if (status === "not_found") return "Approval command could not be correlated safely.";
   if (status === "blocked") return "Approval command was blocked by local safety policy.";
   return "Approval command failed safely.";
@@ -390,6 +396,7 @@ function commandResponse(input: {
   status: ViernesBridgeApprovalCommandBoundaryResponse["status"];
   approvalId?: string;
   actionId?: string;
+  approvalStatus?: ViernesBridgeApprovalCommandBoundaryResponse["approvalStatus"];
   reasons?: readonly string[];
   executionResult?: ViernesBridgeApprovalCommandBoundaryResponse["executionResult"];
 }): ViernesBridgeApprovalCommandBoundaryResponse {
@@ -399,10 +406,15 @@ function commandResponse(input: {
     summary: approvalSummary(input.status),
     ...(input.approvalId ? { approvalId: input.approvalId } : {}),
     ...(input.actionId ? { actionId: input.actionId } : {}),
+    ...(input.approvalStatus ? { approvalStatus: input.approvalStatus } : {}),
     blockedReasons: input.reasons ?? [],
     ...(input.executionResult ? { executionResult: input.executionResult } : {}),
     createdAt: nowIso(),
   };
+}
+
+function isE2EReadOnlyStatusDemo(action: ProposedIntegrationAction): boolean {
+  return action.input["e2eReadonlyStatusDemo"] === true;
 }
 
 export async function processViernesBridgeApprovalCommandPayload(
@@ -512,11 +524,11 @@ export async function processViernesBridgeApprovalCommandPayload(
     resumeApprovedReadOnly: true,
   });
   const status =
-    result.status === "approved" ||
-    result.status === "rejected" ||
     result.status === "resumed_read_only"
-      ? result.status
-      : "blocked";
+      ? "read_only_executed"
+      : result.status === "approved" || result.status === "rejected"
+        ? result.status
+        : "blocked";
 
   return {
     response: await finalizeApprovalResponse(
@@ -524,6 +536,10 @@ export async function processViernesBridgeApprovalCommandPayload(
         status,
         ...(result.approvalId ? { approvalId: result.approvalId } : {}),
         ...(result.actionId ? { actionId: result.actionId } : {}),
+        ...(status === "approved" || status === "read_only_executed"
+          ? { approvalStatus: "approved" as const }
+          : {}),
+        ...(status === "rejected" ? { approvalStatus: "rejected" as const } : {}),
         reasons: result.allowed ? [] : result.reasons,
         ...(result.executionResult ? { executionResult: result.executionResult } : {}),
       }),

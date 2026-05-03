@@ -137,6 +137,13 @@ blocked even after approval.
 
 See [Viernes Approval Resume Flow](viernes-approval-resume-flow.md).
 
+For local/dev E2E demos, `POST /viernes/request` includes the ACT only in the
+immediate `needs_approval` response. The response includes top-level
+`approvalCode`, `approvalInstruction`, `rejectInstruction`, `approvalId`,
+`actionId`, `riskLevel`, `expiresAt`, and `localDevOnly: true`; it may also
+include `approvalRequests[].message` marked with `channel: local_dev`. The ACT
+is not written to status, audit, dashboard, or persistent approval records.
+
 ## Handshake Status
 
 Phase 24 adds a safe local status store for the HTTP boundary. Every processed

@@ -17,6 +17,7 @@ export type ViernesBridgeStatus =
   | "error";
 
 export type ViernesBridgeIntent =
+  | "e2e_readonly_status_demo"
   | "check_github_repo_status"
   | "validate_whatsapp_bridge"
   | "prepare_whatsapp_reply"
@@ -72,6 +73,11 @@ export interface ViernesBridgeApprovalSummary {
   status: "pending" | "approved" | "rejected" | "expired";
   requiredBecause: readonly string[];
   expiresAt: string;
+  message?: {
+    channel: "local_dev";
+    text: string;
+    containsLocalDevAct: true;
+  };
 }
 
 export interface ViernesBridgeResponse {
@@ -81,6 +87,14 @@ export interface ViernesBridgeResponse {
   proposedActions: readonly ViernesBridgeProposedActionSummary[];
   blockedReasons?: readonly string[];
   approvalRequests?: readonly ViernesBridgeApprovalSummary[];
+  approvalId?: string;
+  actionId?: string;
+  riskLevel?: IntegrationActionRiskLevel;
+  expiresAt?: string;
+  localDevOnly?: true;
+  approvalInstruction?: string;
+  rejectInstruction?: string;
+  approvalCode?: string;
   executionResults?: readonly IntegrationActionExecutionResult[];
   auditIds?: readonly string[];
   createdAt: string;

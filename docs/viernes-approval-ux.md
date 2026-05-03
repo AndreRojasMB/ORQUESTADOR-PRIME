@@ -13,6 +13,41 @@ actions can resume; writes remain blocked.
 
 See [Viernes Approval Resume Flow](viernes-approval-resume-flow.md).
 
+Phase 26A returns the ACT only in the immediate `needs_approval` response as a
+complete local/dev approval contract:
+
+```json
+{
+  "status": "needs_approval",
+  "approvalId": "approval-id",
+  "actionId": "action-id",
+  "approvalCode": "ACT-LOCAL-1234-ABCD",
+  "approvalInstruction": "aprobar ACT-LOCAL-1234-ABCD",
+  "rejectInstruction": "rechazar ACT-LOCAL-1234-ABCD",
+  "summary": "Action proposal is valid but requires ACT approval.",
+  "riskLevel": "low",
+  "expiresAt": "2026-05-02T12:00:00.000Z",
+  "localDevOnly": true,
+  "approvalRequests": [
+    {
+      "id": "approval-id",
+      "message": {
+        "channel": "local_dev",
+        "text": "ORQUESTADOR-PRIME solicita aprobacion ACT local/dev...",
+        "containsLocalDevAct": true
+      }
+    }
+  ]
+}
+```
+
+Viernes must never invent an ACT code. If a `needs_approval` response is
+missing `approvalCode`, `approvalInstruction`, or `rejectInstruction`, the
+client should block and report an incomplete approval contract.
+
+The ACT is not stored in the dashboard status file, audit records, or persistent
+approval store. The persistent approval store keeps the ACT hashed/redacted.
+
 Phase 20 adds a local/dev approval UX layer for Viernes and WhatsApp-facing
 flows. It formats ACT approval prompts, parses approval/rejection replies, and
 can resume already-approved read-only allowlisted actions through the existing
@@ -26,7 +61,8 @@ It does not send WhatsApp messages.
 2. The Viernes bridge maps the request to `ProposedIntegrationAction`.
 3. The action is validated, dry-run checked, audited, and target-policy checked.
 4. If approval is required, an `IntegrationActionApprovalRequest` is created.
-5. `formatApprovalRequestForWhatsApp` builds a safe local/dev message.
+5. `formatApprovalRequestForWhatsApp` builds a safe local/dev message for the
+   immediate response.
 6. A user reply such as `aprobar ACT-LOCAL-1234-ABCD` is parsed.
 7. `processViernesApprovalCommand` approves or rejects the local approval.
 8. `resumeApprovedViernesAction` may resume only read-only allowlisted actions.

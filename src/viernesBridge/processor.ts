@@ -1,4 +1,5 @@
 import type { IntegrationActionApprovalGate } from "../integrations/actions/approval/approvalGate.js";
+import type { IntegrationActionApprovalRequest } from "../integrations/actions/approval/types.js";
 import type { IntegrationActionAuditTrail } from "../integrations/actions/audit/auditTrail.js";
 import type { TargetPolicyOptions } from "../integrations/actions/policy/types.js";
 import type {
@@ -22,6 +23,19 @@ type PolicyModule = typeof import("../integrations/actions/policy/policyValidato
 type RedactModule = typeof import("../integrations/actions/audit/redact.js");
 type NormalizerModule = typeof import("./normalizer.js");
 type MapperModule = typeof import("./actionMapper.js");
+type ApprovalMessageFormatterModule = typeof import("./approval/approvalMessageFormatter.js");
+
+type ImmediateApprovalContract = Pick<
+  ViernesBridgeResponse,
+  | "approvalId"
+  | "actionId"
+  | "approvalCode"
+  | "approvalInstruction"
+  | "rejectInstruction"
+  | "riskLevel"
+  | "expiresAt"
+  | "localDevOnly"
+>;
 
 export interface ViernesBridgeProcessorOptions {
   approvalGate?: IntegrationActionApprovalGate;
@@ -66,6 +80,10 @@ async function loadMapperModule(): Promise<MapperModule> {
   return (await import(new URL("./actionMapper.ts", import.meta.url).href)) as MapperModule;
 }
 
+async function loadApprovalMessageFormatterModule(): Promise<ApprovalMessageFormatterModule> {
+  return (await import(new URL("./approval/approvalMessageFormatter.ts", import.meta.url).href)) as ApprovalMessageFormatterModule;
+}
+
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -84,9 +102,14 @@ function summarizeAction(
   };
 }
 
-function summarizeApproval(
-  approval: Awaited<ReturnType<IntegrationActionApprovalGate["createApprovalRequest"]>>,
-): ViernesBridgeApprovalSummary {
+async function summarizeApproval(
+  approval: IntegrationActionApprovalRequest,
+  action: ProposedIntegrationAction,
+  requestId: string,
+): Promise<ViernesBridgeApprovalSummary> {
+  const { formatApprovalRequestForWhatsApp } =
+    await loadApprovalMessageFormatterModule();
+  const message = formatApprovalRequestForWhatsApp(approval, action, requestId);
   return {
     id: approval.id,
     actionId: approval.actionId,
@@ -96,6 +119,26 @@ function summarizeApproval(
     status: approval.status,
     requiredBecause: approval.requiredBecause,
     expiresAt: approval.expiresAt,
+    message: {
+      channel: "local_dev",
+      text: message.text,
+      containsLocalDevAct: true,
+    },
+  };
+}
+
+function buildNeedsApprovalResponseContract(
+  approval: IntegrationActionApprovalRequest,
+): ImmediateApprovalContract {
+  return {
+    approvalId: approval.id,
+    actionId: approval.actionId,
+    approvalCode: approval.actCode,
+    approvalInstruction: `aprobar ${approval.actCode}`,
+    rejectInstruction: `rechazar ${approval.actCode}`,
+    riskLevel: approval.riskLevel,
+    expiresAt: approval.expiresAt,
+    localDevOnly: true,
   };
 }
 
@@ -209,6 +252,7 @@ export async function processViernesBridgeRequest(
   const blockedReasons: string[] = [];
   const auditIds: string[] = [];
   let dryRunReady = false;
+  let immediateApprovalContract: ImmediateApprovalContract | undefined;
 
   for (const action of mapped.actions) {
     proposedActions.push(summarizeAction(action));
@@ -244,7 +288,8 @@ export async function processViernesBridgeRequest(
 
     if (action.requiresApproval) {
       const approval = await approvalGate.createApprovalRequest(action);
-      approvalRequests.push(summarizeApproval(approval));
+      approvalRequests.push(await summarizeApproval(approval, action, request.id));
+      immediateApprovalContract ??= buildNeedsApprovalResponseContract(approval);
       await auditTrail.recordApprovalRequested(action, approval);
       const record = await auditTrail.getAuditRecord(action.id);
       auditIds.push(...(record?.events.map((event) => event.id) ?? []));
@@ -279,6 +324,9 @@ export async function processViernesBridgeRequest(
     status,
     summary: summaryFor(status),
     proposedActions,
+    ...(status === "needs_approval" && immediateApprovalContract
+      ? immediateApprovalContract
+      : {}),
     ...(uniqueBlockedReasons.length > 0
       ? { blockedReasons: uniqueBlockedReasons }
       : {}),

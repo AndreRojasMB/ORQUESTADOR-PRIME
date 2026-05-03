@@ -75,6 +75,11 @@ Phase 25 adds the ORQUESTADOR-side approval command resume boundary:
 resume only read-only allowlisted actions. Writes remain blocked even when
 approved. See [Viernes Approval Resume Flow](viernes-approval-resume-flow.md).
 
+Phase 26A returns a local/dev ACT message only in the immediate
+`needs_approval` response so Viernes can complete an E2E approval demo. The ACT
+is not stored in status, dashboard, audit evidence, or persistent approval
+records.
+
 ## Matrix
 
 | Integration | Required variables | Current level | Health check | Actions currently allowed | Actions blocked | Risks | Next step |
@@ -220,3 +225,7 @@ dashboard reads this status only.
 Phase 25 adds approval resume tests for correct ACT approval, incorrect ACT
 blocking, rejection, expired approvals, missing audit trail blocking, read-only
 resume, write blocking after approval, and status-store redaction.
+
+Phase 26A adds tests that verify the immediate `needs_approval` response carries
+a local/dev ACT message while status, audit, and persistent approval stores do
+not retain the plain ACT.

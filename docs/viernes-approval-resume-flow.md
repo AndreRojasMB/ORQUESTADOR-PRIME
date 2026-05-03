@@ -61,6 +61,50 @@ The approval command flow:
 Read-only resume still goes through the execution gate. That means target policy,
 allowlists, audit, and executor allowlists are still enforced.
 
+## Immediate Local/Dev ACT Message
+
+Phase 26A adds the local/dev ACT contract to the immediate `needs_approval`
+response from `POST /viernes/request`. This is the only place where the ACT is
+returned in plain text:
+
+```json
+{
+  "status": "needs_approval",
+  "approvalId": "approval-id",
+  "actionId": "action-id",
+  "approvalCode": "ACT-LOCAL-1234-ABCD",
+  "approvalInstruction": "aprobar ACT-LOCAL-1234-ABCD",
+  "rejectInstruction": "rechazar ACT-LOCAL-1234-ABCD",
+  "summary": "Action proposal is valid but requires ACT approval.",
+  "riskLevel": "low",
+  "expiresAt": "2026-05-02T12:00:00.000Z",
+  "localDevOnly": true,
+  "approvalRequests": [
+    {
+      "id": "approval-id",
+      "message": {
+        "channel": "local_dev",
+        "text": "ACT: ACT-LOCAL-1234-ABCD",
+        "containsLocalDevAct": true
+      }
+    }
+  ]
+}
+```
+
+Viernes must use the returned `approvalCode`; it must not guess or invent an
+ACT. If the top-level approval contract is incomplete, Viernes should block and
+report the contract error.
+
+The ACT is not stored in:
+
+- `viernes-bridge-status.json`
+- audit records
+- persistent approval records
+- dashboard output
+
+The persistent approval record keeps only a hash and redacted ACT marker.
+
 ## Status Store
 
 `POST /viernes/approval-command` updates the same safe Viernes Bridge status
@@ -84,7 +128,7 @@ Possible statuses:
 
 - `approved`
 - `rejected`
-- `resumed_read_only`
+- `read_only_executed`
 - `blocked`
 - `not_found`
 - `error`
