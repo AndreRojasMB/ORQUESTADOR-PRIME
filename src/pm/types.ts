@@ -361,3 +361,69 @@ export interface ProjectStateValidationResult {
   sourceOnly: true;
   boundaries: PMBoundarySet;
 }
+
+export type PMTaskId = string;
+
+export type PMMilestoneId = string;
+
+export type PMTaskStatus =
+  | "planned"
+  | "ready"
+  | "in_progress"
+  | "blocked"
+  | "needs_review"
+  | "done"
+  | "deferred";
+
+export type PMTaskPriority = "low" | "medium" | "high" | "critical";
+
+export type PMTaskDependencyType =
+  | "blocks"
+  | "requires"
+  | "related"
+  | "sequence_after";
+
+export type PMMilestoneStatus =
+  | "empty"
+  | "planned"
+  | "in_progress"
+  | "blocked"
+  | "complete"
+  | "mixed";
+
+export type PMMilestoneHealth = PMMilestoneStatus;
+
+export interface PMTaskGraphValidationFinding {
+  id: string;
+  severity: PMFindingSeverity;
+  reasonCode: string;
+  safeMessage: string;
+  path?: string;
+  taskId?: PMTaskId;
+  milestoneId?: PMMilestoneId;
+  metadata?: Record<string, string | number | boolean>;
+}
+
+export interface PMTaskGraphValidationResult {
+  validationId: string;
+  schemaVersion: PMSchemaVersion;
+  valid: boolean;
+  status: "pass" | "warn" | "fail";
+  findings: PMTaskGraphValidationFinding[];
+  warnings: PMTaskGraphValidationFinding[];
+  errors: PMTaskGraphValidationFinding[];
+  orderedTaskIds: PMTaskId[];
+  advisoryOnly: true;
+  sourceOnly: true;
+  boundaries: PMBoundarySet;
+}
+
+export interface PMTaskGraphBuildResult {
+  ok: boolean;
+  status: "graph_built" | "input_invalid";
+  orderedTaskIds: PMTaskId[];
+  validation: PMTaskGraphValidationResult;
+  advisoryOnly: true;
+  sourceOnly: true;
+  boundaries: PMBoundarySet;
+}
