@@ -185,3 +185,179 @@ export interface PMProjectStateSummary {
   sourceOnly: true;
   boundaries: PMBoundarySet;
 }
+
+export type ProjectStateStatus =
+  | "not_started"
+  | "observed"
+  | "reported"
+  | "planned"
+  | "proposed"
+  | "blocked"
+  | "deferred";
+
+export type ProjectSnapshotStatus = "candidate" | "valid" | "warn" | "invalid";
+
+export type ProjectEvidenceRef = PMEvidenceReference;
+
+export interface ProjectRoadmapRef {
+  roadmapRefId: string;
+  phaseRef: ProjectPhaseRef;
+  label: string;
+  safeSummary: string;
+  metadataOnly: true;
+  noFileRead: true;
+}
+
+export interface ProjectMilestoneRef {
+  milestoneRefId: string;
+  label: string;
+  safeSummary: string;
+  targetPhaseRef?: ProjectPhaseRef;
+  status: ProjectStateStatus;
+  metadataOnly: true;
+  noExecution: true;
+}
+
+export interface ProjectTaskSummaryRef {
+  taskRefId: string;
+  label: string;
+  safeSummary: string;
+  status: ProjectStateStatus;
+  phaseRef?: ProjectPhaseRef;
+  metadataOnly: true;
+  noTaskExecution: true;
+}
+
+export interface ProjectDecisionRef {
+  decisionRefId: string;
+  label: string;
+  safeSummary: string;
+  decisionMode: PMDecisionMode;
+  phaseRef?: ProjectPhaseRef;
+  metadataOnly: true;
+  noApprovalExecution: true;
+}
+
+export interface ProjectRiskRef {
+  riskRefId: string;
+  label: string;
+  safeSummary: string;
+  riskTier: PMRiskTier;
+  riskSurfaces: PMRiskSurface[];
+  metadataOnly: true;
+  noMitigationExecution: true;
+}
+
+export interface ProjectBlockerRef {
+  blockerRefId: string;
+  label: string;
+  safeSummary: string;
+  severity: PMRiskTier;
+  blockedPhaseRefs: ProjectPhaseRef[];
+  metadataOnly: true;
+  noResolutionExecution: true;
+}
+
+export interface ProjectDoDRef {
+  dodRefId: string;
+  label: string;
+  safeSummary: string;
+  phaseRef?: ProjectPhaseRef;
+  metadataOnly: true;
+  noCheckExecution: true;
+}
+
+export interface ProjectStateSummary {
+  projectId: ProjectId;
+  schemaVersion: PMSchemaVersion;
+  name: string;
+  safeSummary: string;
+  currentPhaseRef: ProjectPhaseRef;
+  status: ProjectStateStatus;
+  allowedAutonomyLevels: PMAllowedAutonomyLevel[];
+  riskTier: PMRiskTier;
+  metadataOnly: true;
+}
+
+export interface ProjectState {
+  projectId: ProjectId;
+  schemaVersion: PMSchemaVersion;
+  name: string;
+  safeSummary: string;
+  currentPhaseRef: ProjectPhaseRef;
+  status: ProjectStateStatus;
+  allowedAutonomyLevels: PMAllowedAutonomyLevel[];
+  roadmapRefs: ProjectRoadmapRef[];
+  milestoneRefs: ProjectMilestoneRef[];
+  taskSummaryRefs: ProjectTaskSummaryRef[];
+  decisionRefs: ProjectDecisionRef[];
+  riskRefs: ProjectRiskRef[];
+  blockerRefs: ProjectBlockerRef[];
+  dodRefs: ProjectDoDRef[];
+  evidenceRefs: ProjectEvidenceRef[];
+  recommendedNextSteps: PMRecommendedNextStep[];
+  assumptions: string[];
+  exclusions: string[];
+  advisoryOnly: true;
+  sourceOnly: true;
+  boundaries: PMBoundarySet;
+}
+
+export interface ProjectSnapshot {
+  snapshotId: string;
+  projectId: ProjectId;
+  schemaVersion: PMSchemaVersion;
+  status: ProjectSnapshotStatus;
+  summary: ProjectStateSummary;
+  state: ProjectState;
+  validation: ProjectStateValidationResult;
+  metadataOnly: true;
+  advisoryOnly: true;
+  sourceOnly: true;
+  boundaries: PMBoundarySet;
+}
+
+export interface ProjectStateInput {
+  projectId?: string;
+  schemaVersion?: string;
+  name?: string;
+  safeSummary?: string;
+  currentPhaseRef?: string;
+  status?: string;
+  allowedAutonomyLevels?: string[];
+  roadmapRefs?: ProjectRoadmapRef[];
+  milestoneRefs?: ProjectMilestoneRef[];
+  taskSummaryRefs?: ProjectTaskSummaryRef[];
+  decisionRefs?: ProjectDecisionRef[];
+  riskRefs?: ProjectRiskRef[];
+  blockerRefs?: ProjectBlockerRef[];
+  dodRefs?: ProjectDoDRef[];
+  evidenceRefs?: ProjectEvidenceRef[];
+  recommendedNextSteps?: PMRecommendedNextStep[];
+  assumptions?: string[];
+  exclusions?: string[];
+}
+
+export interface ProjectStateValidationFinding {
+  id: string;
+  severity: PMFindingSeverity;
+  reasonCode: string;
+  safeMessage: string;
+  path?: string;
+  projectId?: ProjectId;
+  phaseRef?: ProjectPhaseRef;
+  metadata?: Record<string, string | number | boolean>;
+}
+
+export interface ProjectStateValidationResult {
+  validationId: string;
+  schemaVersion: PMSchemaVersion;
+  valid: boolean;
+  status: "pass" | "warn" | "fail";
+  findings: ProjectStateValidationFinding[];
+  warnings: ProjectStateValidationFinding[];
+  errors: ProjectStateValidationFinding[];
+  advisoryOnly: true;
+  sourceOnly: true;
+  boundaries: PMBoundarySet;
+}
