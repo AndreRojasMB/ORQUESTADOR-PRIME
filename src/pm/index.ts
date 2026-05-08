@@ -19,4 +19,5 @@ export * from "./reportBuilder.js";
 export * from "./solidHooks.js";
 export * from "./mobileAppFactoryStrategy.js";
 export * from "./mobileArchitectureProfile.js";
+export * from "./mobileUxPatternCatalog.js";
 export * from "./sampleFixtures.js";
