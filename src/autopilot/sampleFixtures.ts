@@ -4,6 +4,7 @@ import { createMemoryUpdateProposalFromReport } from "./memoryProposalBuilder.js
 import { createMemoryUpdateProposal } from "./memoryUpdateContract.js";
 import { coordinateNextAutopilotAction } from "./nextActionCoordinator.js";
 import { recommendNextAutopilotAction } from "./nextAutopilotAction.js";
+import { coordinatePhaseCloseout } from "./phaseCloseoutCoordinator.js";
 import type { CodexReportContract } from "./reportContract.js";
 import { validateCodexReportAgainstHandoff } from "./reportValidator.js";
 import { autopilotSourceOnlyBoundaries } from "./riskBoundaries.js";
@@ -172,4 +173,57 @@ export const sampleCoordinatorResult = coordinateNextAutopilotAction({
     staged: [],
     metadataOnly: true,
   },
+});
+
+export const samplePhaseCloseoutResult = coordinatePhaseCloseout({
+  phase: "Phase 26K-I",
+  phaseMode: "I",
+  branch: "dev",
+  expectedNextPhase: "Phase 109B - PM STATUS REPORTING PLAN",
+  roadmapTarget: "Phase 109B - PM STATUS REPORTING PLAN",
+  finalReport: {
+    ...sampleCodexReport,
+    phase: "Phase 26K-I",
+    reportId: "report:26K-I",
+    nextRecommendedPhase: "Phase 109B - PM STATUS REPORTING PLAN",
+  },
+  validation: sampleReportValidation,
+  nextActionRecommendation: sampleCoordinatorResult,
+  memoryProposalStatus: "proposed",
+  testsResult: {
+    name: "phase closeout smoke",
+    status: "passed",
+    safeSummary: "Smoke metadata passed.",
+    metadataOnly: true,
+  },
+  smokeResult: {
+    name: "source-only smoke",
+    status: "passed",
+    safeSummary: "Source-only smoke metadata passed.",
+    metadataOnly: true,
+  },
+  typecheckResult: {
+    name: "tsc --noEmit",
+    status: "passed",
+    safeSummary: "Typecheck metadata passed.",
+    metadataOnly: true,
+  },
+  forbiddenGrepResult: {
+    name: "forbidden grep",
+    status: "passed",
+    safeSummary: "Forbidden grep metadata is clean.",
+    metadataOnly: true,
+  },
+  scopeCheckResult: {
+    name: "scope check",
+    status: "passed",
+    safeSummary: "Scope metadata is clean.",
+    metadataOnly: true,
+  },
+  stagedFiles: [],
+  dirtyFilesOutsideScope: ["dashboard/app/integrations/checks.ts"],
+  commitHash: "example-only",
+  pushStatus: "pushed",
+  riskLevel: "plan_only",
+  sourceOnlyImplementation: true,
 });
