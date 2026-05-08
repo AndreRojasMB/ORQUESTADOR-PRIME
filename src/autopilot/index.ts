@@ -3,6 +3,8 @@ export * from "./codexHandoff.js";
 export * from "./codexHandoffRunner.js";
 export * from "./codexPromptRenderer.js";
 export * from "./codexReportSchema.js";
+export * from "./dryRunQualityGates.js";
+export * from "./dryRunScenarioMatrix.js";
 export * from "./errorLearningRules.js";
 export * from "./handoffValidationChecklist.js";
 export * from "./memoryProposalBuilder.js";

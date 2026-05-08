@@ -75,6 +75,7 @@ export interface AutopilotRealDryRunInput {
   workspace: AutopilotRealDryRunWorkspaceFixture;
   commitPush: AutopilotRealDryRunCommitPushFixture;
   riskApproval: AutopilotRealDryRunRiskApprovalFixture;
+  closeoutChecks?: AutopilotRealDryRunCloseoutChecksFixture;
   limitations: string[];
   recommendedModel?: string;
   metadataOnly: true;
@@ -82,6 +83,16 @@ export interface AutopilotRealDryRunInput {
   advisoryOnly: true;
   noExecution: true;
   boundaries: AutopilotBoundarySet;
+}
+
+export interface AutopilotRealDryRunCloseoutChecksFixture {
+  testsResult?: AutopilotCloseoutCheckResult;
+  smokeResult?: AutopilotCloseoutCheckResult;
+  typecheckResult?: AutopilotCloseoutCheckResult;
+  forbiddenGrepResult?: AutopilotCloseoutCheckResult;
+  scopeCheckResult?: AutopilotCloseoutCheckResult;
+  unresolvedBlockers?: string[];
+  metadataOnly: true;
 }
 
 export interface AutopilotRealDryRunSummary {
@@ -315,23 +326,23 @@ export function runAutopilotRealDryRun(
     validation,
     nextActionRecommendation,
     memoryProposalStatus: memoryProposal.status,
-    testsResult: passedCheck(
+    testsResult: input.closeoutChecks?.testsResult ?? passedCheck(
       "autopilot real dry-run smoke",
       "Smoke metadata is supplied by the caller and reports success.",
     ),
-    smokeResult: passedCheck(
+    smokeResult: input.closeoutChecks?.smokeResult ?? passedCheck(
       "source-only dry-run smoke",
       "Dry-run safety metadata reports success.",
     ),
-    typecheckResult: passedCheck(
+    typecheckResult: input.closeoutChecks?.typecheckResult ?? passedCheck(
       "tsc --noEmit",
       "Typecheck metadata is supplied by the caller and reports success.",
     ),
-    forbiddenGrepResult: passedCheck(
+    forbiddenGrepResult: input.closeoutChecks?.forbiddenGrepResult ?? passedCheck(
       "forbidden grep",
       "Forbidden grep metadata is supplied by the caller and reports success.",
     ),
-    scopeCheckResult: passedCheck(
+    scopeCheckResult: input.closeoutChecks?.scopeCheckResult ?? passedCheck(
       "scope check",
       "Scope metadata is supplied by the caller and reports success.",
     ),
@@ -339,6 +350,7 @@ export function runAutopilotRealDryRun(
     dirtyFilesOutsideScope: [...input.workspace.currentDirtyFiles],
     pushStatus: input.commitPush.pushStatus,
     riskLevel: input.riskApproval.riskLevel,
+    unresolvedBlockers: input.closeoutChecks?.unresolvedBlockers ?? [],
     sourceOnlyImplementation: true,
     recommendedModel,
   });
