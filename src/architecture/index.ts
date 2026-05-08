@@ -6,3 +6,5 @@ export * from "./dependencyRules.js";
 export * from "./dependencyClassifier.js";
 export * from "./smellSeverity.js";
 export * from "./smellTaxonomy.js";
+export * from "./reviewFindingTypes.js";
+export * from "./reviewTemplates.js";
