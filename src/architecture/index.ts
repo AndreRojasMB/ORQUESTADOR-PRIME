@@ -10,3 +10,5 @@ export * from "./reviewFindingTypes.js";
 export * from "./reviewTemplates.js";
 export * from "./solidRuleRegistry.js";
 export * from "./solidValidator.js";
+export * from "./frontendRules.js";
+export * from "./uiBoundaryRules.js";
