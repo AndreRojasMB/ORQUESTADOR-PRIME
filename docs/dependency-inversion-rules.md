@@ -11,7 +11,7 @@ Principle review inside the SOLID Architecture Quality Core. It models
 dependency categories, policies, expected abstractions, actual dependency
 metadata, findings, summaries, and a caller-provided metadata classifier.
 
-The layer does not inspect repositories, parse source imports, parse ASTs,
+The layer does not inspect repositories, parse source imports, parse syntax trees,
 rewrite modules, execute refactors, launch processes, call providers, mutate
 dashboards, operate OpenClaw, send WhatsApp messages, run n8n, persist memory,
 deploy, mutate DB/SQL, or perform source-control behavior from source.
@@ -116,7 +116,7 @@ The implementation remains:
 - metadata-only,
 - no repository inspection,
 - no scanner implementation,
-- no AST parsing,
+- no syntax-tree parsing,
 - no refactor execution,
 - no provider calls,
 - no dashboard mutation,
@@ -181,7 +181,7 @@ Phase 113I intentionally does not include:
 
 - repository scanning,
 - import parsing,
-- AST parsing,
+- syntax-tree parsing,
 - dependency graph extraction,
 - refactor execution,
 - import rewriting,

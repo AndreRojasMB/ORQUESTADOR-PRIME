@@ -4,3 +4,5 @@ export * from "./moduleBoundaries.js";
 export * from "./layerMap.js";
 export * from "./dependencyRules.js";
 export * from "./dependencyClassifier.js";
+export * from "./smellSeverity.js";
+export * from "./smellTaxonomy.js";
