@@ -8,3 +8,5 @@ export * from "./smellSeverity.js";
 export * from "./smellTaxonomy.js";
 export * from "./reviewFindingTypes.js";
 export * from "./reviewTemplates.js";
+export * from "./solidRuleRegistry.js";
+export * from "./solidValidator.js";
