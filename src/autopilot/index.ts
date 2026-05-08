@@ -15,6 +15,8 @@ export * from "./phaseCloseoutDecisionModel.js";
 export * from "./reportContract.js";
 export * from "./reportValidator.js";
 export * from "./roadmapReturnPolicy.js";
+export * from "./realDryRunFixtures.js";
+export * from "./realDryRunPilot.js";
 export * from "./riskBoundaries.js";
 export * from "./sampleFixtures.js";
 export * from "./taskState.js";
