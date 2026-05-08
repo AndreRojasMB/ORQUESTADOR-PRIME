@@ -1,4 +1,5 @@
 import { createCodexHandoffDraft } from "./codexHandoff.js";
+import { prepareCodexHandoffPackage } from "./codexHandoffRunner.js";
 import { createMemoryUpdateProposal } from "./memoryUpdateContract.js";
 import { recommendNextAutopilotAction } from "./nextAutopilotAction.js";
 import { autopilotSourceOnlyBoundaries } from "./riskBoundaries.js";
@@ -87,4 +88,15 @@ export const sampleNextAutopilotAction = recommendNextAutopilotAction({
   taskState: "approved",
   riskLevel: "plan_only",
   prerequisites: ["26G-I typecheck passes."],
+});
+
+export const sampleCodexHandoffPackage = prepareCodexHandoffPackage({
+  task: {
+    ...sampleAutopilotTask,
+    state: "approved",
+    phase: "Phase 26H-I",
+    title: "Codex handoff runner MVP",
+  },
+  handoff: sampleCodexHandoffDraft,
+  nextPhase: "Phase 26I-B",
 });
