@@ -125,8 +125,8 @@ The implementation remains:
 - no dashboard mutation,
 - no package script changes,
 - no env or network access,
-- no DB/SQL mutation,
-- no deploy,
+- no database or SQL state changes,
+- no release rollout,
 - no source-control behavior from source,
 - no memory persistence.
 

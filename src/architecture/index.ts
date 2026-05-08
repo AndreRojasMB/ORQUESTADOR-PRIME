@@ -12,3 +12,5 @@ export * from "./solidRuleRegistry.js";
 export * from "./solidValidator.js";
 export * from "./frontendRules.js";
 export * from "./uiBoundaryRules.js";
+export * from "./backendRules.js";
+export * from "./ioBoundaryRules.js";
