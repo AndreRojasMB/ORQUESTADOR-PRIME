@@ -2,10 +2,12 @@ import { createCodexHandoffDraft } from "./codexHandoff.js";
 import { prepareCodexHandoffPackage } from "./codexHandoffRunner.js";
 import { createMemoryUpdateProposalFromReport } from "./memoryProposalBuilder.js";
 import { createMemoryUpdateProposal } from "./memoryUpdateContract.js";
+import { coordinateNextAutopilotAction } from "./nextActionCoordinator.js";
 import { recommendNextAutopilotAction } from "./nextAutopilotAction.js";
 import type { CodexReportContract } from "./reportContract.js";
 import { validateCodexReportAgainstHandoff } from "./reportValidator.js";
 import { autopilotSourceOnlyBoundaries } from "./riskBoundaries.js";
+import { summarizeAutopilotValidation } from "./autopilotValidationSummary.js";
 import type { AutopilotTaskMetadata } from "./types.js";
 
 export const sampleAutopilotTask: AutopilotTaskMetadata = {
@@ -150,3 +152,24 @@ export const sampleMemoryProposalFromReport =
     validation: sampleReportValidation,
     riskLevel: "report_only",
   });
+
+export const sampleCoordinatorResult = coordinateNextAutopilotAction({
+  phase: "Phase 26I-I",
+  phaseMode: "I",
+  previousPhaseMode: "B",
+  expectedNextPhase: "Phase 26J-B",
+  report: sampleCodexReport,
+  validation: sampleReportValidation,
+  validationSummary: summarizeAutopilotValidation(sampleReportValidation),
+  memoryProposal: sampleMemoryProposalFromReport,
+  riskLevel: "plan_only",
+  approvalStatus: "approved",
+  commitStatus: "present",
+  pushStatus: "pushed",
+  dirtyFilesStatus: {
+    knownPreExisting: ["dashboard/app/integrations/checks.ts"],
+    currentDirty: ["dashboard/app/integrations/checks.ts"],
+    staged: [],
+    metadataOnly: true,
+  },
+});
