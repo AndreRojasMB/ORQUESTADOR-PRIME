@@ -1,7 +1,10 @@
 import { createCodexHandoffDraft } from "./codexHandoff.js";
 import { prepareCodexHandoffPackage } from "./codexHandoffRunner.js";
+import { createMemoryUpdateProposalFromReport } from "./memoryProposalBuilder.js";
 import { createMemoryUpdateProposal } from "./memoryUpdateContract.js";
 import { recommendNextAutopilotAction } from "./nextAutopilotAction.js";
+import type { CodexReportContract } from "./reportContract.js";
+import { validateCodexReportAgainstHandoff } from "./reportValidator.js";
 import { autopilotSourceOnlyBoundaries } from "./riskBoundaries.js";
 import type { AutopilotTaskMetadata } from "./types.js";
 
@@ -100,3 +103,50 @@ export const sampleCodexHandoffPackage = prepareCodexHandoffPackage({
   handoff: sampleCodexHandoffDraft,
   nextPhase: "Phase 26I-B",
 });
+
+export const sampleCodexReport: CodexReportContract = {
+  reportId: "report:26I-I",
+  phase: "Phase 26I-I",
+  filesInspected: ["src/autopilot/*"],
+  filesModified: ["src/autopilot/reportValidator.ts"],
+  summary: "Phase 26I-I added source-only validation metadata helpers.",
+  commandsExecuted: [
+    {
+      command: "node node_modules/typescript/bin/tsc --noEmit",
+      result: "passed",
+      safeSummary: "TypeScript check passed by caller-provided metadata.",
+      metadataOnly: true,
+      noExecutionFromContract: true,
+    },
+  ],
+  tests: [],
+  scopeCheck: "Scope metadata is clean.",
+  forbiddenGrepResult: "clean",
+  commitHash: "example-only",
+  pushStatus: "pushed",
+  nextRecommendedPhase: "Phase 26J-B",
+  findings: [],
+  finalStatus: "accepted",
+  advisoryOnly: true,
+  sourceOnly: true,
+  metadataOnly: true,
+  noExecutionFromReport: true,
+  boundaries: autopilotSourceOnlyBoundaries,
+};
+
+export const sampleReportValidation = validateCodexReportAgainstHandoff({
+  report: sampleCodexReport,
+  allowedFiles: ["src/autopilot/*"],
+  forbiddenFiles: ["src/whatsapp/*", "dashboard/*", "package.json"],
+  requiredCommands: ["tsc --noEmit"],
+  commitRequired: true,
+  pushRequired: true,
+  riskLevel: "plan_only",
+});
+
+export const sampleMemoryProposalFromReport =
+  createMemoryUpdateProposalFromReport({
+    report: sampleCodexReport,
+    validation: sampleReportValidation,
+    riskLevel: "report_only",
+  });
