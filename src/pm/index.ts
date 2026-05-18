@@ -27,4 +27,5 @@ export * from "./mobileSecurityBaseline.js";
 export * from "./mobilePerformanceChecklist.js";
 export * from "./mobileTestingStrategy.js";
 export * from "./mobileReleaseStrategy.js";
+export * from "./appIdeaIntakeInterview.js";
 export * from "./sampleFixtures.js";
