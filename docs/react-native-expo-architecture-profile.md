@@ -122,7 +122,7 @@ recovery, account deletion, permission prompts, and privacy review.
 risks, abuse risks, premium or payment risks, provider trust boundaries, and
 required approvals.
 
-The profile does not read secrets, create credentials, configure auth
+The profile does not read secrets, create credential material, configure auth
 providers, process payments, or configure stores.
 
 ## Testing Profile
@@ -237,7 +237,7 @@ Phase 122I remains:
 - no package changes,
 - no workflow changes,
 - no CI activation,
-- no credentials,
+- no credential material,
 - no providers,
 - no runtime execution,
 - no dashboard mutation,
