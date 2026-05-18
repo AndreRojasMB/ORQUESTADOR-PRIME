@@ -23,4 +23,5 @@ export * from "./mobileUxPatternCatalog.js";
 export * from "./mobileNavigationFlowModel.js";
 export * from "./mobileStateManagementStrategy.js";
 export * from "./offlineCacheSyncStrategy.js";
+export * from "./mobileSecurityBaseline.js";
 export * from "./sampleFixtures.js";
