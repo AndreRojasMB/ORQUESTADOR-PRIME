@@ -25,4 +25,5 @@ export * from "./mobileStateManagementStrategy.js";
 export * from "./offlineCacheSyncStrategy.js";
 export * from "./mobileSecurityBaseline.js";
 export * from "./mobilePerformanceChecklist.js";
+export * from "./mobileTestingStrategy.js";
 export * from "./sampleFixtures.js";
