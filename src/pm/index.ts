@@ -29,4 +29,5 @@ export * from "./mobileTestingStrategy.js";
 export * from "./mobileReleaseStrategy.js";
 export * from "./appIdeaIntakeInterview.js";
 export * from "./mobileRequirementsInterview.js";
+export * from "./mobileFeatureBlueprintGenerator.js";
 export * from "./sampleFixtures.js";

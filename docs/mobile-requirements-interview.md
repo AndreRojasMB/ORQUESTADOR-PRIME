@@ -149,8 +149,8 @@ review, and feature blueprint planning.
 - risks/blockers
 - Autopilot handoff context
 
-The mapping is conceptual and advisory. It does not generate routes, screens,
-stores, APIs, tests, release files, prompts, agents, or source-control actions.
+The mapping is conceptual and advisory. It does not create route files, screen
+files, stores, APIs, tests, release files, prompts, agents, or source-control actions.
 
 ## Helpers
 
@@ -242,7 +242,7 @@ app.
 - The model does not perform live interviews.
 - The model does not verify requirements with users.
 - The model does not create implementation tasks automatically.
-- The model does not generate mobile code, screens, app folders, native files,
+- The model does not create mobile source, screens, app folders, native files,
   package changes, workflow changes, or release artifacts.
 - Human review remains required for sensitive, regulated, monetized, public
   release, or low-confidence requirements.
