@@ -21,4 +21,5 @@ export * from "./mobileAppFactoryStrategy.js";
 export * from "./mobileArchitectureProfile.js";
 export * from "./mobileUxPatternCatalog.js";
 export * from "./mobileNavigationFlowModel.js";
+export * from "./mobileStateManagementStrategy.js";
 export * from "./sampleFixtures.js";
