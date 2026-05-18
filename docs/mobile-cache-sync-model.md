@@ -9,7 +9,7 @@ Status: model plan / source-only / advisory / metadata-only
 The Mobile Cache And Sync Model defines future metadata for cached data,
 refresh posture, offline behavior, retry posture, conflict handling, and user
 feedback. It prepares Phase 126B without implementing storage, network, API,
-database, background tasks, or runtime sync.
+database, deferred worker behavior, or runtime sync.
 
 ## Future Metadata Shape
 

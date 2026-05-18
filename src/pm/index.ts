@@ -22,4 +22,5 @@ export * from "./mobileArchitectureProfile.js";
 export * from "./mobileUxPatternCatalog.js";
 export * from "./mobileNavigationFlowModel.js";
 export * from "./mobileStateManagementStrategy.js";
+export * from "./offlineCacheSyncStrategy.js";
 export * from "./sampleFixtures.js";
