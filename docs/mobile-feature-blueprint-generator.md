@@ -14,7 +14,7 @@ and limitations.
 
 The layer does not create feature source, screens, route files, app projects,
 Codex runs, Expo/EAS runs, provider behavior, runtime behavior, dashboard
-mutations, DB/SQL changes, CI behavior, memory writes, or source-control
+mutations, database/schema changes, CI behavior, memory writes, or source-control
 actions from source.
 
 ## Implemented Source File
@@ -189,7 +189,7 @@ The implementation preserves:
 - no provider calls
 - no runtime execution
 - no dashboard mutation
-- no DB/SQL mutation
+- no database or schema mutation
 - no CI activation
 - no memory persistence
 - no git automation from source
