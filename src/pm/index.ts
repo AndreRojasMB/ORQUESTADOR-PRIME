@@ -30,4 +30,5 @@ export * from "./mobileReleaseStrategy.js";
 export * from "./appIdeaIntakeInterview.js";
 export * from "./mobileRequirementsInterview.js";
 export * from "./mobileFeatureBlueprintGenerator.js";
+export * from "./mobileScreenBlueprintGenerator.js";
 export * from "./sampleFixtures.js";
