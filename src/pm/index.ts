@@ -35,4 +35,5 @@ export * from "./mobileApiContractPlanner.js";
 export * from "./mobileDesignSystemBlueprint.js";
 export * from "./mobilePushNotificationStrategy.js";
 export * from "./mobileAnalyticsCrashStrategy.js";
+export * from "./storeReadinessAppMetadata.js";
 export * from "./sampleFixtures.js";

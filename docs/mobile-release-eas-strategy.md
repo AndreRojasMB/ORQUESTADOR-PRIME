@@ -71,7 +71,7 @@ tooling.
 
 The model consumes caller-supplied metadata and static defaults only. It does
 not inspect repositories, generate config, execute commands, read environment
-values, or create release assets.
+values, or produce release artifacts.
 
 ## Channel Model
 
