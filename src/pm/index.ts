@@ -36,4 +36,6 @@ export * from "./mobileDesignSystemBlueprint.js";
 export * from "./mobilePushNotificationStrategy.js";
 export * from "./mobileAnalyticsCrashStrategy.js";
 export * from "./storeReadinessAppMetadata.js";
+export * from "./mobileFactoryReview.js";
+export * from "./mobileFactoryDryRun.js";
 export * from "./sampleFixtures.js";
