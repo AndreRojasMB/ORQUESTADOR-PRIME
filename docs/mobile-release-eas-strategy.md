@@ -38,7 +38,7 @@ Implemented advisory categories:
 - `update_channel`
 - `versioning`
 - `release_notes`
-- `signing_credentials_future`
+- `signing_material_future`
 - `store_metadata`
 - `internal_testing`
 - `staged_rollout`

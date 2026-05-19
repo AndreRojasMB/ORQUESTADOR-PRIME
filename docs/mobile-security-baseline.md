@@ -13,7 +13,7 @@ implementation limits before any real mobile app or runtime exists.
 
 The baseline does not implement auth, storage, cryptographic controls,
 runtime auth artifact handling, network/API behavior, permission prompts,
-native config, credentials, provider execution, DB/SQL behavior, app
+native config, credential material, provider execution, database/schema behavior, app
 generation, Expo/EAS behavior, package changes, CI activation, memory
 persistence, or source-control automation from source.
 
@@ -138,7 +138,7 @@ The baseline explicitly guarantees:
 - no network calls,
 - no permission prompts,
 - no native config changes,
-- no secrets or credentials,
+- no secrets or credential material,
 - no provider calls,
 - no DB or SQL mutation,
 - no app generation,

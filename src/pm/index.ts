@@ -33,4 +33,5 @@ export * from "./mobileFeatureBlueprintGenerator.js";
 export * from "./mobileScreenBlueprintGenerator.js";
 export * from "./mobileApiContractPlanner.js";
 export * from "./mobileDesignSystemBlueprint.js";
+export * from "./mobilePushNotificationStrategy.js";
 export * from "./sampleFixtures.js";
