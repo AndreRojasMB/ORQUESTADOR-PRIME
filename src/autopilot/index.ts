@@ -23,6 +23,8 @@ export * from "./conversationalBuildLoopDryRun.js";
 export * from "./conversationalBuildLoopFixtures.js";
 export * from "./humanApprovedCodexHandoff.js";
 export * from "./humanApprovedCodexHandoffFixtures.js";
+export * from "./manualCodexHandoffTrial.js";
+export * from "./manualCodexHandoffTrialFixtures.js";
 export * from "./riskBoundaries.js";
 export * from "./sampleFixtures.js";
 export * from "./taskState.js";
