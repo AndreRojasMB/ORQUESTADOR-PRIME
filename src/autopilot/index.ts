@@ -21,6 +21,8 @@ export * from "./realDryRunFixtures.js";
 export * from "./realDryRunPilot.js";
 export * from "./conversationalBuildLoopDryRun.js";
 export * from "./conversationalBuildLoopFixtures.js";
+export * from "./humanApprovedCodexHandoff.js";
+export * from "./humanApprovedCodexHandoffFixtures.js";
 export * from "./riskBoundaries.js";
 export * from "./sampleFixtures.js";
 export * from "./taskState.js";
