@@ -27,6 +27,8 @@ export * from "./manualCodexHandoffTrial.js";
 export * from "./manualCodexHandoffTrialFixtures.js";
 export * from "./semiAutomatedHandoffSafety.js";
 export * from "./semiAutomatedHandoffFixtures.js";
+export * from "./controlledOpenClawPasteBridge.js";
+export * from "./controlledOpenClawPasteFixtures.js";
 export * from "./riskBoundaries.js";
 export * from "./sampleFixtures.js";
 export * from "./taskState.js";
