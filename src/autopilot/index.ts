@@ -37,6 +37,8 @@ export * from "./approvalAuditHardening.js";
 export * from "./approvalAuditFixtures.js";
 export * from "./loopDashboardReadiness.js";
 export * from "./loopDashboardFixtures.js";
+export * from "./loopDashboardWireframe.js";
+export * from "./loopDashboardWireframeFixtures.js";
 export * from "./riskBoundaries.js";
 export * from "./sampleFixtures.js";
 export * from "./taskState.js";
