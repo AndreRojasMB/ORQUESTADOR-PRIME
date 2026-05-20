@@ -33,6 +33,8 @@ export * from "./controlledCodexReportReturn.js";
 export * from "./controlledCodexReportReturnFixtures.js";
 export * from "./endToEndManualLoopTrial.js";
 export * from "./endToEndManualLoopFixtures.js";
+export * from "./approvalAuditHardening.js";
+export * from "./approvalAuditFixtures.js";
 export * from "./riskBoundaries.js";
 export * from "./sampleFixtures.js";
 export * from "./taskState.js";
