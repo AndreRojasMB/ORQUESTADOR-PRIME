@@ -39,6 +39,8 @@ export * from "./loopDashboardReadiness.js";
 export * from "./loopDashboardFixtures.js";
 export * from "./loopDashboardWireframe.js";
 export * from "./loopDashboardWireframeFixtures.js";
+export * from "./controlledAutomationDecision.js";
+export * from "./controlledAutomationDecisionFixtures.js";
 export * from "./riskBoundaries.js";
 export * from "./sampleFixtures.js";
 export * from "./taskState.js";
